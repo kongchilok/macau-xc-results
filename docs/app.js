@@ -572,7 +572,7 @@
     const edNo = Number(params.get("e")) || LATEST.edition;
     const ed = DB.editions.find((e) => e.edition === edNo) || LATEST;
     const cat = CATS.includes(params.get("c")) ? params.get("c") : "MA";
-    const go = (o) => { const p = new URLSearchParams({ t: tab, e: ed.edition, c: cat, ...o }); location.hash = "#/rank?" + p; };
+    const go = (o) => { const p = new URLSearchParams({ t: tab, e: ed.edition, c: cat, ...o }); location.replace("#/rank?" + p); };
 
     const yearChips = DB.editions.map((e) => `<button class="chip ${e.edition === ed.edition ? "on" : ""}" data-e="${e.edition}"><span class="num">${yearShort(e.year)}</span></button>`).join("");
     let body = "";
@@ -626,7 +626,8 @@
     view.querySelectorAll("[data-e]").forEach((b) => b.onclick = () => go({ e: b.dataset.e }));
     view.querySelectorAll("[data-c]").forEach((b) => b.onclick = () => go({ c: b.dataset.c }));
     view.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => go({ c: b.dataset.g + cat[1] }));
-    const on = $("#years .on"); if (on) on.scrollIntoView({ inline: "center", block: "nearest" });
+    // 只橫向置中已選屆別，不可令整頁上下捲動
+    const on = $("#years .on"); if (on) { const box = on.parentElement; box.scrollLeft = on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2; }
     const mine = $(".medal.mine"); if (mine) mine.scrollIntoView({ block: "center" });
     if (tab === "pop") { fillPopularity(); popTimer = setInterval(fillPopularity, 15000); }
   }
@@ -803,7 +804,7 @@
     const cat = CATS.includes(params.get("c")) ? params.get("c") : "MA";
     const g = cat[0];
     const mode = params.get("v") === "pred" && pv.categories[cat].prediction ? "pred" : "past";
-    const go = (c, v = mode) => { location.hash = "#/preview?c=" + c + (v === "pred" ? "&v=pred" : ""); };
+    const go = (c, v = mode) => { location.replace("#/preview?c=" + c + (v === "pred" ? "&v=pred" : "")); };
     const sch = race.schedule.find((x) => x.cat === cat);
     const dist = sch.distance, distRules = sch.distance_rules;
     const m = (v) => v.toLocaleString() + (lang === "zh" ? " 米" : " m");
@@ -1121,7 +1122,7 @@
   function renderRecords(params) {
     const cat = CATS.includes(params.get("c")) ? params.get("c") : "MA";
     const g = cat[0];
-    const go = (c) => { location.hash = "#/records?c=" + c; };
+    const go = (c) => { location.replace("#/records?c=" + c); };
     const eds = [...DB.editions].sort((a, b) => a.edition - b.edition); // 舊→新
     const xs = eds.map((e) => yearShort(e.year));
     const champ = eds.map((e) => e.categories[cat].individual[0]?.seconds ?? null);
@@ -1198,7 +1199,7 @@
 
   /* ---------- 路由 ---------- */
   window.addEventListener("error", (e) => { console.error(e.error || e.message); });
-  let routed = false, navDepth = 0;
+  let routed = false, navDepth = 0, lastPath = null;
   window.addEventListener("hashchange", () => { navDepth++; });
   function backButton() {
     // Phosphor Icons (MIT) caret-left bold
@@ -1235,8 +1236,15 @@
     });
     if (routed) view.focus({ preventScroll: true });
     routed = true;
-    if (!params.get("hl") && !(path === "/rank" && params.get("s")) && !params.get("go")) window.scrollTo(0, 0);
+    // 同一頁面內切換篩選（男女、組別、屆別、往績／預測）保留捲動位置；進入另一頁才回到頁頂
+    const samePage = path === lastPath;
+    lastPath = path;
+    if (!samePage && !params.get("hl") && !(path === "/rank" && params.get("s")) && !params.get("go")) window.scrollTo(0, 0);
   }
+  // 再按目前頁面的底部按鈕：回到頁頂（一般 App 做法）
+  document.querySelectorAll(".dock a").forEach((a) => a.addEventListener("click", () => {
+    if (a.classList.contains("on")) window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }));
   function highlight(pid) {
     if (!pid) return;
     const a = view.querySelector(`.row[href="#/p/${pid}"]`);

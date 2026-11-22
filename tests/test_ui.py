@@ -471,3 +471,38 @@ def test_weather_data_sane():
         assert 5 <= w["temp_min"] <= w["temp_max"] <= 35, w
         assert 20 <= w["rh_avg"] <= 100 and w["obs"] >= 4, w
         assert w["basis"] in ("actual", "planned")
+
+
+# ---------- 同頁切換篩選：不跳回頁頂、不增加瀏覽紀錄 ----------
+@pytest.mark.parametrize("h, clicks", [
+    ("#/preview?c=MA", ['[data-g="F"]', '.cats [data-c="FC"]', '[data-v="pred"]', '[data-v="past"]', '[data-g="M"]']),
+    ("#/rank?e=47&c=MA", ['[data-g="F"]', '.cats [data-c="FB"]', '[data-e="45"]']),
+    ("#/records?c=MA", ['[data-g="F"]', '.cats [data-c="FD"]']),
+])
+def test_filters_keep_scroll_position(page, h, clicks):
+    """以 dispatch_event 觸發點擊（不經 Playwright 自動捲動），檢查網站本身不會跳回頁頂。
+    若新內容較短，瀏覽器會把捲動位置限制在最底，此情況以「最大可捲動距離」為準。"""
+    go(page, h)
+    page.evaluate("window.scrollTo(0, 400)")
+    page.wait_for_timeout(100)
+    y0 = page.evaluate("window.scrollY")
+    assert y0 >= 300, "測試前未能向下捲動"
+    hist0 = page.evaluate("history.length")
+    for sel in clicks:
+        before = page.evaluate("location.hash")
+        page.locator(sel).first.dispatch_event("click")
+        page.wait_for_function(f"location.hash !== {json.dumps(before)}")
+        page.wait_for_timeout(80)
+        y, ymax = page.evaluate("[window.scrollY, document.documentElement.scrollHeight - window.innerHeight]")
+        assert abs(y - min(y0, ymax)) <= 2, (sel, y, y0, ymax)
+        y0 = y
+    assert page.evaluate("history.length") == hist0, "篩選切換不應增加瀏覽紀錄"
+
+
+def test_new_page_still_starts_at_top(page):
+    go(page, "#/rank?e=47&c=MA")
+    page.evaluate("window.scrollTo(0, 600)")
+    page.locator(".board .row").first.click()
+    page.wait_for_function("location.hash.startsWith('#/p/')")
+    page.wait_for_timeout(80)
+    assert page.evaluate("window.scrollY") == 0
