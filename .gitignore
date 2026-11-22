@@ -1,0 +1,19 @@
+# 私人／含學生名單：絕不上傳
+private/
+review_persons.csv
+26_27學年越野跑賽程表.pdf
+# 原始素材（已處理後的版本在 docs/img/ 內）
+校徽補/
+images.jpg
+真實圖片/
+章程.pdf
+# 內部筆記
+工作筆記.md
+申請移除表單設計.md
+校徽待補名單.md
+# 工具
+.claude/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.old

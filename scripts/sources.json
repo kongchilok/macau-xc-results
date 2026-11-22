@@ -1,0 +1,15 @@
+{
+  "base": "https://portal.dsedj.gov.mo/webdsejspace/addon/upload/Upload_viewfile_page.jsp?id=",
+  "years": [
+    {"year": "2016/17", "edition": 38, "format": "xls", "files": {"all": 48171}},
+    {"year": "2017/18", "edition": 39, "format": "xls", "files": {"all": 54088}},
+    {"year": "2018/19", "edition": 40, "format": "xls", "files": {"all": 59869}},
+    {"year": "2019/20", "edition": 41, "format": "xls", "files": {"all": 65855}},
+    {"year": "2020/21", "edition": 42, "format": "xls", "files": {"all": 75126}},
+    {"year": "2021/22", "edition": 43, "format": "pdf", "files": {"individual": 84710, "team": 84711}},
+    {"year": "2022/23", "edition": 44, "format": "pdf", "files": {"individual": 89995, "team": 89996}},
+    {"year": "2023/24", "edition": 45, "format": "pdf", "files": {"individual": 96940, "team": 96939}},
+    {"year": "2024/25", "edition": 46, "format": "pdf", "files": {"individual": 698632, "team": 698642}},
+    {"year": "2025/26", "edition": 47, "format": "pdf", "files": {"individual": 706663, "team": 706664}}
+  ]
+}

@@ -1,0 +1,680 @@
+{
+ "_note": "第 48 屆（2026/27）賽程資料，來源：2026/2027 學年第四十八屆學界越野跑比賽秩序冊（運動員人數統計表、比賽時間及距離表）。不含個別運動員資料。",
+ "edition": 48,
+ "year": "2026/27",
+ "date": "2026-11-29",
+ "venue_zh": "松山健康徑",
+ "venue_pt": "Circuito de Manutenção da Guia",
+ "schedule": [
+  {
+   "cat": "MA",
+   "session": 1,
+   "call": "07:45",
+   "start": "08:00",
+   "laps_zh": "五個大圈",
+   "laps_en": "5 full laps",
+   "heats": 1,
+   "distance": 6850,
+   "teams": 4,
+   "runners": 57,
+   "distance_rules": 6850
+  },
+  {
+   "cat": "MB",
+   "session": 2,
+   "call": "08:15",
+   "start": "08:35",
+   "laps_zh": "四個大圈",
+   "laps_en": "4 full laps",
+   "heats": 1,
+   "distance": 5480,
+   "teams": 5,
+   "runners": 64,
+   "distance_rules": 5500
+  },
+  {
+   "cat": "FB",
+   "session": 3,
+   "call": "08:50",
+   "start": "09:05",
+   "laps_zh": "三個大圈",
+   "laps_en": "3 full laps",
+   "heats": 1,
+   "distance": 4110,
+   "teams": 4,
+   "runners": 46,
+   "distance_rules": 4500
+  },
+  {
+   "cat": "MD",
+   "session": 4,
+   "call": "09:00",
+   "start": "09:30",
+   "laps_zh": "二個小圈",
+   "laps_en": "2 short laps",
+   "heats": 4,
+   "distance": 1660,
+   "teams": 18,
+   "runners": 106,
+   "distance_rules": 1650
+  },
+  {
+   "cat": "FD",
+   "session": 5,
+   "call": "09:50",
+   "start": "10:10",
+   "laps_zh": "二個小圈",
+   "laps_en": "2 short laps",
+   "heats": 3,
+   "distance": 1660,
+   "teams": 16,
+   "runners": 92,
+   "distance_rules": 1650
+  },
+  {
+   "cat": "ME",
+   "session": 6,
+   "call": "10:20",
+   "start": "10:40",
+   "laps_zh": "一個小圈",
+   "laps_en": "1 short lap",
+   "heats": 3,
+   "distance": 830,
+   "teams": 14,
+   "runners": 84,
+   "distance_rules": 922
+  },
+  {
+   "cat": "FE",
+   "session": 7,
+   "call": "10:40",
+   "start": "11:00",
+   "laps_zh": "一個小圈",
+   "laps_en": "1 short lap",
+   "heats": 2,
+   "distance": 830,
+   "teams": 10,
+   "runners": 72,
+   "distance_rules": 922
+  },
+  {
+   "cat": "MC",
+   "session": 8,
+   "call": "11:00",
+   "start": "11:15",
+   "laps_zh": "二個大圈",
+   "laps_en": "2 full laps",
+   "heats": 3,
+   "distance": 2740,
+   "teams": 13,
+   "runners": 81,
+   "distance_rules": 2860
+  },
+  {
+   "cat": "FC",
+   "session": 9,
+   "call": "11:35",
+   "start": "11:55",
+   "laps_zh": "二個大圈",
+   "laps_en": "2 full laps",
+   "heats": 2,
+   "distance": 2740,
+   "teams": 9,
+   "runners": 62,
+   "distance_rules": 2860
+  },
+  {
+   "cat": "FA",
+   "session": 10,
+   "call": "12:10",
+   "start": "12:25",
+   "laps_zh": "四個大圈",
+   "laps_en": "4 full laps",
+   "heats": 1,
+   "distance": 5480,
+   "teams": 2,
+   "runners": 26,
+   "distance_rules": 5500
+  }
+ ],
+ "schools": [
+  {
+   "abbr": "CAM",
+   "zh": "聖公會中學(澳門)",
+   "pt": "Colégio Anglicano de Macau",
+   "n": {
+    "MC": 1,
+    "ME": 2,
+    "FA": 1,
+    "FC": 1,
+    "FE": 4
+   }
+  },
+  {
+   "abbr": "CDBYW",
+   "zh": "鮑思高粵華小學",
+   "pt": "Colégio Dom Bosco (Yuet Wah)",
+   "n": {
+    "MD": 5,
+    "ME": 5
+   }
+  },
+  {
+   "abbr": "CDSJ",
+   "zh": "聖若瑟教區中學",
+   "pt": "Colégio Diocesano de São José",
+   "n": {
+    "MA": 1
+   }
+  },
+  {
+   "abbr": "CDSJ5",
+   "zh": "聖若瑟教區中學第五校",
+   "pt": "Colégio Diocesano de São José 5",
+   "n": {
+    "MA": 1,
+    "MC": 2,
+    "MD": 2,
+    "FB": 1,
+    "FC": 5,
+    "FD": 3
+   }
+  },
+  {
+   "abbr": "CDSJ6",
+   "zh": "聖若瑟教區中學第六校",
+   "pt": "Colégio Diocesano de São José 6",
+   "n": {
+    "MA": 3,
+    "MB": 3,
+    "MC": 4,
+    "FA": 1,
+    "FB": 2,
+    "FC": 1
+   }
+  },
+  {
+   "abbr": "CK",
+   "zh": "聖公會(澳門)蔡高中學",
+   "pt": "Sheng Kung Hui Escola Choi Kou (Macau)",
+   "n": {
+    "MB": 1,
+    "FA": 1
+   }
+  },
+  {
+   "abbr": "CN",
+   "zh": "菜農子弟學校",
+   "pt": "Escola da Associação para Filhos e Irmãos dos Agricultores",
+   "n": {
+    "MA": 2,
+    "MC": 4,
+    "MD": 5,
+    "ME": 5,
+    "FC": 1,
+    "FD": 5,
+    "FE": 3
+   }
+  },
+  {
+   "abbr": "CS",
+   "zh": "澳門浸信中學",
+   "pt": "Escola Cham Son de Macau",
+   "n": {
+    "MC": 2,
+    "MD": 3,
+    "ME": 3,
+    "FC": 1,
+    "FD": 2,
+    "FE": 2
+   }
+  },
+  {
+   "abbr": "DLV",
+   "zh": "雷鳴道主教紀念學校",
+   "pt": "Escola Dom Luís Versíglia",
+   "n": {
+    "MA": 1,
+    "MB": 1,
+    "MC": 1
+   }
+  },
+  {
+   "abbr": "EAUM",
+   "zh": "澳門大學附屬應用學校",
+   "pt": "Escola de Aplicação Anexa à Universidade de Macau",
+   "n": {
+    "MA": 1,
+    "MC": 3,
+    "MD": 5
+   }
+  },
+  {
+   "abbr": "EIM",
+   "zh": "澳門國際學校",
+   "pt": "Escola Internacional de Macau",
+   "n": {
+    "MA": 2,
+    "MB": 2,
+    "MC": 4,
+    "MD": 5,
+    "ME": 5,
+    "FB": 7,
+    "FC": 1,
+    "FD": 5,
+    "FE": 1
+   }
+  },
+  {
+   "abbr": "EM",
+   "zh": "海星中學",
+   "pt": "Escola Estrela do Mar",
+   "n": {
+    "MA": 3,
+    "MB": 4,
+    "MC": 3
+   }
+  },
+  {
+   "abbr": "EMM",
+   "zh": "澳坊中學",
+   "pt": "Escola dos Moradores de Macau",
+   "n": {
+    "MA": 3,
+    "MB": 5,
+    "MC": 2,
+    "MD": 5,
+    "ME": 5,
+    "FB": 1,
+    "FC": 4,
+    "FD": 2,
+    "FE": 4
+   }
+  },
+  {
+   "abbr": "EN",
+   "zh": "聯國學校",
+   "pt": "Escola das Nações",
+   "n": {
+    "FD": 1
+   }
+  },
+  {
+   "abbr": "EOSPV",
+   "zh": "石排灣公立學校",
+   "pt": "Escola Oficial de Seac Pai Van",
+   "n": {
+    "MC": 2,
+    "MD": 5,
+    "ME": 5,
+    "FC": 3,
+    "FD": 5,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "EOZGY",
+   "zh": "鄭觀應公立學校",
+   "pt": "Escola Oficial Zheng Guanying",
+   "n": {
+    "MB": 1,
+    "MC": 5,
+    "MD": 5,
+    "ME": 2,
+    "FE": 1
+   }
+  },
+  {
+   "abbr": "EPM",
+   "zh": "澳門葡文學校",
+   "pt": "Escola Portuguesa de Macau",
+   "n": {
+    "MB": 2,
+    "MC": 5,
+    "MD": 5,
+    "ME": 5,
+    "FA": 2,
+    "FB": 3,
+    "FC": 4,
+    "FD": 5,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "FCP",
+   "zh": "沙梨頭坊眾學校",
+   "pt": "Escola dos Moradores do Bairro do Patane",
+   "n": {
+    "MD": 4
+   }
+  },
+  {
+   "abbr": "FCT",
+   "zh": "氹仔坊眾學校",
+   "pt": "Escola Fong Chong da Taipa",
+   "n": {
+    "MA": 1,
+    "MB": 2,
+    "FB": 2,
+    "FC": 1
+   }
+  },
+  {
+   "abbr": "FK",
+   "zh": "福建學校",
+   "pt": "Escola Fukien",
+   "n": {
+    "MD": 5,
+    "ME": 5,
+    "FD": 5,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "FL",
+   "zh": "婦聯學校",
+   "pt": "Escola da Associação Geral das Mulheres de Macau",
+   "n": {
+    "MC": 2,
+    "MD": 3,
+    "ME": 4,
+    "FC": 4,
+    "FD": 5,
+    "FE": 4
+   }
+  },
+  {
+   "abbr": "HF",
+   "zh": "海暉學校",
+   "pt": "Escola Hói Fai",
+   "n": {
+    "MD": 5,
+    "ME": 5,
+    "FD": 5,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "HK",
+   "zh": "濠江中學",
+   "pt": "Escola Hou Kong",
+   "n": {
+    "MA": 6,
+    "MB": 7,
+    "MC": 4,
+    "MD": 5,
+    "ME": 5,
+    "FA": 7,
+    "FB": 7,
+    "FC": 5,
+    "FD": 4,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "HVCV",
+   "zh": "下環浸會學校",
+   "pt": "Escola Há Ván Châm Vui",
+   "n": {
+    "MD": 5,
+    "ME": 1,
+    "FC": 1,
+    "FD": 2,
+    "FE": 3
+   }
+  },
+  {
+   "abbr": "IS",
+   "zh": "慈幼中學",
+   "pt": "Instituto Salesiano da Imaculada Conceição",
+   "n": {
+    "MC": 2
+   }
+  },
+  {
+   "abbr": "IV",
+   "zh": "澳門中華總商會附設青洲中學",
+   "pt": "Escola Secundária Ilha Verde da Associação Comercial de Macau",
+   "n": {
+    "MA": 4,
+    "MB": 1,
+    "MC": 4,
+    "MD": 5,
+    "ME": 5,
+    "FB": 1,
+    "FC": 1,
+    "FD": 4,
+    "FE": 2
+   }
+  },
+  {
+   "abbr": "KP",
+   "zh": "鏡平學校",
+   "pt": "Escola Keang Peng",
+   "n": {
+    "MA": 5,
+    "MB": 1,
+    "MC": 3,
+    "MD": 5,
+    "ME": 5,
+    "FB": 5,
+    "FC": 2,
+    "FD": 5,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "KY",
+   "zh": "教業中學",
+   "pt": "Escola Kao Yip",
+   "n": {
+    "MA": 2,
+    "MB": 2,
+    "MC": 4,
+    "MD": 4,
+    "ME": 4,
+    "FA": 1,
+    "FB": 1,
+    "FC": 3,
+    "FD": 1,
+    "FE": 1
+   }
+  },
+  {
+   "abbr": "LCTP",
+   "zh": "中葡職業技術學校",
+   "pt": "Escola Luso-Chinesa Técnico-Profissional",
+   "n": {
+    "MA": 3,
+    "MB": 2,
+    "FA": 2,
+    "FB": 1,
+    "FC": 1
+   }
+  },
+  {
+   "abbr": "LH",
+   "zh": "勞校中學",
+   "pt": "Escola Secundária Lou Hau",
+   "n": {
+    "MB": 1,
+    "MC": 5,
+    "MD": 5,
+    "ME": 3,
+    "FB": 4,
+    "FC": 4,
+    "FD": 5,
+    "FE": 3
+   }
+  },
+  {
+   "abbr": "LN",
+   "zh": "嶺南中學",
+   "pt": "Escola Ling Nam",
+   "n": {
+    "MA": 1,
+    "MB": 2,
+    "FB": 1
+   }
+  },
+  {
+   "abbr": "PC",
+   "zh": "培正中學",
+   "pt": "Escola Secundária Pui Ching",
+   "n": {
+    "MA": 1,
+    "MB": 4,
+    "MC": 4,
+    "MD": 4,
+    "ME": 4,
+    "FC": 4,
+    "FD": 5,
+    "FE": 2
+   }
+  },
+  {
+   "abbr": "PHS",
+   "zh": "陳瑞祺永援中學",
+   "pt": "Colégio Perpétuo Socorro Chan Sui Ki",
+   "n": {
+    "MA": 1,
+    "MB": 1
+   }
+  },
+  {
+   "abbr": "PT",
+   "zh": "培道中學",
+   "pt": "Escola Pui Tou",
+   "n": {
+    "MA": 1,
+    "MB": 5,
+    "MC": 1,
+    "MD": 5,
+    "ME": 4,
+    "FA": 2,
+    "FB": 2,
+    "FC": 2,
+    "FD": 2
+   }
+  },
+  {
+   "abbr": "PV",
+   "zh": "培華中學",
+   "pt": "Escola Secundária Pui Va",
+   "n": {
+    "MA": 5,
+    "MB": 6,
+    "MC": 5,
+    "MD": 1,
+    "FA": 1,
+    "FD": 4
+   }
+  },
+  {
+   "abbr": "SCJI",
+   "zh": "嘉諾撒聖心英文中學",
+   "pt": "Colégio do Sagrado Coração de Jesus - Secção Inglesa",
+   "n": {
+    "FE": 3
+   }
+  },
+  {
+   "abbr": "SF",
+   "zh": "聖家學校",
+   "pt": "Escola da Sagrada Família",
+   "n": {
+    "MD": 2,
+    "ME": 2,
+    "FD": 2
+   }
+  },
+  {
+   "abbr": "SJB",
+   "zh": "庇道學校",
+   "pt": "Escola São João de Brito",
+   "n": {
+    "MB": 2
+   }
+  },
+  {
+   "abbr": "SP",
+   "zh": "聖保祿學校",
+   "pt": "Escola São Paulo",
+   "n": {
+    "MA": 1,
+    "MB": 1,
+    "MD": 3,
+    "FD": 5,
+    "FE": 1
+   }
+  },
+  {
+   "abbr": "SRLC",
+   "zh": "聖羅撒女子中學中文部",
+   "pt": "Colégio de Santa Rosa de Lima - Secção Chinesa",
+   "n": {
+    "FA": 7,
+    "FB": 5,
+    "FC": 5,
+    "FD": 4,
+    "FE": 3
+   }
+  },
+  {
+   "abbr": "SRLI",
+   "zh": "聖羅撒英文中學",
+   "pt": "Colégio de Santa Rosa de Lima - Secção Inglesa",
+   "n": {
+    "FC": 5,
+    "FD": 5,
+    "FE": 5
+   }
+  },
+  {
+   "abbr": "SY",
+   "zh": "澳門三育中學",
+   "pt": "Escola Secundária Sam Yuk de Macau",
+   "n": {
+    "FB": 2,
+    "FC": 1,
+    "FD": 1
+   }
+  },
+  {
+   "abbr": "TN",
+   "zh": "東南學校",
+   "pt": "Escola Tong Nam",
+   "n": {
+    "MA": 2,
+    "MB": 1,
+    "MC": 4,
+    "FA": 1,
+    "FB": 1,
+    "FC": 2
+   }
+  },
+  {
+   "abbr": "YW",
+   "zh": "粵華中學",
+   "pt": "Colégio Yuet Wah",
+   "n": {
+    "MA": 7,
+    "MB": 7,
+    "MC": 5
+   }
+  }
+ ],
+ "totals": {
+  "MA": 57,
+  "MB": 64,
+  "MC": 81,
+  "MD": 106,
+  "ME": 84,
+  "FA": 26,
+  "FB": 46,
+  "FC": 62,
+  "FD": 92,
+  "FE": 72
+ },
+ "_distance_note": "distance＝秩序冊（比賽當日實際安排）；distance_rules＝2026/27 學年章程 5.2 所列距離。兩者不一致時以秩序冊為準。"
+}
