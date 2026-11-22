@@ -87,6 +87,8 @@
       lvRule: (a, c) => `計分方法：A、B 組取每校首 ${a} 名、C 組取每校首 ${c} 名的名次相加，分數最低者勝；同分時以首名隊員名次較前者為勝。未齊人的隊伍以「暫計」顯示，假設餘下隊員緊接目前最後一名之後到達，即該隊仍可取得的最佳分數。`,
       lvHeatsRule: "本組分組出發，按章程以時間定名次；後續分組完成前，名次及團體分只屬暫計。",
       lvUpdated: (s) => `更新於 ${s}`, lvOffline: "暫時未能連線，稍後自動重試。", lvTimeNote: "時間為人手計時，只供參考。",
+      cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
+      cardNote: "圖片只使用本網站已公開的成績資料。手機可按「分享」儲存至相簿或傳送給朋友。",
     },
     en: {
       brand: "Macau Schools XC", searchPh: "Search name, romanised name or school", navHome: "Home", navRank: "Results", navAthletes: "Athletes", navRecords: "Records",
@@ -172,6 +174,8 @@
       lvRule: (a, c) => `Scoring: the places of each school's first ${a} finishers (A and B) or first ${c} finishers (C) are added; lowest total wins, ties go to the team whose first runner placed higher. Incomplete teams show a provisional score assuming their remaining runners finish right after the current last place, the best they can still achieve.`,
       lvHeatsRule: "This category runs in heats and is ranked by time, so places and team points stay provisional until all heats finish.",
       lvUpdated: (s) => `Updated ${s}`, lvOffline: "Connection lost, retrying.", lvTimeNote: "Hand timing, for reference only.",
+      cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
+      cardNote: "The card uses only results already published on this site. On a phone, use Share to save it to your photos.",
     },
   };
 
@@ -449,6 +453,7 @@
      後端：docs/data/site.json 的 views = { url, key }（Supabase）。未設定時為「示範模式」，只計本裝置。
      規則：每次進入選手頁面 +1；同一裝置 60 秒內重複進入同一選手不重複計（防止重新整理灌數）。 */
   const ICON = {
+    card: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M208,28H48A20,20,0,0,0,28,48V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28Zm-4,24V158.1l-27.51-27.52a20,20,0,0,0-28.29,0L128,150.83,100.3,123.17a20,20,0,0,0-28.29,0L52,143.17V52ZM52,177.11l34.16-34.17,62.18,62.18a.53.53,0,0,0,0,.08H52ZM181.29,204l-36-36,17.34-17.34L204,192.06V204ZM144,100a16,16,0,1,1,16,16A16,16,0,0,1,144,100Z"/></svg>',
     fire: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M143.38,17.85a8,8,0,0,0-12.63,3.41l-22,60.41L84.59,58.26a8,8,0,0,0-11.93.89C51,87.53,40,116.08,40,144a88,88,0,0,0,176,0C216,84.55,165.21,36,143.38,17.85Zm40.51,135.49a57.6,57.6,0,0,1-46.56,46.55A7.65,7.65,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.630-16.85,33.44-33.45a8,8,0,0,1,15.780,2.68Z"/></svg>',
     eye: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.570,61.26,162.880,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></svg>',
     crown: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M248,80a28,28,0,1,0-51.12,15.77l-26.79,33L146,73.4a28,28,0,1,0-36.06,0L85.910,128.74l-26.79-33a28,28,0,1,0-26.6,12L47,194.63A16,16,0,0,0,62.78,208H193.22A16,16,0,0,0,209,194.63l14.47-86.850A28,28,0,0,0,248,80ZM128,40a12,12,0,1,1-12,12A12,12,0,0,1,128,40ZM24,80A12,12,0,1,1,36,92,12,12,0,0,1,24,80ZM220,92a12,12,0,1,1,12-12A12,12,0,0,1,220,92Z"/></svg>',
@@ -695,6 +700,7 @@
           <div class="stat"><b style="color:${best <= 3 ? `var(--${["gold", "silver", "bronze"][best - 1]})` : "inherit"}">${best}</b><span>${t("best")}</span></div>
           <div class="stat"><b style="color:var(--gold)">${wins}</b><span>${t("wins")}</span></div>
         </div>
+        <button type="button" class="card-btn" id="cardBtn">${ICON.card}${t("cardBtn")}</button>
       </section>
       ${spark}
       <p class="muted-note">${t("stHow")}</p>
@@ -706,6 +712,63 @@
           <span class="res"><div class="pos ${pos(r.rank)}">${t("placeShort", r.rank)}</div><div class="tm">${fmt(r.seconds)}</div></span>
         </a>`).join("")}</div>`;
     trackProfileView(pid);
+    $("#cardBtn").onclick = () => openCard(p);
+  }
+
+  /* ---------- 榮譽卡（docs/card.js 繪製） ---------- */
+  function cardData(p) {
+    const last = p.recs.at(-1), zh = (p.status && p.status.code === "active" && p.status.school) || last.school_zh;
+    const info = DB.schools[zh] || {}, abbr = info.abbr || zh.slice(0, 2);
+    const medals = p.recs.filter((r) => r.rank <= 3), wins = medals.filter((r) => r.rank === 1).length;
+    const best = Math.min(...p.recs.map((r) => r.rank));
+    const newest = [...p.recs].reverse();
+    const rows = [...medals].reverse();
+    for (const r of newest) { if (rows.length >= 5) break; if (r.rank > 3) rows.push(r); }
+    const catZh = (c) => `${c[0] === "M" ? "男子" : "女子"}${c[1]}組`;
+    const pbRecs = p.recs.filter((r) => r.cat === last.cat && r.seconds);
+    const pb = pbRecs.length ? pbRecs.reduce((a, b) => (b.seconds < a.seconds ? b : a)) : null;
+    const st = p.status;
+    const status = !st ? null : st.code === "active" ? `在讀・第 ${DB.race.edition} 屆參賽` : st.code === "unsure" ? null : t("st_" + st.code);
+    const url = "kongchilok.github.io/macau-xc-results";
+    return {
+      name: p.name_zh || p.name_pt, namePt: p.name_zh ? p.name_pt : "", school: zh, crestImg: DB.crests[abbr] || null, crestAbbr: abbr, crestHue: hueOf(abbr),
+      status, statusMuted: !!st && st.code !== "active",
+      stats: { races: p.recs.length, wins, medals: medals.length, best },
+      tier: wins ? "gold" : medals.length ? (best === 2 ? "silver" : "bronze") : "base",
+      title: medals.length ? "榮譽紀錄" : "歷屆成績",
+      rows: rows.slice(0, 5).sort((a, b) => b.edition - a.edition).map((r) => ({ place: r.rank, year: r.year, edition: r.edition, cat: catZh(r.cat), gender: r.cat[0], time: fmt(r.seconds) })),
+      pb: pb ? { label: catZh(pb.cat), time: fmt(pb.seconds), year: pb.year } : null,
+      url, qrUrl: `https://${url}/#/p/${p.pid}`, seed: p.pid,
+    };
+  }
+  async function openCard(p) {
+    const box = document.createElement("div");
+    box.className = "card-modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", t("cardBtn"));
+    box.innerHTML = `<div class="cm-inner"><div class="cm-img"><div class="skeleton"><i class="sk-card"></i></div></div>
+      <div class="cm-btns"><a class="btn-primary" id="cmSave" aria-disabled="true">${t("cardSave")}</a><button type="button" class="cm-share" id="cmShare" hidden>${t("cardShare")}</button><button type="button" class="cm-close" id="cmClose">${t("cardClose")}</button></div>
+      <p class="muted-note">${t("cardNote")}</p></div>`;
+    document.body.appendChild(box);
+    const close = () => { box.remove(); document.removeEventListener("keydown", onKey); if (box._url) URL.revokeObjectURL(box._url); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    box.addEventListener("click", (e) => { if (e.target === box) close(); });
+    $("#cmClose").onclick = close; $("#cmClose").focus();
+    try {
+      const cv = await XCCard.render(cardData(p));
+      const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+      const name = `${p.name_zh || p.name_pt}_榮譽卡.png`;
+      const url = box._url = URL.createObjectURL(blob);
+      box.querySelector(".cm-img").innerHTML = `<img src="${url}" alt="${esc(t("cardBtn"))}">`;
+      const a = $("#cmSave"); a.href = url; a.download = name; a.removeAttribute("aria-disabled");
+      const file = new File([blob], name, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        const sh = $("#cmShare"); sh.hidden = false;
+        sh.onclick = () => navigator.share({ files: [file], title: name }).catch(() => { /* 使用者取消 */ });
+      }
+    } catch (e) {
+      console.error(e);
+      box.querySelector(".cm-img").innerHTML = `<p class="banner">${t("cardFail")}</p>`;
+    }
   }
 
 

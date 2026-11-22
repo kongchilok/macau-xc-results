@@ -668,3 +668,48 @@ def test_live_demo_replay(page):
     expect(page.locator(".lv-team").first).to_contain_text(champ)
     expect(page.locator(".lv-team .rank.r1")).to_have_count(1)
     no_hscroll(page)
+
+
+# ---------- 榮譽卡 ----------
+def _card_png(page, pid):
+    go(page, f"#/p/{pid}")
+    page.click("#cardBtn")
+    page.wait_for_selector(".cm-img img", timeout=15000)
+    info = page.evaluate("""async () => {
+        const img = document.querySelector('.cm-img img');
+        await img.decode();
+        const b = await (await fetch(img.src)).blob();
+        const buf = new Uint8Array(await b.arrayBuffer());
+        let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+        return { w: img.naturalWidth, h: img.naturalHeight, name: document.querySelector('#cmSave').download, b64: btoa(s) };
+    }""")
+    out = __import__("os").environ.get("XC_CARD_OUT")
+    if out:
+        pathlib.Path(out).mkdir(parents=True, exist_ok=True)
+        (pathlib.Path(out) / f"{pid}.png").write_bytes(base64.b64decode(info["b64"]))
+        page.screenshot(path=str(pathlib.Path(out) / f"modal_{pid}.png"))
+    return info
+
+
+def _pid_by(pred):
+    people = {}
+    for e in DATA["editions"]:
+        for c, v in e["categories"].items():
+            for r in v["individual"]:
+                people.setdefault(r["pid"], []).append(r)
+    return next(pid for pid, recs in people.items() if pred(recs))
+
+
+@pytest.mark.parametrize("kind", ["champion", "medal", "base"])
+def test_honours_card_export(page, kind):
+    preds = {
+        "champion": lambda recs: sum(r["rank"] == 1 for r in recs) >= 3 and not recs[0].get("hidden"),
+        "medal": lambda recs: min(r["rank"] for r in recs) == 2 and len(recs) >= 3 and not recs[0].get("hidden"),
+        "base": lambda recs: min(r["rank"] for r in recs) > 3 and len(recs) >= 3 and not recs[0].get("hidden"),
+    }
+    pid = _pid_by(preds[kind])
+    info = _card_png(page, pid)
+    assert (info["w"], info["h"]) == (1080, 1350)
+    assert info["name"].endswith("_榮譽卡.png")
+    page.click("#cmClose")
+    expect(page.locator(".card-modal")).to_have_count(0)

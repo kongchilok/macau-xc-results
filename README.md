@@ -86,3 +86,10 @@ python -m http.server 8765 --directory docs
 - 計分：`docs/live-core.js`（章程 5.6–5.12；以第 44–47 屆官方團體冠軍驗證 36/36 一致）
 - 號碼布名單：在 `private/startlist48.csv` 加 `bib` 欄 → `python -P -X utf8 scripts/live_roster.py private/startlist48.csv private/preview48_review.csv private/live_roster48.sql` → 在 Supabase 執行輸出的 SQL
 - 新增工作人員：在 Supabase Authentication 建立帳戶（勾選 Auto Confirm），再執行 `insert into public.xc_live_admins(email) values ('電郵小寫');`
+
+## 運動員榮譽卡
+
+- 運動員頁「匯出榮譽卡」：`docs/card.js` 以 Canvas 即時繪製 1080×1350（4:5）PNG，版面依示範圖（`陳曉晴_榮譽卡.png.jpg`，不入 repo）
+- 三個版本：冠軍（金框＋皇冠）、獎牌（銀／銅框）、參賽紀念（綠框，標題「歷屆成績」）
+- QR 碼連去該運動員頁面（`qrcode-generator@1.4.4`，按下匯出時才載入；載入失敗則不畫 QR 碼）
+- 只用已公開資料；檔名「姓名_榮譽卡.png」；手機支援「分享」存入相簿
