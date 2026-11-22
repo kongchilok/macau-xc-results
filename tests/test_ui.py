@@ -95,7 +95,7 @@ def test_home(page):
     expect(page.locator(".card")).to_have_count(5)
     expect(page.locator(".dots i")).to_have_count(5)
     expect(page.locator(".quick a")).to_have_count(10)
-    expect(page.locator(".dock a")).to_have_count(3)
+    expect(page.locator(".dock a")).to_have_count(4)
     expect(page.locator('.dock a[data-nav="home"]')).to_have_class("on")
     champ = EDS[47]["categories"]["MA"]["individual"][0]
     expect(page.locator(".card").first).to_contain_text(champ["name_zh"])
@@ -167,7 +167,7 @@ def test_rank_filters_update(page):
 def test_rank_school_tab(page):
     go(page, "#/rank?t=team&e=47")
     expect(page.locator(".team")).to_have_count(10)
-    expect(page.locator(".team").nth(5)).to_contain_text("不設團體獎")
+    expect(page.locator(".team").nth(5)).to_contain_text("未設團體獎")
     total = sum(1 for e in DATA["editions"] for c in e["categories"].values() if c["team_champion"])
     shown = page.locator(".medal .total").all_inner_texts()
     assert sum(int(x) for x in shown) == total
@@ -230,7 +230,7 @@ def test_not_found_routes(page):
 
 
 # ---------- 所有頁面無橫向捲動、底部按鈕不遮內容 ----------
-@pytest.mark.parametrize("h", ["#/", "#/rank?t=team&e=44", "#/records?c=FE", "#/p/" + EDS[47]["categories"]["FA"]["individual"][0]["pid"]])
+@pytest.mark.parametrize("h", ["#/", "#/rank?t=team&e=44", "#/records?c=FE", "#/athletes", "#/athletes?tab=schools", "#/s/YW", "#/p/" + EDS[47]["categories"]["FA"]["individual"][0]["pid"]])
 def test_layout_fits_phone(page, h):
     go(page, h)
     no_hscroll(page)
@@ -242,7 +242,7 @@ def test_layout_fits_phone(page, h):
 
 
 # ---------- 設計規範（美觀審查後加入的回歸測試） ----------
-@pytest.mark.parametrize("h", ["#/", "#/rank?e=47&c=MA", "#/records?c=MA"])
+@pytest.mark.parametrize("h", ["#/", "#/rank?e=47&c=MA", "#/records?c=MA", "#/athletes", "#/s/YW"])
 def test_touch_targets_at_least_40px(page, h):
     """主要可按控制（按鈕、膠囊、組別鈕、底部導覽）高度不少於 40px。"""
     go(page, h)
@@ -253,7 +253,7 @@ def test_touch_targets_at_least_40px(page, h):
 
 
 def test_no_dash_characters_in_visible_text(page):
-    for h in ["#/", "#/rank?t=team&e=44", "#/records?c=FA"]:
+    for h in ["#/", "#/rank?t=team&e=44", "#/records?c=FA", "#/athletes", "#/s/KP", "#/rank?e=46&c=FD"]:
         go(page, h)
         txt = page.evaluate("document.body.innerText")
         assert "—" not in txt and "–" not in txt, h
@@ -378,7 +378,7 @@ def test_prediction_view(page):
     expect(page.locator(".pd-row")).to_have_count(len(pv["categories"]["MA"]["prediction"]))
     expect(page.locator(".pd-note")).to_contain_text("推算預測")
     expect(page.locator(".pd-note")).to_contain_text("濠江")
-    expect(page.locator(".pd-row").first).to_contain_text("預測領先")
+    expect(page.locator(".pd-row").first).to_contain_text("預測首名")
     no_hscroll(page)
 
 
@@ -400,3 +400,74 @@ def test_preview_title_and_hero(page):
         assert page.request.get(f"{page.base}/img/race/{img}.jpg").ok, img
     expect(page.locator("#pvCarousel .card").nth(1).locator(".mini-row")).to_have_count(10)
     no_hscroll(page)
+
+
+# ---------- 第六輪：運動員／學校名錄、互相連結、比賽天氣 ----------
+WX = json.loads((ROOT / "docs/data/weather.json").read_text(encoding="utf-8"))
+
+
+def test_dock_has_four_tabs(page):
+    go(page, "#/")
+    expect(page.locator(".dock a")).to_have_count(4)
+    assert page.locator(".dock .lbl").all_inner_texts() == ["首頁", "歷屆成績", "運動員", "紀錄與趨勢"]
+    expect(page.locator(".entry a")).to_have_count(4)
+    expect(page.locator(".card-more")).to_have_count(5)
+
+
+def test_athlete_directory_filters(page):
+    go(page, "#/athletes?k=champ&g=F")
+    expect(page.locator('.dock a[aria-current="page"]')).to_have_attribute("data-nav", "athletes")
+    champs = {r["pid"] for e in DATA["editions"] for c, v in e["categories"].items() if c[0] == "F" for r in v["individual"] if r["rank"] == 1 and not r.get("hidden")}
+    expect(page.locator(".board-head h2")).to_have_text(f"共 {len(champs)} 名運動員")
+    hrefs = page.locator("#athList a").evaluate_all("els => els.map(e => e.getAttribute('href').slice(4))")
+    assert set(hrefs) <= champs and len(hrefs) == min(40, len(champs))
+    page.select_option("#athSchool", "KP")
+    page.wait_for_function("location.hash.includes('s=KP')")
+    for t in page.locator("#athList .sch").all_inner_texts():
+        assert t  # 每行有校名
+    no_hscroll(page)
+
+
+def test_school_page_counts(page):
+    go(page, "#/s/YW")
+    names = {zh for zh, s in DATA["schools"].items() if s.get("abbr") == "YW"}
+    titles = sum(1 for e in DATA["editions"] for v in e["categories"].values() if v["team_champion"] and v["team_champion"]["school_zh"] in names)
+    expect(page.locator(".stats4 .stat b").first).to_have_text(str(titles))
+    expect(page.locator(".back")).to_be_visible()
+    no_hscroll(page)
+
+
+def test_links_between_pages(page):
+    go(page, "#/rank?t=team&e=47")
+    page.locator(".team a.sl-link").first.click()
+    page.wait_for_function("location.hash.startsWith('#/s/')")
+    expect(page.locator(".school-hero h1")).to_be_visible()
+    go(page, "#/rank?e=47&c=MA")
+    page.click(".link-row a >> nth=0")
+    page.wait_for_function("location.hash.startsWith('#/records?c=MA')")
+    go(page, "#/")
+    page.locator(".card .bars a").first.click()
+    page.wait_for_function("location.hash.startsWith('#/s/')")
+
+
+def test_weather_on_rank_and_records(page):
+    go(page, "#/rank?e=46&c=FD")
+    w = next(x for x in WX["races"] if x["edition"] == 46 and x.get("cats") == "DE")
+    expect(page.locator(".wx summary")).to_contain_text(f"濕度 {w['rh_avg']}%")
+    go(page, "#/rank?e=46&c=MA")
+    w = next(x for x in WX["races"] if x["edition"] == 46 and x.get("cats") == "ABC")
+    expect(page.locator(".wx summary")).to_contain_text("有雨")
+    page.click(".wx summary")
+    expect(page.locator(".wx .wx-note")).to_contain_text("天雨延期")
+    go(page, "#/records?c=MA&go=wx")
+    expect(page.locator(".wxrow")).to_have_count(len(DATA["editions"]))
+    no_hscroll(page)
+
+
+def test_weather_data_sane():
+    eds = {e["edition"] for e in DATA["editions"]}
+    assert eds <= {w["edition"] for w in WX["races"]}
+    for w in WX["races"]:
+        assert 5 <= w["temp_min"] <= w["temp_max"] <= 35, w
+        assert 20 <= w["rh_avg"] <= 100 and w["obs"] >= 4, w
+        assert w["basis"] in ("actual", "planned")

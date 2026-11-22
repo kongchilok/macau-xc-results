@@ -4,79 +4,92 @@
 
   const I18N = {
     zh: {
-      brand: "澳門學界越野跑", searchPh: "搜尋學生姓名、拼音或學校", navHome: "首頁", navRank: "排行榜", navRecords: "紀錄與趨勢",
-      disclaimer: "本網站為非官方整理，資料來自教育及青年發展局「學界比賽」網頁公布的成績，如有出入以官方公布為準。",
+      brand: "澳門學界越野跑", searchPh: "搜尋運動員、葡文拼音或學校", navHome: "首頁", navRank: "歷屆成績", navAthletes: "運動員", navRecords: "紀錄與趨勢",
+      disclaimer: "本網站為非官方整理，資料來自教育及青年發展局「學界比賽」網頁公布的成績，如有出入，以官方公布為準。",
       source: "官方資料來源", removal: "申請移除個人資料",
       male: "男子", female: "女子", group: "組", secondary: "中學", primary: "小學",
       edition: (n) => `第${n}屆`, latestChamps: "最新一屆各組冠軍", medalTitle: "學校團體冠軍榜",
-      medalNote: (a, b) => `只計團體冠軍，${a} 至 ${b}`, fastest: "近十年各組最快時間", fastestNote: "各屆距離及場地可能不同，未按距離校正。",
-      streak: "團體連冠中", streakNote: "以最新一屆往前連續奪得團體冠軍計算", kings: "個人冠軍最多",
-      kingsNote: "近十年個人賽第一名次數", times: "次", years: "連霸", quick: "最新一屆排行榜", quickAll: "全部排行",
-      individual: "個人", team: "學校", top10: "該屆官方只公布每組前 10 名。", runners: (n) => `${n} 人完成`,
-      teamChamps: "各組團體冠軍", noTeam: "參賽隊數不足，不設團體獎", medalAll: "團體冠軍總數（近十年）",
-      secShort: "中", priShort: "小", total: "總數",
-      noResult: "找不到相符的學生或學校", races: "參賽次數", best: "最佳名次", wins: "冠軍",
-      history: "歷年成績", rankTrend: "名次走勢", schoolLbl: "學校", wipTitle: "紀錄與趨勢", wipText: "此頁待開發：待補齊各屆章程的比賽距離後，會提供各組歷屆紀錄及冠軍時間趨勢。",
-      season: "學年", lowerFaster: "縱軸已倒置：越高越快；距離未校正", tableView: "表格檢視",
-      distBanner: (k, d, r) => `${d ? `第 48 屆此組距離：秩序冊 ${d.toLocaleString()} 米、章程 ${r ? r.toLocaleString() + " 米" : "未列"}${r && r !== d ? "（兩者不一致，以秩序冊為準）" : ""}。` : ""}${k ? `已知 ${k} 屆距離，其餘不詳。` : "過往各屆距離未有資料，"}以下紀錄及趨勢未按距離校正。`,
+      medalNote: (a, b) => `只計算團體冠軍，統計期間為 ${a} 至 ${b}`, fastest: "近十年最快成績", fastestNote: "各屆賽道距離或有不同，成績未按距離調整。",
+      streak: "團體冠軍連續衛冕", streakNote: "由最新一屆起向前計算連續奪得團體冠軍的屆數", kings: "個人冠軍次數最多",
+      kingsNote: "近十年個人賽奪冠次數", times: "次", years: "連冠", quick: "最新一屆成績", quickAll: "全部成績",
+      individual: "個人賽", team: "團體賽", top10: "該屆官方只公布每組前十名。", runners: (n) => `${n} 人完成賽事`,
+      teamChamps: "各組團體冠軍", noTeam: "參賽隊伍不足，未設團體獎", medalAll: "團體冠軍總數（近十年）",
+      secShort: "中學", priShort: "小學", total: "合計",
+      noResult: "沒有符合的運動員或學校", races: "參賽次數", best: "最佳名次", wins: "冠軍次數",
+      history: "歷屆成績", rankTrend: "名次變化", schoolLbl: "學校", wipTitle: "紀錄與趨勢", wipText: "本頁尚在開發：待補齊各屆章程所列的比賽距離後，將提供各組歷屆紀錄及冠軍成績趨勢。",
+      season: "學年", lowerFaster: "縱軸已倒置：位置愈高代表成績愈快；成績未按距離調整", tableView: "以表格顯示",
+      distBanner: (k, d, r) => `${d ? `第 48 屆本組距離：秩序冊為 ${d.toLocaleString()} 米，章程${r ? "為 " + r.toLocaleString() + " 米" : "未有列明"}${r && r !== d ? "（兩者不一致，以秩序冊為準）" : ""}。` : ""}${k ? `已知 ${k} 屆的比賽距離，其餘從缺。` : "過往各屆距離未有資料，"}以下紀錄及趨勢未按距離調整。`,
       distSched: "秩序冊", distRules: "章程", distDiffer: "兩者不一致，以比賽當日秩序冊為準", distSame: "兩者一致",
-      recordTitle: (c) => `${c} · 近十年最快`, trendTitle: "冠軍與第 10 名時間", champTime: "冠軍", tenthTime: "第 10 名",
-      top10Title: "近十年最快十人", finTitle: "完成人數", finNote: "第 38 至 43 屆官方只公布每組前 10 名，未有完整人數。", teamHist: "歷屆團體冠軍", streakNow: (n) => `現正 ${n} 連冠`,
-      rangeSub: (a, b) => `${a} 至 ${b}`, asOf: (n) => `截至第${n}屆`, skip: "跳到主要內容", searchLabel: "搜尋學生或學校", navLabel: "主選單",
-      langAria: "Switch to English", loadFail: "資料載入失敗", loadFailText: "請檢查網絡後再試。", retry: "重新載入",
-      pvTitle: (n) => `第${n}屆賽前預覽`, pvBanner: (n) => `第${n}屆學界越野跑`, pvWhen: (d, t, v) => `${d} ${t} · ${v}`,
-      pvDays: (n) => n > 1 ? `還有 ${n} 日` : n === 1 ? "明天開跑" : n === 0 ? "今天開跑" : "比賽已完成，成績待公布", pvGo: "賽前預覽",
-      pvCall: "檢錄", pvStart: "起跑", pvDist: "距離", pvRunners: "參賽", pvHeats: (n) => n > 1 ? `分 ${n} 組出發` : "一次過出發",
-      pvKnown: (k, n) => `${n} 人參賽，其中 ${k} 人有往績`, pvNew: (n) => `另有 ${n} 人未有公開往績（首次參賽或姓名未能確定），不列出。`,
-      pvSame: "上屆同組", pvUp: "升組", pvOlder: "較早往績", pvLast: "上屆", pvBest: "最佳",
-      pvDefend: "衛冕", pvTop3: "上屆三甲", pvUpTag: (c) => `由${c}升組`, pvHeat: (h) => `第 ${h} 組`,
-      pvNote: "按往績排列，並非賽果預測。只列出曾在官方公布成績中出現的參賽者。",
-      pvNone: "此組參賽者都未有公開往績。", dateFmt: (d) => `${d.getMonth() + 1}月${d.getDate()}日（${"日一二三四五六"[d.getDay()]}）`,
-      prevSchool: "上屆代表：",
-      st_active: "在讀・今屆參賽", st_unsure: "未確定", st_grad: "已畢業", st_gradEst: "已畢業（推斷）", st_idle: "在讀（推斷）",
-      stEntered: (n) => `第${n}屆報名`, stAYear: (n) => `A組第${n}年`, stLast: "最後出賽", stOver4: "超過 4 年 A 組，請核對",
-      stUnsureWhy: "今屆名單有同名參賽者，未能確定是否本人",
-      stHow: "狀態按第 48 屆參賽名單推斷：A 組最多 4 年，今屆 A 組名單沒有其名字即視為畢業；其他組別按年齡組別推算。",
-      hiddenName: "（應要求隱藏）", hiddenText: "此學生的資料已應要求隱藏。",
-      pvyTitle: "私隱及資料使用", pvyApply: "填寫申請表", pvyPending: "申請渠道設立中，如需移除或更正資料，請先聯絡所屬學校的體育老師轉達。",
-      pvySrcH: "資料來源", pvySrc: "本站歷屆成績均整理自教育及青年發展局「學界比賽」網頁公開發布的越野跑成績，屬非官方整理，如有出入以官方公布為準。第 48 屆預測另參考澳門中華學生聯合總會公開的「全澳學生環山跑比賽」獲獎名單（頭十名）。",
-      pvyShowH: "顯示甚麼", pvyShow: "官方成績已公開的資料：姓名（中文及葡文拼音）、學校、組別、名次、成績。第 48 屆賽前預覽只列出曾在官方成績或公開獲獎名單中出現的參賽者及其今屆學校；選手頁面的瀏覽次數只作人氣排名，不記錄瀏覽者身份。",
-      pvyNoH: "不顯示甚麼", pvyNo: "不顯示號碼布號碼、出生日期、聯絡方式或任何未經官方公布的個人資料；未有公開往績的參賽者只計人數，不列姓名。本站亦設定不被搜尋引擎收錄。",
-      pvyStatusH: "在讀／畢業標示",
-      pvyRemoveH: "申請移除或更正", pvyRemove: (d) => `學生本人、家長或學校老師可申請隱藏姓名，或更正錯誤資料。我們會在收到申請後 ${d} 日內處理。`,
-      pvyStep1: "提供學生姓名、學校、出賽年份及組別，方便定位資料。", pvyStep2: "選擇「隱藏姓名」或「更正資料」，並留下回覆用的聯絡方式（毋須提交身份證明文件）。",
-      pvyStep3: "處理後，該學生所有成績的姓名會顯示為「應要求隱藏」，名次與成績保留，其他學生的排名不受影響。",
-      pvyNote: "註：隱藏只影響本站；官方網頁的原始成績不受影響。",
+      recordTitle: (c) => `${c} · 近十年最快成績`, trendTitle: "冠軍及第十名成績走勢", champTime: "冠軍", tenthTime: "第十名",
+      top10Title: "近十年最快十名", finTitle: "完成人數", finNote: "第 38 至 43 屆官方只公布每組前十名，故未有完整人數。", teamHist: "歷屆團體冠軍", streakNow: (n) => `現已連續 ${n} 屆奪冠`,
+      rangeSub: (a, b) => `${a} 至 ${b}`, asOf: (n) => `截至第${n}屆`, skip: "跳至主要內容", searchLabel: "搜尋運動員或學校", navLabel: "主選單",
+      langAria: "Switch to English", loadFail: "資料載入失敗", loadFailText: "請檢查網絡連線後再試。", retry: "重新載入",
+      pvTitle: (n) => `第${n}屆賽前預覽`, pvBanner: (n) => `第${n}屆學界越野跑比賽`, pvWhen: (d, t, v) => `${d} ${t} · ${v}`,
+      pvDays: (n) => n > 1 ? `距離比賽尚有 ${n} 日` : n === 1 ? "明日舉行" : n === 0 ? "今日舉行" : "比賽已結束，成績有待公布", pvGo: "賽前預覽",
+      pvCall: "檢錄", pvStart: "起跑", pvDist: "距離", pvRunners: "參賽人數", pvHeats: (n) => n > 1 ? `分 ${n} 組起跑` : "全組同時起跑",
+      pvKnown: (k, n) => `共 ${n} 人參賽，其中 ${k} 人有往績`, pvNew: (n) => `另有 ${n} 人未有公開往績（首次參賽或未能確認身份），不予列出。`,
+      pvSame: "上屆同組參賽", pvUp: "今屆升組", pvOlder: "較早屆別往績", pvLast: "上屆", pvBest: "最佳",
+      pvDefend: "衛冕者", pvTop3: "上屆前三名", pvUpTag: (c) => `由${c}升組`, pvHeat: (h) => `第 ${h} 組`,
+      pvNote: "按往績排列，並非賽果預測；只列出曾於官方成績出現的參賽者。",
+      pvNone: "本組參賽者均未有公開往績。", dateFmt: (d) => `${d.getMonth() + 1}月${d.getDate()}日（星期${"日一二三四五六"[d.getDay()]}）`,
+      prevSchool: "上屆代表學校：",
+      st_active: "在讀・今屆參賽", st_unsure: "未能確認", st_grad: "已畢業", st_gradEst: "推斷已畢業", st_idle: "推斷在讀",
+      stEntered: (n) => `已報名第${n}屆`, stAYear: (n) => `A組第${n}年`, stLast: "最後參賽", stOver4: "A 組參賽已逾 4 年，請核對",
+      stUnsureWhy: "今屆名單有同名參賽者，未能確認是否同一人",
+      stHow: "在讀及畢業狀態按第 48 屆參賽名單推斷：A 組最多參賽 4 年，今屆 A 組名單未見其姓名者視為已畢業；其他組別按年齡組別推算。",
+      hiddenName: "（應要求隱藏）", hiddenText: "此運動員的資料已應要求隱藏。",
+      pvyTitle: "私隱及資料使用", pvyApply: "填寫申請表", pvyPending: "申請渠道正在設立。如需移除或更正資料，請先聯絡所屬學校的體育老師代為轉達。",
+      pvySrcH: "資料來源", pvySrc: "本網站的歷屆成績均整理自教育及青年發展局「學界比賽」網頁公開發布的越野跑成績，屬非官方整理，如有出入，以官方公布為準。第 48 屆預測另參考澳門中華學生聯合總會公開的「全澳學生環山跑比賽」獲獎名單（前十名）。比賽當日天氣取自澳門國際機場氣象站的航空天氣報告。",
+      pvyShowH: "顯示的資料", pvyShow: "只顯示官方已公開的資料，包括姓名（中文及葡文拼音）、學校、組別、名次及成績。第 48 屆賽前預覽只列出曾於官方成績或公開獲獎名單出現的參賽者及其今屆學校；運動員頁面的瀏覽次數只用於人氣排名，不會記錄瀏覽者身份。",
+      pvyNoH: "不顯示的資料", pvyNo: "不顯示號碼布號碼、出生日期、聯絡方式或任何未經官方公布的個人資料；未有公開往績的參賽者只計算人數，不列姓名。本網站亦已設定不被搜尋引擎收錄。",
+      pvyStatusH: "在讀及畢業標示",
+      pvyRemoveH: "申請移除或更正", pvyRemove: (d) => `運動員本人、家長或學校老師均可申請隱藏姓名或更正錯誤資料，本網站會於收到申請後 ${d} 日內處理。`,
+      pvyStep1: "請提供運動員姓名、學校、參賽年份及組別，以便查找相關紀錄。", pvyStep2: "選擇「隱藏姓名」或「更正資料」，並留下聯絡方式以便回覆（毋須提交身份證明文件）。",
+      pvyStep3: "處理完成後，該運動員所有成績的姓名均顯示為「應要求隱藏」，名次及成績保留，其他運動員的排名不受影響。",
+      pvyNote: "註：隱藏只適用於本網站，官方網頁公布的成績不受影響。",
       privacyLink: "私隱及移除申請",
-      pdPast: "往績", pdPred: "預測", pdHead: (k, n) => `${n} 人參賽，推算到 ${k} 人`, pdTop: "預測領先", pdClose: "實力接近",
-      pdNone: "此組未有足夠往績作推算。", pdAecm: (r, tm) => `環山跑第${r}名 ${tm}`, pdNewbie: "學界新人", pdNoForm: "近況未知", pdNoHist: "未有學界往績",
-      pdNoteAecm: (n, w, d) => `已加入一星期前「${n}」的近況（佔 ${w}%）：${d}，與學界越野賽距離及路面不同，只作參考；今日跑入頭十名的學界新人亦一併推算。`,
-      pdNoteHK: "注意：傳統強校濠江中學今日大部分組別未有參賽，其選手只按往績推算、近況欠奉，實力不容看小。", pdNoteTitle: "推算預測，並非賽果。",
-      pdNote1: (c) => `按各人歷屆「成績相對冠軍」的實力指數，加上同組第二年平均進步約 2.5%、升組第一年平均退步約 3.9% 推算；預測相差少於 ${c}% 的選手標示為實力接近，名次互換機會約一半。`,
-      pdNote2: (r, h) => `以第 46、47 屆回測：預測與實際名次相關度 ${r}，前三名命中 ${h}。`,
-      pdNote3: (n) => `小心黑馬：另有 ${n} 人未有足夠往績或近況（新人、往績太舊或轉組），未列入推算，任何人都可能爆冷。`,
-      popTab: "人氣", popLive: "實時", popDemo: "示範模式", popViews: " 次瀏覽", popNext: (n, l) => `再 ${n} 次瀏覽升上 Lv.${l}`, popMax: "已達最高等級",
-      popDemoNote: "示範模式：目前只計算本裝置的瀏覽次數。正式啟用資料庫後，會變成全站所有人一起累積、實時更新。",
-      popRule: "每次進入選手頁面累積 1 次瀏覽（同一裝置 60 秒內重複進入不重複計算），每 15 秒自動更新。瀏覽次數愈多等級愈高：銅、銀、金、白金、鑽石。",
-      popEmpty: "暫時未有瀏覽紀錄。進入任何選手頁面就會開始累積人氣。", popFail: "暫時未能讀取人氣數據，請稍後再試。", popUpdated: (s) => `更新於 ${s}`,
-      tier_bronze: "銅牌", tier_silver: "銀牌", tier_gold: "金牌", tier_plat: "白金", tier_diamond: "鑽石",
+      pdPast: "往績", pdPred: "預測", pdHead: (k, n) => `共 ${n} 人參賽，其中 ${k} 人可作推算`, pdTop: "預測首名", pdClose: "實力相若",
+      pdNone: "本組未有足夠往績作推算。", pdAecm: (r, tm) => `環山跑第${r}名（${tm}）`, pdNewbie: "首次參加學界賽", pdNoForm: "未有近期成績", pdNoHist: "未有學界往績",
+      pdNoteAecm: (n, w, d) => `已納入一星期前「${n}」的近期成績（佔 ${w}%）：${d}。該賽事的距離及路面與學界越野跑不同，只作參考；於該賽事躋身前十名而首次參加學界賽的運動員，亦一併推算。`,
+      pdNoteHK: "注意：傳統強校濠江中學大部分組別未有參加該賽事，其運動員只按往績推算，未有近期成績可供參考，實力不容忽視。", pdNoteTitle: "以下為推算預測，並非賽果。",
+      pdNote1: (c) => `按各人歷屆「成績與該場冠軍的比例」計算實力指數，並計及同組第二年平均進步約 2.5%、升組首年平均退步約 3.9% 的趨勢；預測差距少於 ${c}% 的運動員標示為「實力相若」，名次互換的機會約為一半。`,
+      pdNote2: (r, h) => `以第 46、47 屆回測：預測與實際名次的相關係數為 ${r}，前三名命中 ${h}。`,
+      pdNote3: (n) => `另有 ${n} 人因往績不足或欠缺近期成績（首次參賽、往績過舊或轉換組別）而未列入推算，賽果仍可能出現意外。`,
+      popTab: "人氣", popLive: "實時", popDemo: "示範模式", popViews: " 次瀏覽", popNext: (n, l) => `尚差 ${n} 次瀏覽升至 Lv.${l}`, popMax: "已達最高等級",
+      popDemoNote: "示範模式：目前只計算本裝置的瀏覽次數。正式啟用資料庫後，將累計全站瀏覽次數並實時更新。",
+      popRule: "每次進入運動員頁面累計 1 次瀏覽（同一裝置 60 秒內重複進入不另計算），排名每 15 秒自動更新。瀏覽次數愈多，等級愈高，依次為銅級、銀級、金級、白金級及鑽石級。",
+      popEmpty: "暫未有瀏覽紀錄。進入任何運動員頁面即開始累計人氣。", popFail: "暫時未能讀取人氣數據，請稍後再試。", popUpdated: (s) => `更新於 ${s}`,
+      tier_bronze: "銅級", tier_silver: "銀級", tier_gold: "金級", tier_plat: "白金級", tier_diamond: "鑽石級",
       pvTitleZh: "第四十八屆學界越野跑比賽", pvTitlePt: "48° Campeonato Escolar de Corta-Mato",
-      hcTitle: "比賽日", hcRunners: "運動員", hcSchools: "學校", hcCats: "組別", hcChamps: "預測各組冠軍", hcChampsSub: "按往績及近況推算，點擊看該組預測",
-      hcPredNote: "推算預測，並非賽果；小心黑馬。", hcPopular: "人氣選手", hcHorse: "黑馬注意", hcHorseSub: "一星期前環山跑三甲、未有學界往績的新人",
-      hcSched: "當日時間表", hcSchedSub: "按起跑時間排列", hcLast: "去年精彩", hcLastSub: (n) => `第${n}屆學界越野跑頒獎`, hcPhotoNote: "相片：去年賽事",
-      pdAecmShort: (r) => `環山跑第${r}`, pvRunnersUnit: " 人",
+      hcTitle: "比賽日", hcRunners: "運動員", hcSchools: "學校", hcCats: "組別", hcChamps: "各組冠軍預測", hcChampsSub: "按往績及近期成績推算，點選可查看該組預測",
+      hcPredNote: "推算結果並非賽果，僅供參考。", hcPopular: "人氣運動員", hcHorse: "新晉焦點", hcHorseSub: "一星期前環山跑前三名、未有學界往績的運動員",
+      hcSched: "比賽時間表", hcSchedSub: "按起跑時間排列", hcLast: "上屆賽事回顧", hcLastSub: (n) => `第${n}屆學界越野跑比賽頒獎典禮`, hcPhotoNote: "相片：上屆賽事",
+      pdAecmShort: (r) => `環山跑第${r}名`, pvRunnersUnit: " 人",
       back: "返回", notFound: "找不到此頁面", placeShort: (n) => `第${n}名`, searchSchool: "學校",
+      more: "查看全部", seeRecords: "本組紀錄與趨勢", seeRank: "查看該屆成績", seeSchool: "查看學校資料",
+      athTitle: "運動員名錄", athTabPeople: "運動員", athTabSchools: "學校", athAll: "全部", athActive: "今屆參賽", athChamp: "曾獲冠軍", athPodium: "曾入前三名",
+      athCount: (n) => `共 ${n} 名運動員`, athMore: (n) => `顯示更多（尚有 ${n} 名）`, athAllSchools: "所有學校", athSortNote: "按冠軍次數、獎牌數目及最佳名次排列。",
+      athWins: (n) => `冠軍 ${n} 次`, athMedals: (n) => `獎牌 ${n} 面`, athBest: (n) => `最佳第${n}名`, athNone: "沒有符合篩選條件的運動員。",
+      schCount: (n) => `共 ${n} 間學校`, schTitles: "團體冠軍", schAthletes: "參賽運動員", schIndWins: "個人冠軍", schMedals: "個人獎牌",
+      schTeamList: "團體冠軍紀錄", schMedalList: "個人獎牌得主（前三名）", schCurrent: (n) => `第${n}屆參賽運動員`, schRoster: "歷屆參賽運動員", schNoTitle: "近十年未有團體冠軍。", schNoMedal: "近十年未有個人獎牌。", schSortNote: "按團體冠軍數目及參賽人數排列。",
+      schFormer: "舊校名：", schViewRank: "查看團體賽成績",
+      wxTitle: "比賽當日天氣", wxTemp: "氣溫", wxRh: "相對濕度", wxWind: "風速", wxRainY: "有雨", wxRainN: "無雨", wxImpact: "估計影響",
+      wxSlow: (a, b) => b === 0 ? "幾乎無影響" : `約慢 ${a}% 至 ${b}%`, wx_good: "有利", wx_mild: "略受影響", wx_hard: "受影響", wx_severe: "明顯受影響",
+      wxPlanned: "日期按《學校運作指南》的計劃舉行日期推定", wxPlannedFoot: "＊日期按《學校運作指南》的計劃舉行日期推定，未能以賽後報道核實。", wxDE: "D、E 組延期補賽", wxABC: "D、E 組因天雨延期",
+      wxNote: "天氣資料取自澳門國際機場氣象站每半小時發布的航空天氣報告（METAR）。氣象站位於氹仔，與松山相距約 5 公里，數值只供比較各屆比賽條件之用。估計影響按長跑常用的「氣溫＋露點」配速調整經驗表推算，氣溫及濕度愈高，成績一般愈慢。",
+      wxRecTitle: "歷屆比賽天氣", wxRecSub: "比較各屆成績時，可參考當日氣溫及濕度", wxDate: "比賽日期", wxShort: (t, h) => `約 ${t}°C · 濕度 ${h}%`,
+      wxDayFmt: (s) => { const [y, m, d] = s.split("-").map(Number); return `${y}年${m}月${d}日`; },
     },
     en: {
-      brand: "Macau Schools XC", searchPh: "Search name, romanised name or school", navHome: "Home", navRank: "Rankings", navRecords: "Records",
+      brand: "Macau Schools XC", searchPh: "Search name, romanised name or school", navHome: "Home", navRank: "Results", navAthletes: "Athletes", navRecords: "Records",
       disclaimer: "Unofficial site. Results are compiled from the School Sports Competitions pages of the Education and Youth Development Bureau (DSEDJ); official publications prevail.",
       source: "Official source", removal: "Request removal",
       male: "Boys", female: "Girls", group: "", secondary: "Secondary", primary: "Primary",
       edition: (n) => `${n}th edition`, latestChamps: "Latest individual champions", medalTitle: "School team titles",
       medalNote: (a, b) => `Team titles only, ${a} to ${b}`, fastest: "Fastest times, last 10 years", fastestNote: "Course distance may differ between years; times are not distance-adjusted.",
       streak: "Active team streaks", streakNote: "Consecutive team titles up to the latest edition", kings: "Most individual titles",
-      kingsNote: "Individual wins in the last 10 years", times: "×", years: "in a row", quick: "Latest rankings", quickAll: "All rankings",
-      individual: "Individual", team: "Schools", top10: "Only the top 10 per category were published this year.", runners: (n) => `${n} finishers`,
+      kingsNote: "Individual wins in the last 10 years", times: "×", years: "in a row", quick: "Latest results", quickAll: "All results",
+      individual: "Individual", team: "Teams", top10: "Only the top 10 per category were published this year.", runners: (n) => `${n} finishers`,
       teamChamps: "Team champions", noTeam: "Not awarded (too few teams)", medalAll: "Team titles (last 10 years)",
       secShort: "Sec", priShort: "Pri", total: "Total",
       noResult: "No matching student or school", races: "Races", best: "Best place", wins: "Wins",
@@ -126,10 +139,23 @@
       tier_bronze: "Bronze", tier_silver: "Silver", tier_gold: "Gold", tier_plat: "Platinum", tier_diamond: "Diamond",
       pvTitleZh: "第四十八屆學界越野跑比賽", pvTitlePt: "48° Campeonato Escolar de Corta-Mato",
       hcTitle: "Race day", hcRunners: "Runners", hcSchools: "Schools", hcCats: "Categories", hcChamps: "Predicted winners", hcChampsSub: "From past results and recent form; tap for the full projection",
-      hcPredNote: "A projection, not a result. Watch for dark horses.", hcPopular: "Most viewed", hcHorse: "Dark horses", hcHorseSub: "Top 3 in last week's round-the-hill race, new to schools XC",
+      hcPredNote: "A projection, not a result. Watch for dark horses.", hcPopular: "Most viewed", hcHorse: "Ones to watch", hcHorseSub: "Top 3 in last week's round-the-hill race, new to schools XC",
       hcSched: "Race schedule", hcSchedSub: "By start time", hcLast: "Last year", hcLastSub: (n) => `Edition ${n} prize-giving`, hcPhotoNote: "Photo: last year's race",
       pdAecmShort: (r) => `RTH #${r}`, pvRunnersUnit: " runners",
       back: "Back", notFound: "Page not found", placeShort: (n) => `#${n}`, searchSchool: "School",
+      more: "See all", seeRecords: "Records for this category", seeRank: "See results", seeSchool: "School profile",
+      athTitle: "Athletes", athTabPeople: "Athletes", athTabSchools: "Schools", athAll: "All", athActive: "Racing this year", athChamp: "Champions", athPodium: "Podium finishers",
+      athCount: (n) => `${n} athletes`, athMore: (n) => `Show more (${n} left)`, athAllSchools: "All schools", athSortNote: "Sorted by wins, medals and best placing.",
+      athWins: (n) => `${n} win${n > 1 ? "s" : ""}`, athMedals: (n) => `${n} medal${n > 1 ? "s" : ""}`, athBest: (n) => `Best #${n}`, athNone: "No athletes match these filters.",
+      schCount: (n) => `${n} schools`, schTitles: "Team titles", schAthletes: "Athletes", schIndWins: "Individual wins", schMedals: "Medals",
+      schTeamList: "Team titles", schMedalList: "Individual medallists (top 3)", schCurrent: (n) => `Entered for edition ${n}`, schRoster: "All athletes", schNoTitle: "No team titles in the last 10 years.", schNoMedal: "No individual medals in the last 10 years.", schSortNote: "Sorted by team titles and number of athletes.",
+      schFormer: "Former name: ", schViewRank: "See team results",
+      wxTitle: "Race-day weather", wxTemp: "Temperature", wxRh: "Humidity", wxWind: "Wind", wxRainY: "Rain", wxRainN: "Dry", wxImpact: "Estimated effect",
+      wxSlow: (a, b) => b === 0 ? "Negligible" : `About ${a}% to ${b}% slower`, wx_good: "Favourable", wx_mild: "Slightly affected", wx_hard: "Affected", wx_severe: "Strongly affected",
+      wxPlanned: "Date taken from the planned schedule in the School Operations Guide", wxPlannedFoot: "* Planned date from the School Operations Guide, not confirmed by a post-race report. ", wxDE: "Rescheduled D and E races", wxABC: "D and E races postponed for rain",
+      wxNote: "Weather comes from the half-hourly aviation reports (METAR) of the Macau International Airport station in Taipa, about 5 km from Guia Hill, and is meant only for comparing conditions between years. The estimated effect uses the common temperature-plus-dew-point pace adjustment table for distance running: hotter, more humid days are slower.",
+      wxRecTitle: "Race-day weather by year", wxRecSub: "Useful when comparing times between years", wxDate: "Race date", wxShort: (t, h) => `About ${t}°C · ${h}% humidity`,
+      wxDayFmt: (s) => new Date(s + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
     },
   };
 
@@ -140,6 +166,12 @@
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const view = $("#view");
+  /* Phosphor Icons (MIT) chart-bar / trend-up bold；運動員圖示為自繪 */
+  const NAVICON = {
+    rank: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,196h-4V40a12,12,0,0,0-12-12H152a12,12,0,0,0-12,12V76H96A12,12,0,0,0,84,88v36H48a12,12,0,0,0-12,12v60H32a12,12,0,0,0,0,24H224a12,12,0,0,0,0-24ZM164,52h32V196H164Zm-56,48h32v96H108ZM60,148H84v48H60Z"/></svg>',
+    records: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M244,56v64a12,12,0,0,1-24,0V85l-75.51,75.52a12,12,0,0,1-17,0L96,129,32.49,192.490a12,12,0,0,1-17-17l72-72a12,12,0,0,1,17,0L136,135l67-67H168a12,12,0,0,1,0-24h64A12,12,0,0,1,244,56Z"/></svg>',
+    athletes: '<svg viewBox="0 0 256 256" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><circle cx="100" cy="84" r="38"/><path d="M30 208c8-38 37-62 70-62s62 24 70 62"/><path d="M162 50a38 38 0 0 1 0 68"/><path d="M190 150c20 12 32 32 36 58"/></svg>',
+  };
 
   let DB = null;
   const CATS = ["MA", "MB", "MC", "MD", "ME", "FA", "FB", "FC", "FD", "FE"];
@@ -165,6 +197,45 @@
     return `<span class="crest ${size}" style="--h:${hueOf(a)};--k:${k}" title="${title}" aria-hidden="true"><i>${esc(a)}</i></span>`;
   }
   function schoolLine(zh, size = "xs") { return `<span class="sl">${crest(zh, size)}<span>${esc(school(zh))}</span></span>`; }
+  const abbrOf = (zh) => ((DB && DB.schools[zh]) || {}).abbr || zh;
+  const schoolHref = (zh) => `#/s/${encodeURIComponent(abbrOf(zh))}`;
+  /* 可點擊的校名：連去學校資料頁（不可放在另一個連結之內） */
+  function schoolLink(zh, size = "xs") { return `<a class="sl sl-link" href="${schoolHref(zh)}">${crest(zh, size)}<span>${esc(school(zh))}</span></a>`; }
+  const to = (a, b) => a === b ? `${a}` : `${a}${lang === "zh" ? " 至 " : " to "}${b}`;
+
+  /* ---------- 比賽當日天氣（docs/data/weather.json） ---------- */
+  function wxFor(edNo, cat) {
+    const list = ((DB && DB.weather && DB.weather.races) || []).filter((w) => w.edition === edNo);
+    if (list.length < 2) return list[0] || null;
+    return list.find((w) => w.cats && cat && w.cats.includes(cat[1])) || list[0];
+  }
+  function wxSlow(w) { return t("wxSlow", w.slow_pct[0], w.slow_pct[1]); }
+  function wxNotes(w) {
+    const n = [];
+    if (w.cats === "ABC") n.push(t("wxABC"));
+    if (w.cats === "DE") n.push(t("wxDE"));
+    if (w.basis === "planned") n.push(t("wxPlanned"));
+    return n;
+  }
+  /* 排行榜用：一張天氣資訊卡 */
+  function wxCard(w, cat) {
+    if (!w) return "";
+    const notes = wxNotes(w);
+    const tr = w.temp_min === w.temp_max ? `${w.temp_min}` : `${w.temp_min}-${w.temp_max}`;
+    return `<details class="wx">
+      <summary><span class="wx-sum"><b>${t("wxTitle")}</b><span>${tr}°C · ${lang === "zh" ? "濕度" : "RH"} ${w.rh_avg}%${w.rain_reports > 0 ? " · " + t("wxRainY") : ""}</span></span><span class="wx-badge lv-${w.level}">${t("wx_" + w.level)}</span></summary>
+      <div class="wx-head"><span>${esc(t("wxDayFmt", w.date))}</span></div>
+      <div class="wx-grid">
+        <div><span>${t("wxTemp")}</span><b>${tr}<small>°C</small></b></div>
+        <div><span>${t("wxRh")}</span><b>${w.rh_avg}<small>%</small></b></div>
+        <div><span>${t("wxWind")}</span><b>${w.wind_avg ?? "-"}<small> km/h</small></b></div>
+        <div><span>${lang === "zh" ? "天氣" : "Rain"}</span><b>${w.rain_reports > 0 ? t("wxRainY") : t("wxRainN")}</b></div>
+      </div>
+      <div class="wx-impact">${t("wxImpact")}：${esc(wxSlow(w))}</div>
+      ${notes.length ? `<p class="wx-note">${esc(notes.join("；"))}</p>` : ""}
+      <a class="wx-link" href="#/records?c=${cat}&go=wx">${t("wxRecTitle")} ›</a>
+    </details>`;
+  }
 
   function personName(r, withSub = true) {
     if (r.hidden) return `<span class="hidden-name">${t("hiddenName")}</span>`;
@@ -277,7 +348,7 @@
       if (hits.length > 60) break;
     }
     hits.sort((a, b) => b.recs.at(-1).edition - a.recs.at(-1).edition || b.recs.length - a.recs.length);
-    let html = schoolHits.map(([zh]) => `<a class="result" role="option" href="#/rank?t=team&s=${encodeURIComponent(zh)}">${crest(zh, "md")}<div><div>${esc(school(zh))}</div><div class="sub">${t("searchSchool")}</div></div></a>`).join("");
+    let html = schoolHits.map(([zh]) => `<a class="result" role="option" href="${schoolHref(zh)}">${crest(zh, "md")}<div><div>${esc(school(zh))}</div><div class="sub">${t("searchSchool")}</div></div></a>`).join("");
     html += hits.slice(0, 20).map((p) => {
       const last = p.recs.at(-1);
       return `<a class="result" role="option" href="#/p/${p.pid}">${crest(last.school_zh, "md")}<div><div>${personName(p)}</div><div class="sub">${esc(school(last.school_zh))}</div></div><span class="tag">${statusChip(p)}<br>${catLabel(last.cat)} · ${yearShort(last.year)}</span></a>`;
@@ -290,6 +361,19 @@
   document.addEventListener("click", (e) => { if (!e.target.closest(".search")) results.hidden = true; });
   results.addEventListener("click", (e) => { if (e.target.closest("a")) { results.hidden = true; q.value = ""; q.blur(); } });
 
+  /* 首頁功能入口：讓使用者一眼看到可以查甚麼 */
+  function entryTiles() {
+    const zh = lang === "zh";
+    const tiles = [
+      { href: "#/rank", nav: "rank", t: zh ? "歷屆成績" : "Results by year", d: zh ? "第 38 至 47 屆各組個人及團體名次" : "Individual and team placings, editions 38 to 47" },
+      { href: "#/athletes", nav: "athletes", t: zh ? "運動員名錄" : "Athlete directory", d: zh ? "按性別、組別、學校篩選，查看個人歷屆成績" : "Filter by gender, category or school" },
+      { href: "#/athletes?tab=schools", nav: "athletes", t: zh ? "學校資料" : "Schools", d: zh ? "各校團體冠軍、獎牌得主及參賽運動員" : "Team titles, medallists and athletes" },
+      { href: "#/records", nav: "records", t: zh ? "紀錄與趨勢" : "Records & trends", d: zh ? "最快成績、成績走勢及歷屆比賽天氣" : "Fastest times, trends and race-day weather" },
+    ];
+    return `<div class="section-title"><h2>${zh ? "功能導覽" : "Explore"}</h2></div>
+      <div class="entry">${tiles.map((x) => `<a href="${x.href}"><span class="dot">${NAVICON[x.nav]}</span><b>${x.t}</b><small>${x.d}</small></a>`).join("")}</div>`;
+  }
+
   /* ---------- 首頁 ---------- */
   function renderHome() {
     const ed = LATEST;
@@ -298,7 +382,7 @@
 
     const years = DB.editions.map((e) => e.year);
     const maxM = MEDALS[0]?.total || 1;
-    const medalRows = MEDALS.slice(0, 6).map((m, i) => `<div class="bar"><span class="pos">${i + 1}</span><div class="track"><div class="fill" style="width:${(m.total / maxM) * 100}%"></div><div class="name">${crest(m.school, "xs")}${esc(school(m.school))}</div></div><span class="n">${m.total}</span></div>`).join("");
+    const medalRows = MEDALS.slice(0, 6).map((m, i) => `<a class="bar" href="${schoolHref(m.school)}"><span class="pos">${i + 1}</span><div class="track"><div class="fill" style="width:${(m.total / maxM) * 100}%"></div><div class="name">${crest(m.school, "xs")}${esc(school(m.school))}</div></div><span class="n">${m.total}</span></a>`).join("");
 
     const fastest = CATS.map((c) => {
       let best = null;
@@ -314,27 +398,28 @@
       for (const e of DB.editions) { const tc = e.categories[c].team_champion; if (tc && tc.school_zh === first.school_zh) n++; else break; }
       return n >= 2 ? { c, school: first.school_zh, n } : null;
     }).filter(Boolean).sort((a, b) => b.n - a.n);
-    const streakRows = streaks.slice(0, 8).map((s) => `<div class="mini-row ${s.c[0] === "M" ? "m" : "f"}"><span class="cat">${catLabel(s.c)}</span><span class="who">${crest(s.school, "xs")}${esc(school(s.school))}</span><span class="t">${s.n}<small>${t("years")}</small></span></div>`).join("");
+    const streakRows = streaks.slice(0, 8).map((s) => `<a class="mini-row ${s.c[0] === "M" ? "m" : "f"}" href="${schoolHref(s.school)}"><span class="cat">${catLabel(s.c)}</span><span class="who">${crest(s.school, "xs")}${esc(school(s.school))}</span><span class="t">${s.n}<small>${t("years")}</small></span></a>`).join("");
 
     const kings = [...PEOPLE.values()].map((p) => ({ p, w: p.recs.filter((r) => r.rank === 1).length })).filter((x) => x.w > 0).sort((a, b) => b.w - a.w || b.p.recs.length - a.p.recs.length).slice(0, 7);
     const kingRows = kings.map(({ p, w }) => `<a class="mini-row ${p.gender === "M" ? "m" : "f"}" href="#/p/${p.pid}"><span class="cat">${catLabel(p.recs.at(-1).cat)}</span><span class="who">${crest(p.recs.at(-1).school_zh, "xs")}${esc(lang === "zh" ? (p.name_zh || p.name_pt) : p.name_pt)}<small>${esc(school(p.recs.at(-1).school_zh))}</small></span><span class="t">${w}<small>${t("times")}</small></span></a>`).join("");
 
     const cards = [
-      { cls: "c-green", sub: `${t("edition", ed.edition)} · ${ed.year}`, title: t("latestChamps"), body: `<div class="mini">${champRows}</div>` },
-      { cls: "c-gold", sub: t("medalNote", years.at(-1), years[0]), title: t("medalTitle"), body: `<div class="bars">${medalRows}</div>` },
-      { cls: "c-steel", sub: t("rangeSub", years.at(-1), years[0]), title: t("fastest"), body: `<div class="mini">${fastRows}</div>`, note: t("fastestNote") },
-      { cls: "c-green", sub: t("asOf", ed.edition), title: t("streak"), body: `<div class="mini">${streakRows}</div>`, note: t("streakNote") },
-      { cls: "c-gold", sub: t("kingsNote"), title: t("kings"), body: `<div class="mini">${kingRows}</div>` },
+      { cls: "c-green", sub: `${t("edition", ed.edition)} · ${ed.year}`, title: t("latestChamps"), body: `<div class="mini">${champRows}</div>`, more: `#/rank?e=${ed.edition}&c=MA` },
+      { cls: "c-gold", sub: t("medalNote", years.at(-1), years[0]), title: t("medalTitle"), body: `<div class="bars">${medalRows}</div>`, more: "#/athletes?tab=schools" },
+      { cls: "c-steel", sub: t("rangeSub", years.at(-1), years[0]), title: t("fastest"), body: `<div class="mini">${fastRows}</div>`, note: t("fastestNote"), more: "#/records" },
+      { cls: "c-green", sub: t("asOf", ed.edition), title: t("streak"), body: `<div class="mini">${streakRows}</div>`, note: t("streakNote"), more: `#/rank?t=team&e=${ed.edition}` },
+      { cls: "c-gold", sub: t("kingsNote"), title: t("kings"), body: `<div class="mini">${kingRows}</div>`, more: "#/athletes?k=champ" },
     ];
 
     const quick = CATS.map((c) => `<a class="${c[0] === "M" ? "m" : "f"}" href="#/rank?e=${ed.edition}&c=${c}">${c[1]}<small>${t(c[0] === "M" ? "male" : "female")}</small></a>`).join("");
 
     view.innerHTML = `
       ${raceBanner()}
-      <div class="carousel" id="carousel">${cards.map((k) => `<article class="card ${k.cls}"><h3>${esc(k.title)}</h3><div class="sub">${esc(k.sub)}</div>${k.body}${k.note ? `<div class="note">${esc(k.note)}</div>` : ""}</article>`).join("")}</div>
+      <div class="carousel" id="carousel">${cards.map((k) => `<article class="card ${k.cls}"><h3>${esc(k.title)}</h3>${k.more ? `<a class="card-more" href="${k.more}">${t("more")} ›</a>` : ""}<div class="sub">${esc(k.sub)}</div>${k.body}${k.note ? `<div class="note">${esc(k.note)}</div>` : ""}</article>`).join("")}</div>
       <div class="dots" id="dots">${cards.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>
       <div class="section-title"><h2>${t("quick")} · ${t("edition", ed.edition)}</h2><a href="#/rank">${t("quickAll")} ›</a></div>
-      <div class="quick">${quick}</div>`;
+      <div class="quick">${quick}</div>
+      ${entryTiles()}`;
 
     const car = $("#carousel"), dots = [...$("#dots").children];
     car.addEventListener("scroll", () => {
@@ -508,23 +593,26 @@
         </div>
         <div class="board-head"><h2>${esc(catLong(cat))}</h2><span class="meta">${t("edition", ed.edition)} · ${t("runners", rows.length)}</span></div>
         ${ed.scope === "top10" ? `<p class="banner">${t("top10")}</p>` : ""}
+        ${wxCard(wxFor(ed.edition, cat), cat)}
         <div class="board">${rows.map((r) => `
           <a class="row cr" href="#/p/${r.pid}">
             <span class="rank ${r.rank <= 3 ? "r" + r.rank : ""}">${r.rank}</span>
             ${crest(r.school_zh, "sm")}
             <span style="min-width:0"><div class="nm">${personName(r)}</div><div class="sch">${esc(school(r.school_zh))}</div></span>
             <span class="tm">${fmt(r.seconds)}${r.rank > 1 && lead ? `<span class="gap">+${fmt(r.seconds - lead)}</span>` : ""}</span>
-          </a>`).join("")}</div>`;
+          </a>`).join("")}</div>
+        <div class="link-row"><a href="#/records?c=${cat}">${t("seeRecords")} ›</a><a href="#/athletes?g=${g}&lv=${cat[1]}">${lang === "zh" ? "本組運動員名錄" : "Athletes in this category"} ›</a></div>`;
     } else {
       const focus = params.get("s");
       const teams = CATS.map((c) => {
         const tc = ed.categories[c].team_champion;
-        return `<div class="team"><span class="cat ${c[0] === "M" ? "m" : "f"}">${catLabel(c)}</span>${tc ? schoolLine(tc.school_zh, "sm") : `<span class="none">${t("noTeam")}</span>`}</div>`;
+        return `<div class="team"><a class="cat ${c[0] === "M" ? "m" : "f"}" href="#/rank?e=${ed.edition}&c=${c}" aria-label="${esc(catLong(c))}">${catLabel(c)}</a>${tc ? schoolLink(tc.school_zh, "sm") : `<span class="none">${t("noTeam")}</span>`}</div>`;
       }).join("");
-      const medal = MEDALS.map((m, i) => `<div class="medal ${focus === m.school ? "mine" : ""}"><span class="rank ${i < 3 ? "r" + (i + 1) : ""}">${i + 1}</span>${schoolLine(m.school, "sm")}<span class="cnt"><span>${m.secondary}</span><span>${m.primary}</span><span class="total">${m.total}</span></span></div>`).join("");
+      const medal = MEDALS.map((m, i) => `<a class="medal ${focus && abbrOf(focus) === abbrOf(m.school) ? "mine" : ""}" href="${schoolHref(m.school)}"><span class="rank ${i < 3 ? "r" + (i + 1) : ""}">${i + 1}</span>${schoolLine(m.school, "sm")}<span class="cnt"><span>${m.secondary}</span><span>${m.primary}</span><span class="total">${m.total}</span></span></a>`).join("");
       body = `
         <div class="board-head"><h2>${t("teamChamps")}</h2><span class="meta">${t("edition", ed.edition)} · ${ed.year}</span></div>
         <div class="team-grid">${teams}</div>
+        ${wxCard(wxFor(ed.edition, "MA"), "MA")}
         <div class="board-head"><h2>${t("medalAll")}</h2></div>
         <div class="board"><div class="medal-head"><span>#</span><span>${t("schoolLbl")}</span><span class="cnt"><span>${t("secShort")}</span><span>${t("priShort")}</span><span>${t("total")}</span></span></div>${medal}</div>`;
     }
@@ -551,7 +639,8 @@
     const wins = p.recs.filter((r) => r.rank === 1).length;
     const best = Math.min(...p.recs.map((r) => r.rank));
     const chain = [...p.schools];
-    const schools = chain.map(school).join(" → ");
+    // 校名可點擊進入學校資料頁；同校改名只顯示一次
+    const schools = chain.filter((zh, i) => i === 0 || abbrOf(zh) !== abbrOf(chain[i - 1])).map((zh) => `<a href="${schoolHref(zh)}">${esc(school(zh))}</a>`).join(" → ");
     // 校徽鏈：只在真正轉校（代碼不同）時才顯示多個校徽；同校改名只顯示一個
     const crestSchools = chain.filter((zh, i) => i === 0 || (DB.schools[zh] || {}).abbr !== (DB.schools[chain[i - 1]] || {}).abbr);
     const crestChain = crestSchools.map((zh, i) => `${i ? '<span class="cc-arrow" aria-hidden="true">›</span>' : ""}${crest(zh, i === crestSchools.length - 1 ? "lg" : "md")}`).join("");
@@ -579,7 +668,7 @@
       <section class="hero">
         <h1>${esc(lang === "zh" ? (p.name_zh || p.name_pt) : (p.name_pt || p.name_zh))}</h1>
         <div class="pt">${esc(lang === "zh" ? p.name_pt : p.name_zh)}</div>
-        <div class="schools">${esc(schools)}</div>
+        <div class="schools">${schools}</div>
         <div class="st-line">${statusChip(p, true)}</div>
         ${popCard(0)}
         <div class="crest-chain${crestSchools.length > 1 ? " multi" : ""}">${crestChain}${lvCorner(0)}</div>
@@ -595,7 +684,7 @@
       <div class="timeline">${recsDesc.map((r) => `
         <a class="tl" href="#/rank?e=${r.edition}&c=${r.cat}&hl=${r.pid}">
           <span class="yr">${yearShort(r.year)}<small>${t("edition", r.edition)}</small></span>
-          <span class="info"><b>${esc(catLong(r.cat))}</b><br>${schoolLine(r.school_zh)}</span>
+          <span class="info"><b>${esc(catLong(r.cat))}</b><br>${schoolLine(r.school_zh)}${(() => { const w = wxFor(r.edition, r.cat); return w ? `<span class="tl-wx">${esc(t("wxShort", Math.round(w.temp_avg), w.rh_avg))}${w.rain_reports > 0 ? " · " + t("wxRainY") : ""}</span>` : ""; })()}</span>
           <span class="res"><div class="pos ${pos(r.rank)}">${t("placeShort", r.rank)}</div><div class="tm">${fmt(r.seconds)}</div></span>
         </a>`).join("")}</div>`;
     trackProfileView(pid);
@@ -785,6 +874,146 @@
   }
 
 
+  /* ---------- 運動員名錄／學校名錄 ---------- */
+  let ATH = null, SCHOOLS = null;
+  function buildDirectory() {
+    if (ATH) return;
+    ATH = [...PEOPLE.values()].filter((p) => !p.hidden).map((p) => {
+      const last = p.recs.at(-1);
+      return { p, last, wins: p.recs.filter((r) => r.rank === 1).length, medals: p.recs.filter((r) => r.rank <= 3).length,
+        best: Math.min(...p.recs.map((r) => r.rank)), abbrs: new Set(p.recs.map((r) => abbrOf(r.school_zh))) };
+    }).sort((a, b) => b.wins - a.wins || b.medals - a.medals || a.best - b.best || b.last.edition - a.last.edition || b.p.recs.length - a.p.recs.length);
+    const m = new Map();
+    const row = (a) => { if (!m.has(a)) m.set(a, { abbr: a, names: new Set(), latest: null, latestEd: 0, titles: [], people: new Set(), wins: 0, medals: 0 }); return m.get(a); };
+    for (const ed of DB.editions) for (const c of CATS) {
+      const cat = ed.categories[c];
+      for (const r of cat.individual) {
+        const x = row(abbrOf(r.school_zh)); x.names.add(r.school_zh);
+        if (ed.edition > x.latestEd) { x.latestEd = ed.edition; x.latest = r.school_zh; }
+        if (!r.hidden) x.people.add(r.pid);
+        if (r.rank === 1) x.wins++;
+        if (r.rank <= 3) x.medals++;
+      }
+      if (cat.team_champion) { const x = row(abbrOf(cat.team_champion.school_zh)); x.names.add(cat.team_champion.school_zh); x.titles.push({ edition: ed.edition, year: ed.year, cat: c }); if (!x.latest) x.latest = cat.team_champion.school_zh; }
+    }
+    for (const s of (DB.race && DB.race.schools) || []) if (m.has(s.abbr)) m.get(s.abbr).latest = s.zh;
+    SCHOOLS = [...m.values()].sort((a, b) => b.titles.length - a.titles.length || b.people.size - a.people.size || a.abbr.localeCompare(b.abbr));
+  }
+
+  function athRow(x) {
+    const tags = [];
+    if (x.wins) tags.push(`<span class="tag gold">${t("athWins", x.wins)}</span>`);
+    if (x.medals > x.wins) tags.push(`<span class="tag">${t("athMedals", x.medals)}</span>`);
+    if (!x.medals) tags.push(`<span class="tag">${t("athBest", x.best)}</span>`);
+    return `<a class="row r3 ath-row" href="#/p/${x.p.pid}">
+      ${crest(x.last.school_zh, "sm")}
+      <span style="min-width:0"><div class="nm">${personName(x.p)}</div><div class="sch">${esc(school(x.last.school_zh))} · ${catLabel(x.last.cat)} ${yearShort(x.last.year)}</div><div class="tags">${tags.join("")}${x.p.status && x.p.status.code === "active" ? statusChip(x.p) : ""}</div></span>
+      <span class="go">›</span></a>`;
+  }
+
+  function renderAthletes(params) {
+    buildDirectory();
+    const tab = params.get("tab") === "schools" ? "schools" : "people";
+    const g = ["M", "F"].includes(params.get("g")) ? params.get("g") : "";
+    const k = ["active", "champ", "podium"].includes(params.get("k")) ? params.get("k") : "";
+    const lv = "ABCDE".includes(params.get("lv") || "-") ? params.get("lv") : "";
+    const sc = params.get("s") || "";
+    const set = (o) => { const p = new URLSearchParams({ tab, g, k, lv, s: sc, ...o }); for (const [a, b] of [...p]) if (!b || (a === "tab" && b === "people")) p.delete(a); location.replace("#/athletes" + (p.toString() ? "?" + p : "")); };
+    const seg = `<div class="seg"><button data-tab="people" class="${tab === "people" ? "on" : ""}">${t("athTabPeople")}</button><button data-tab="schools" class="${tab === "schools" ? "on" : ""}">${t("athTabSchools")}</button></div>`;
+    let body = "";
+    if (tab === "schools") {
+      body = `<div class="board-head"><h2>${t("schCount", SCHOOLS.length)}</h2></div>
+        <div class="board">${SCHOOLS.map((x) => `<a class="row r3" href="#/s/${encodeURIComponent(x.abbr)}">${crest(x.latest, "sm")}
+          <span style="min-width:0"><div class="nm">${esc(school(x.latest))}</div><div class="sch">${t("schAthletes")} ${x.people.size} · ${t("schIndWins")} ${x.wins}</div></span>
+          <span class="sch-titles"><b>${x.titles.length}</b><small>${t("schTitles")}</small></span></a>`).join("")}</div>
+        <p class="muted-note">${t("schSortNote")}</p>`;
+    } else {
+      let list = ATH;
+      if (g) list = list.filter((x) => x.p.gender === g);
+      if (lv) list = list.filter((x) => x.last.cat[1] === lv);
+      if (sc) list = list.filter((x) => x.abbrs.has(sc));
+      if (k === "active") list = list.filter((x) => x.p.status && x.p.status.code === "active");
+      if (k === "champ") list = list.filter((x) => x.wins > 0);
+      if (k === "podium") list = list.filter((x) => x.medals > 0);
+      const chips = [["", t("athAll")], ["active", t("athActive")], ["champ", t("athChamp")], ["podium", t("athPodium")]].map(([v, l]) => `<button class="chip ${k === v ? "on" : ""}" data-k="${v}">${l}</button>`).join("");
+      const opts = SCHOOLS.map((x) => `<option value="${esc(x.abbr)}" ${sc === x.abbr ? "selected" : ""}>${esc(school(x.latest))}</option>`).join("");
+      const lvBtns = ["", ..."ABCDE"].map((l) => `<button class="${lv === l ? "on" : ""}" data-lv="${l}">${l || t("athAll")}</button>`).join("");
+      body = `
+        <div class="filters">
+          <div class="toggle"><button class="a ${g === "" ? "on" : ""}" data-g="">${t("athAll")}</button><button class="m ${g === "M" ? "on" : ""}" data-g="M">${t("male")}</button><button class="f ${g === "F" ? "on" : ""}" data-g="F">${t("female")}</button></div>
+          <div class="cats lv-cats">${lvBtns}</div>
+        </div>
+        <label class="sel"><span class="sr">${t("schoolLbl")}</span><select id="athSchool"><option value="">${t("athAllSchools")}</option>${opts}</select></label>
+        <div class="chips">${chips}</div>
+        <div class="board-head"><h2>${t("athCount", list.length)}</h2><span class="meta">${lang === "zh" ? "以最後一次參賽的組別計算" : "By latest category"}</span></div>
+        ${list.length ? `<div class="board" id="athList">${list.slice(0, 40).map(athRow).join("")}</div>
+        ${list.length > 40 ? `<button type="button" class="more-btn" id="athMore">${t("athMore", list.length - 40)}</button>` : ""}` : `<p class="muted-note">${t("athNone")}</p>`}
+        <p class="muted-note">${t("athSortNote")}</p>`;
+      view._athList = list;
+    }
+    view.innerHTML = `<h1 class="page-title">${t("athTitle")}</h1>${seg}${body}`;
+    view.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => set({ tab: b.dataset.tab }));
+    view.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => set({ g: b.dataset.g }));
+    view.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => set({ k: b.dataset.k }));
+    view.querySelectorAll("[data-lv]").forEach((b) => b.onclick = () => set({ lv: b.dataset.lv }));
+    const sel = $("#athSchool"); if (sel) sel.onchange = () => set({ s: sel.value });
+    const more = $("#athMore");
+    if (more) {
+      let shown = 40;
+      more.onclick = () => {
+        const list = view._athList; const next = list.slice(shown, shown + 40); shown += next.length;
+        $("#athList").insertAdjacentHTML("beforeend", next.map(athRow).join(""));
+        if (shown >= list.length) more.remove(); else more.textContent = t("athMore", list.length - shown);
+      };
+    }
+  }
+
+  /* ---------- 學校資料頁 ---------- */
+  function renderSchool(abbr) {
+    buildDirectory();
+    const x = SCHOOLS.find((s) => s.abbr === abbr);
+    if (!x) return renderNotFound();
+    const zh = x.latest, info = DB.schools[zh] || {};
+    const former = [...x.names].filter((n) => n !== zh);
+    const people = ATH.filter((a) => a.abbrs.has(abbr));
+    const medals = [];
+    for (const a of people) for (const r of a.p.recs) if (r.rank <= 3 && abbrOf(r.school_zh) === abbr) medals.push({ a, r });
+    medals.sort((m, n) => n.r.edition - m.r.edition || CATS.indexOf(m.r.cat) - CATS.indexOf(n.r.cat) || m.r.rank - n.r.rank);
+    const current = people.filter((a) => a.p.status && a.p.status.code === "active" && abbrOf(a.p.status.school) === abbr)
+      .sort((m, n) => CATS.indexOf(m.p.status.cat) - CATS.indexOf(n.p.status.cat) || m.best - n.best);
+    const byYear = new Map(); for (const tt of x.titles) { if (!byYear.has(tt.edition)) byYear.set(tt.edition, { ...tt, cats: [] }); byYear.get(tt.edition).cats.push(tt.cat); }
+    const titleRows = [...byYear.values()].sort((a, b) => b.edition - a.edition).map((y) => `
+      <a class="medal" href="#/rank?t=team&e=${y.edition}&s=${encodeURIComponent(zh)}"><span class="yr-cell">${yearShort(y.year)}</span>
+        <span class="title-cats">${y.cats.map((c) => `<span class="cat-chip ${c[0] === "M" ? "m" : "f"}">${catLabel(c)}</span>`).join("")}</span><span class="go">›</span></a>`).join("");
+    const medalRows = medals.map(({ a, r }) => `<a class="row r3" href="#/p/${a.p.pid}">
+      <span class="rank r${r.rank}">${r.rank}</span>
+      <span style="min-width:0"><div class="nm">${personName(a.p)}</div><div class="sch">${catLong(r.cat)} · ${t("edition", r.edition)} ${yearShort(r.year)}</div></span>
+      <span class="tm">${fmt(r.seconds)}</span></a>`).join("");
+    const roster = [...people].sort((m, n) => n.last.edition - m.last.edition || n.wins - m.wins || n.medals - m.medals || m.best - n.best);
+    view.innerHTML = `
+      <section class="hero school-hero">
+        <div class="school-crest">${crest(zh, "lg")}</div>
+        <h1>${esc(school(zh))}</h1>
+        <div class="pt">${esc(lang === "zh" ? (info.pt || "") : zh)}</div>
+        ${former.length ? `<div class="schools">${t("schFormer")}${former.map((n) => esc(school(n))).join("、")}</div>` : ""}
+        <div class="stats stats4">
+          <div class="stat"><b style="color:var(--gold)">${x.titles.length}</b><span>${t("schTitles")}</span></div>
+          <div class="stat"><b>${x.wins}</b><span>${t("schIndWins")}</span></div>
+          <div class="stat"><b>${x.medals}</b><span>${t("schMedals")}</span></div>
+          <div class="stat"><b>${x.people.size}</b><span>${t("schAthletes")}</span></div>
+        </div>
+      </section>
+      ${current.length ? `<div class="section-title"><h2>${t("schCurrent", DB.race.edition)}</h2><a href="#/preview">${t("pvGo")} ›</a></div>
+        <div class="board">${current.map((a) => `<a class="row r3" href="#/p/${a.p.pid}"><span class="rank cat-rank ${a.p.status.cat[0] === "M" ? "m" : "f"}">${catLabel(a.p.status.cat)}</span>
+          <span style="min-width:0"><div class="nm">${personName(a.p)}</div><div class="sch">${t("pvLast")} ${catLabel(a.last.cat)} ${t("placeShort", a.last.rank)} · ${yearShort(a.last.year)}</div></span><span class="go">›</span></a>`).join("")}</div>` : ""}
+      <div class="section-title"><h2>${t("schTeamList")}</h2><a href="#/rank?t=team&s=${encodeURIComponent(zh)}">${t("schViewRank")} ›</a></div>
+      ${titleRows ? `<div class="board">${titleRows}</div>` : `<p class="muted-note">${t("schNoTitle")}</p>`}
+      <div class="section-title"><h2>${t("schMedalList")}</h2></div>
+      ${medalRows ? `<div class="board">${medalRows}</div>` : `<p class="muted-note">${t("schNoMedal")}</p>`}
+      <div class="section-title"><h2>${t("schRoster")}</h2><a href="#/athletes?s=${encodeURIComponent(abbr)}">${t("more")} ›</a></div>
+      <div class="board">${roster.slice(0, 15).map(athRow).join("")}</div>`;
+  }
+
   /* ---------- 私隱及資料使用／申請移除 ---------- */
   function renderPrivacy() {
     const site = DB.site || {};
@@ -918,7 +1147,7 @@
         <div class="label">${t("recordTitle", catLong(cat))}</div>
         <div class="rec-time">${fmt(rec.seconds)}</div>
         <a class="rec-who" href="#/p/${rec.pid}">${personName(rec)}</a>
-        <div class="rec-meta">${schoolLine(rec.school_zh, "sm")} · ${t("edition", rec.edition)} ${esc(rec.year)}</div>
+        <div class="rec-meta">${schoolLink(rec.school_zh, "sm")} · <a href="#/rank?e=${rec.edition}&c=${cat}&hl=${rec.pid}">${t("edition", rec.edition)} ${esc(rec.year)}</a></div>
       </section>` : ""}
       <div class="section-title"><h2>${t("trendTitle")}</h2></div>
       ${lineChart({ id: "trend", xs, series: [{ name: t("champTime"), color: SERIES.champ, values: champ }, { name: t("tenthTime"), color: SERIES.tenth, values: tenth }], label: t("trendTitle") })}
@@ -934,12 +1163,36 @@
       ${barChart({ id: "fin", xs: fullEds.map((e) => yearShort(e.year)), values: fullEds.map((e) => e.categories[cat].individual.length), label: t("finTitle") })}
       <p class="muted-note">${t("finNote")}</p>
       <div class="section-title"><h2>${t("teamHist")}</h2>${streak >= 2 ? `<span class="pill">${t("streakNow", streak)}</span>` : ""}</div>
-      <div class="board">${teamRows.map(({ e, tc }) => `
-        <div class="medal"><span class="yr-cell">${yearShort(e.year)}</span><span>${tc ? schoolLine(tc.school_zh, "sm") : `<span class="none" style="color:var(--muted);font-size:13px">${t("noTeam")}</span>`}</span><span></span></div>`).join("")}</div>`;
+      <div class="board">${teamRows.map(({ e, tc }) => tc ? `
+        <a class="medal" href="${schoolHref(tc.school_zh)}"><span class="yr-cell">${yearShort(e.year)}</span><span>${schoolLine(tc.school_zh, "sm")}</span><span class="go">›</span></a>` : `
+        <div class="medal"><span class="yr-cell">${yearShort(e.year)}</span><span class="none" style="color:var(--muted);font-size:13px">${t("noTeam")}</span><span></span></div>`).join("")}</div>
+      ${wxTable(eds, cat)}`;
 
     view.querySelectorAll("[data-c]").forEach((b) => b.onclick = () => go(b.dataset.c));
     view.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => go(b.dataset.g + cat[1]));
     wireLineChart("trend", xs, [{ name: t("champTime"), color: SERIES.champ, values: champ }, { name: t("tenthTime"), color: SERIES.tenth, values: tenth }]);
+    if (params.get("go") === "wx") { const el = $("#wx"); if (el) el.scrollIntoView({ block: "start" }); }
+  }
+
+  /* 歷屆比賽天氣：每屆一行，連同本組冠軍成績，方便比較各年條件；點選進入該屆成績 */
+  function wxTable(eds, cat) {
+    if (!DB.weather) return "";
+    const rows = [...eds].reverse().map((e) => {
+      const w = wxFor(e.edition, cat); if (!w) return "";
+      const champ = e.categories[cat].individual[0];
+      const notes = wxNotes(w).filter((n) => n !== t("wxPlanned"));
+      return `<a class="wxrow" href="#/rank?e=${e.edition}&c=${cat}">
+        <span class="yr">${yearShort(e.year)}<small>${t("edition", e.edition)}</small></span>
+        <span class="wx-mid"><b>${to(w.temp_min, w.temp_max)}°C · ${lang === "zh" ? "濕度" : "RH"} ${w.rh_avg}%${w.rain_reports > 0 ? " · " + t("wxRainY") : ""}</b>
+          <small>${esc(t("wxDayFmt", w.date))}${w.basis === "planned" ? "＊" : ""}${notes.length ? " · " + esc(notes.join("；")) : ""}</small>
+          <span class="wx-badge lv-${w.level}">${t("wx_" + w.level)} · ${esc(wxSlow(w))}</span></span>
+        <span class="wx-champ">${champ ? fmt(champ.seconds) : "-"}<small>${t("champTime")}</small></span>
+      </a>`;
+    }).join("");
+    return `<div class="section-title" id="wx"><h2>${t("wxRecTitle")}</h2></div>
+      <p class="muted-note" style="margin-top:-4px">${t("wxRecSub")}</p>
+      <div class="board">${rows}</div>
+      <p class="muted-note">${t("wxPlannedFoot")}${t("wxNote")}</p>`;
   }
   function renderNotFound() { view.innerHTML = `<div class="wip"><h2>${t("notFound")}</h2><a class="btn" href="#/">${t("back")}</a></div>`; }
 
@@ -965,11 +1218,13 @@
     if (path === "/" || path === "") renderHome();
     else if (path === "/rank") { nav = "rank"; renderRank(params); highlight(params.get("hl")); }
     else if (path.startsWith("/p/")) { nav = ""; renderPerson(path.slice(3)); }
+    else if (path === "/athletes") { nav = "athletes"; renderAthletes(params); }
+    else if (path.startsWith("/s/")) { nav = "athletes"; renderSchool(decodeURIComponent(path.slice(3))); }
     else if (path === "/records") { nav = "records"; renderRecords(params); }
     else if (path === "/preview") { nav = ""; renderPreview(params); }
     else if (path === "/privacy") { nav = ""; renderPrivacy(); }
     else renderNotFound();
-    if ((path.startsWith("/p/") || path === "/preview" || path === "/privacy") && !view.querySelector(".wip")) {
+    if ((path.startsWith("/p/") || path.startsWith("/s/") || path === "/preview" || path === "/privacy") && !view.querySelector(".wip")) {
       view.insertAdjacentHTML("afterbegin", backButton());
       wireBack();
     }
@@ -980,7 +1235,7 @@
     });
     if (routed) view.focus({ preventScroll: true });
     routed = true;
-    if (!params.get("hl") && !params.get("s")) window.scrollTo(0, 0);
+    if (!params.get("hl") && !(path === "/rank" && params.get("s")) && !params.get("go")) window.scrollTo(0, 0);
   }
   function highlight(pid) {
     if (!pid) return;
@@ -1000,15 +1255,15 @@
   $("#langBtn").onclick = () => {
     lang = lang === "zh" ? "en" : "zh";
     try { localStorage.setItem("xc-lang", lang); } catch (e) { /* 忽略 */ }
-    applyLang(); route(); if (q.value) search(q.value);
+    applyLang(); ATH = null; SCHOOLS = null; route(); if (q.value) search(q.value);
   };
 
   applyLang();
   // 每次都向伺服器確認資料是否更新（ETag），避免新舊檔案混用
   const get = (u) => fetch(u, { cache: "no-cache" });
   const opt = (u) => get(u).then((r) => r.ok ? r.json() : null).catch(() => null);
-  Promise.all([get("data/results.json").then((r) => r.json()), opt("data/distances.json"), opt("data/race48.json"), opt("data/preview48.json"), opt("data/crests.json"), opt("data/site.json")]).then(([d, dist, race, pv, crests, site]) => {
-    DB = d; DB.site = site || {};
+  Promise.all([get("data/results.json").then((r) => r.json()), opt("data/distances.json"), opt("data/race48.json"), opt("data/preview48.json"), opt("data/crests.json"), opt("data/site.json"), opt("data/weather.json")]).then(([d, dist, race, pv, crests, site, weather]) => {
+    DB = d; DB.site = site || {}; DB.weather = weather;
     DB = d; DB.distances = dist; DB.race = race; DB.preview = pv && pv.data_version === d.data_version ? pv : null; DB.crests = (crests && crests.images) || {}; derive(); deriveStatus();
     $("#srcLink").href = d.source;
     window.addEventListener("hashchange", route);

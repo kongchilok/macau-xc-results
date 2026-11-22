@@ -16,6 +16,7 @@
 | `docs/data/race48.json` | 第 48 屆賽程、距離（秩序冊／章程）、各校人數 |
 | `docs/data/crests.json` | 真校徽圖片對照（代碼 → `img/crest/…`），未登記者自動生成盾形徽章 |
 | `docs/data/site.json` | 網站設定（移除申請渠道） |
+| `scripts/weather.py` | 歷屆比賽當日天氣（澳門國際機場 METAR，經 Ogimet）→ `docs/data/weather.json`；比賽日期及其來源寫在腳本內 |
 | `docs/` | 網站本體（GitHub Pages 發布此資料夾） |
 
 ## 更新資料
@@ -27,6 +28,7 @@ python -P -X utf8 scripts/enrich.py docs/data/results.json review_persons.csv
 python -P -X utf8 scripts/check.py docs/data/results.json
 python -P -X utf8 scripts/preview.py docs/data/results.json docs/data/race48.json private/startlist48.csv docs/data/preview48.json private/preview48_review.csv
 python -P -X utf8 scripts/predict.py docs/data/results.json docs/data/preview48.json   # 預測排名＋回測（須在 preview.py 之後）
+python -P -X utf8 scripts/weather.py docs/data/weather.json   # 新增一屆時先在 RACES 加入比賽日期
 ```
 
 學生編號（pid）固定為「第一次出賽的屆數＋組別＋名次」（如 `p47MB002`），重建資料不會改變，連結與隱藏清單長期有效。
@@ -51,6 +53,7 @@ python -P -X utf8 -m pytest tests/
 - 圓角：容器 16px、小方塊 12px、可按的膠囊及圓鈕全圓
 - 圖表配色已用 dataviz 驗證器在深色底驗證（`--series-1/2/3`）
 - 介面不使用長破折號；數字用 Barlow Condensed，其餘用系統中文字體
+- 介面文字一律用書面語（不用口語，如「搵」「冇」「一次過」「爆冷」）；範圍用「至」，不用破折號
 
 ## 本機預覽
 

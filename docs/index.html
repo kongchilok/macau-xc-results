@@ -11,10 +11,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261122t">
+<link rel="stylesheet" href="styles.css?v=20261122w">
 </head>
 <body>
-<a class="skip" href="#view" data-i18n="skip">跳到主要內容</a>
+<a class="skip" href="#view" data-i18n="skip">跳至主要內容</a>
 <header class="appbar">
   <div class="appbar-row">
     <a class="brand" href="#/">
@@ -26,8 +26,8 @@
   <div class="search" role="search">
     <!-- Phosphor Icons (MIT) magnifying-glass bold -->
     <svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M232.49,215.51,185,168a92.12,92.12,0,1,0-17,17l47.53,47.54a12,12,0,0,0,17-17ZM44,112a68,68,0,1,1,68,68A68.07,68.07,0,0,1,44,112Z"/></svg>
-    <label class="sr" for="q" data-i18n="searchLabel">搜尋學生或學校</label>
-    <input id="q" type="search" autocomplete="off" enterkeyhint="search" data-i18n-ph="searchPh" placeholder="搜尋學生姓名、拼音或學校">
+    <label class="sr" for="q" data-i18n="searchLabel">搜尋運動員或學校</label>
+    <input id="q" type="search" autocomplete="off" enterkeyhint="search" data-i18n-ph="searchPh" placeholder="搜尋運動員、葡文拼音或學校">
     <div class="results" id="results" hidden></div>
   </div>
 </header>
@@ -37,17 +37,18 @@
 </main>
 
 <footer class="disclaimer">
-  <p data-i18n="disclaimer">本網站為非官方整理，資料來自教育及青年發展局「學界比賽」網頁公布的成績，如有出入以官方公布為準。</p>
+  <p data-i18n="disclaimer">本網站為非官方整理，資料來自教育及青年發展局「學界比賽」網頁公布的成績，如有出入，以官方公布為準。</p>
   <p class="links"><a id="srcLink" target="_blank" rel="noopener" data-i18n="source">官方資料來源</a><a href="#/privacy" data-i18n="privacyLink">私隱及移除申請</a></p>
 </footer>
 
 <nav class="dock" aria-label="主選單" data-i18n-aria="navLabel">
-  <!-- 圖示：Phosphor Icons (MIT) house / chart-bar / trend-up, bold -->
+  <!-- 圖示：Phosphor Icons (MIT) house / chart-bar / trend-up, bold；運動員圖示為自繪 -->
   <a href="#/" data-nav="home"><span class="dot"><svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M222.14,105.85l-80-80a20,20,0,0,0-28.28,0l-80,80A19.86,19.86,0,0,0,28,120v96a12,12,0,0,0,12,12h64a12,12,0,0,0,12-12V164h24v52a12,12,0,0,0,12,12h64a12,12,0,0,0,12-12V120A19.86,19.86,0,0,0,222.14,105.85ZM204,204H164V152a12,12,0,0,0-12-12H104a12,12,0,0,0-12,12v52H52V121.65l76-76,76,76Z"/></svg></span><span class="lbl" data-i18n="navHome">首頁</span></a>
-  <a href="#/rank" data-nav="rank"><span class="dot"><svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,196h-4V40a12,12,0,0,0-12-12H152a12,12,0,0,0-12,12V76H96A12,12,0,0,0,84,88v36H48a12,12,0,0,0-12,12v60H32a12,12,0,0,0,0,24H224a12,12,0,0,0,0-24ZM164,52h32V196H164Zm-56,48h32v96H108ZM60,148H84v48H60Z"/></svg></span><span class="lbl" data-i18n="navRank">排行榜</span></a>
+  <a href="#/rank" data-nav="rank"><span class="dot"><svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,196h-4V40a12,12,0,0,0-12-12H152a12,12,0,0,0-12,12V76H96A12,12,0,0,0,84,88v36H48a12,12,0,0,0-12,12v60H32a12,12,0,0,0,0,24H224a12,12,0,0,0,0-24ZM164,52h32V196H164Zm-56,48h32v96H108ZM60,148H84v48H60Z"/></svg></span><span class="lbl" data-i18n="navRank">歷屆成績</span></a>
+  <a href="#/athletes" data-nav="athletes"><span class="dot"><svg viewBox="0 0 256 256" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><circle cx="100" cy="84" r="38"/><path d="M30 208c8-38 37-62 70-62s62 24 70 62"/><path d="M162 50a38 38 0 0 1 0 68"/><path d="M190 150c20 12 32 32 36 58"/></svg></span><span class="lbl" data-i18n="navAthletes">運動員</span></a>
   <a href="#/records" data-nav="records"><span class="dot"><svg viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M244,56v64a12,12,0,0,1-24,0V85l-75.51,75.52a12,12,0,0,1-17,0L96,129,32.49,192.49a12,12,0,0,1-17-17l72-72a12,12,0,0,1,17,0L136,135l67-67H168a12,12,0,0,1,0-24h64A12,12,0,0,1,244,56Z"/></svg></span><span class="lbl" data-i18n="navRecords">紀錄與趨勢</span></a>
 </nav>
 
-<script src="app.js?v=20261122t"></script>
+<script src="app.js?v=20261122w"></script>
 </body>
 </html>
