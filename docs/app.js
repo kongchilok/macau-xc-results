@@ -1091,6 +1091,14 @@
     }).join("");
     const statusTxt = { ready: t("lvReady"), running: t("lvRunning"), done: t("lvDone") }[st.status];
     $("#lvTabs").innerHTML = tabs;
+    // 標題旁狀態：有組別進行中才顯示紅色「直播中」
+    const pill = $("#lvPill");
+    if (pill && !LIVE.demo && LIVE.event === String((DB.race && DB.race.edition) || 48)) {
+      const sts = cats.map((c) => catState(c).status);
+      const any = sts.includes("running"), all = sts.every((x) => x === "done");
+      pill.textContent = any ? t("lvLive") : all ? t("lvDone") : t("lvReady");
+      pill.classList.toggle("demo", !any);
+    }
     $("#lvBody").innerHTML = `
       <section class="lv-head">
         <div><span class="lv-status ${st.status}">${statusTxt}</span>${multi ? `<span class="lv-heat">${t("lvHeat", st.cur.heat, st.n)}</span>` : ""}<h2>${esc(catLong(cat))}</h2></div>
@@ -1117,7 +1125,7 @@
     if (cats.includes(want)) LIVE.cat = want;
     if (!LIVE.cat) { const running = cats.find((c) => catState(c).status === "running"); LIVE.cat = running || cats[0]; }
     view.innerHTML = `
-      <h1 class="page-title lv-title">${esc(t("lvTitle", demo ? LIVE.demoEd : (DB.race && DB.race.edition) || 48))}<span class="lv-pill ${demo || event !== "48" ? "demo" : ""}">${demo ? t("lvDemo") : event !== String((DB.race && DB.race.edition) || 48) ? "TEST" : t("lvLive")}</span></h1>
+      <h1 class="page-title lv-title">${esc(t("lvTitle", demo ? LIVE.demoEd : (DB.race && DB.race.edition) || 48))}<span class="lv-pill demo" id="lvPill">${demo ? t("lvDemo") : event !== String((DB.race && DB.race.edition) || 48) ? "TEST" : t("lvReady")}</span></h1>
       <p class="lv-note">${demo ? t("lvDemoNote", LIVE.demoEd) : t("lvNote")} <span id="lvUpdated" class="lv-upd"></span></p>
       <div class="chips" id="lvTabs"></div>
       <div id="lvBody"><div class="skeleton"><i class="sk-row"></i><i class="sk-row"></i></div></div>`;
