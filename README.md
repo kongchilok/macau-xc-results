@@ -75,3 +75,14 @@ python -m http.server 8765 --directory docs
 - 學生名單：`supabase/002_seed_pids.sql`（由 results.json 產生；新增屆數後重新產生並執行）
 - 網站設定：`docs/data/site.json` 的 `views = { url, key }`（key 為公開的 publishable key，可放在前端）；未設定時網站自動用「示範模式」只計本機
 - 只存學生編號及次數，不記錄瀏覽者身份
+
+## 即時成績（第 48 屆起）
+
+- 公眾頁：`#/live`（正式）、`#/live?ev=test`（演練）、`#/live?demo=47`（以第 47 屆成績本機示範重播）
+- 工作人員頁：`live-admin.html`（不在網站任何位置連結；須登入）
+- 資料庫：`supabase/004_live.sql`（`xc_live_heats` 起跑時間／狀態、`xc_live_entries` 終點紀錄、`xc_live_roster` 號碼布對照、`xc_live_admins` 授權電郵）
+  - 只有 `xc_live_admins` 內的電郵可讀寫；公眾只能經 `xc_live_feed()` 取得**不含號碼布**的增量資料
+  - 號碼布對照不含姓名；無往績者在公眾頁只顯示學校
+- 計分：`docs/live-core.js`（章程 5.6–5.12；以第 44–47 屆官方團體冠軍驗證 36/36 一致）
+- 號碼布名單：在 `private/startlist48.csv` 加 `bib` 欄 → `python -P -X utf8 scripts/live_roster.py private/startlist48.csv private/preview48_review.csv private/live_roster48.sql` → 在 Supabase 執行輸出的 SQL
+- 新增工作人員：在 Supabase Authentication 建立帳戶（勾選 Auto Confirm），再執行 `insert into public.xc_live_admins(email) values ('電郵小寫');`

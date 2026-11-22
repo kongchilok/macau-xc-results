@@ -79,6 +79,14 @@
       wxNote: "天氣資料取自澳門國際機場氣象站每半小時發布的航空天氣報告（METAR）。氣象站位於氹仔，與松山相距約 5 公里，數值只供比較各屆比賽條件之用。估計影響按長跑常用的「氣溫＋露點」配速調整經驗表推算，氣溫及濕度愈高，成績一般愈慢。",
       wxRecTitle: "歷屆比賽天氣", wxRecSub: "比較各屆成績時，可參考當日氣溫及濕度", wxDate: "比賽日期", wxShort: (t, h) => `約 ${t}°C · 濕度 ${h}%`,
       wxDayFmt: (s) => { const [y, m, d] = s.split("-").map(Number); return `${y}年${m}月${d}日`; },
+      lvTitle: (n) => `第${n}屆即時成績`, lvGo: "即時成績", lvLive: "直播中", lvDemo: "示範重播", lvNote: "非官方即時紀錄：由工作人員於終點人手輸入，或有錯漏；名次及成績以教育及青年發展局公布為準。",
+      lvDemoNote: (n) => `示範重播：以第${n}屆的官方成績模擬即時更新，並非今屆賽果。`, lvWait: "比賽尚未開始，開賽後本頁會自動更新。", lvReady: "未開始", lvRunning: "進行中", lvDone: "已完成",
+      lvElapsed: "比賽用時", lvCutoff: "距達標時間", lvCutoffOver: "已到達標時間", lvHeat: (h, n) => `第 ${h} 組（共 ${n} 組）`,
+      lvTeam: "團體賽即時排名", lvInd: "終點名次", lvFin: (k) => `已有 ${k} 人到達終點`, lvNoAward: "本組參賽隊伍不足兩隊，不設團體獎。",
+      lvScore: "分數", lvProv: "暫計", lvComplete: "已齊", lvMissing: (k) => `尚欠 ${k} 人`, lvOut: "人數不足，不計分", lvUnknown: "號碼待確認", lvRunner: "運動員",
+      lvRule: (a, c) => `計分方法：A、B 組取每校首 ${a} 名、C 組取每校首 ${c} 名的名次相加，分數最低者勝；同分時以首名隊員名次較前者為勝。未齊人的隊伍以「暫計」顯示，假設餘下隊員緊接目前最後一名之後到達，即該隊仍可取得的最佳分數。`,
+      lvHeatsRule: "本組分組出發，按章程以時間定名次；後續分組完成前，名次及團體分只屬暫計。",
+      lvUpdated: (s) => `更新於 ${s}`, lvOffline: "暫時未能連線，稍後自動重試。", lvTimeNote: "時間為人手計時，只供參考。",
     },
     en: {
       brand: "Macau Schools XC", searchPh: "Search name, romanised name or school", navHome: "Home", navRank: "Results", navAthletes: "Athletes", navRecords: "Records",
@@ -156,6 +164,14 @@
       wxNote: "Weather comes from the half-hourly aviation reports (METAR) of the Macau International Airport station in Taipa, about 5 km from Guia Hill, and is meant only for comparing conditions between years. The estimated effect uses the common temperature-plus-dew-point pace adjustment table for distance running: hotter, more humid days are slower.",
       wxRecTitle: "Race-day weather by year", wxRecSub: "Useful when comparing times between years", wxDate: "Race date", wxShort: (t, h) => `About ${t}°C · ${h}% humidity`,
       wxDayFmt: (s) => new Date(s + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      lvTitle: (n) => `Edition ${n} live results`, lvGo: "Live results", lvLive: "Live", lvDemo: "Demo replay", lvNote: "Unofficial live record entered by hand at the finish and may contain errors. Official results from DSEDJ prevail.",
+      lvDemoNote: (n) => `Demo replay of edition ${n} official results, not this year's race.`, lvWait: "The race has not started. This page updates automatically.", lvReady: "Not started", lvRunning: "Running", lvDone: "Finished",
+      lvElapsed: "Elapsed", lvCutoff: "To cut-off", lvCutoffOver: "Cut-off reached", lvHeat: (h, n) => `Heat ${h} of ${n}`,
+      lvTeam: "Live team standings", lvInd: "Finish order", lvFin: (k) => `${k} finished`, lvNoAward: "Fewer than two teams entered, so no team award in this category.",
+      lvScore: "Points", lvProv: "Provisional", lvComplete: "Complete", lvMissing: (k) => `${k} to come`, lvOut: "Too few finishers", lvUnknown: "Bib to be confirmed", lvRunner: "runner",
+      lvRule: (a, c) => `Scoring: the places of each school's first ${a} finishers (A and B) or first ${c} finishers (C) are added; lowest total wins, ties go to the team whose first runner placed higher. Incomplete teams show a provisional score assuming their remaining runners finish right after the current last place, the best they can still achieve.`,
+      lvHeatsRule: "This category runs in heats and is ranked by time, so places and team points stay provisional until all heats finish.",
+      lvUpdated: (s) => `Updated ${s}`, lvOffline: "Connection lost, retrying.", lvTimeNote: "Hand timing, for reference only.",
     },
   };
 
@@ -536,6 +552,7 @@
   }
 
   let popTimer = null;
+  const pageTimers = []; // 換頁時清除
   async function fillPopularity() {
     const box = $("#popBoard"); if (!box) return;
     let rows;
@@ -704,10 +721,11 @@
     if (days < -30) return ""; // 賽後一個月不再顯示
     const first = race.schedule.slice().sort((a, b) => a.start.localeCompare(b.start))[0];
     const venue = lang === "zh" ? race.venue_zh : race.venue_pt;
-    return `<a class="race-banner" href="#/preview">
+    const live = days <= 0 && days >= -3; // 比賽當日起三日內：橫額改為連去即時成績
+    return `<a class="race-banner${live ? " live" : ""}" href="${live ? "#/live" : "#/preview"}">
       <div class="rb-main"><div class="rb-title">${esc(t("pvBanner", race.edition))}</div>
       <div class="rb-when">${esc(t("pvWhen", t("dateFmt", new Date(race.date + "T00:00:00")), first.start, venue))}</div></div>
-      <div class="rb-side"><span class="rb-days">${esc(t("pvDays", days))}</span><span class="rb-go">${t("pvGo")} ›</span></div>
+      <div class="rb-side"><span class="rb-days">${esc(t("pvDays", days))}</span><span class="rb-go">${live ? t("lvGo") : t("pvGo")} ›</span></div>
     </a>`;
   }
 
@@ -843,6 +861,7 @@
     const catBtns = (letters) => letters.split("").map((l) => `<button class="${cat === g + l ? "on" : ""}" data-c="${g + l}">${l}</button>`).join("");
     view.innerHTML = `
       <h1 class="page-title pv-title">${esc(t("pvTitleZh"))}<small lang="pt">${esc(t("pvTitlePt"))}</small></h1>
+      <div class="link-row"><a href="#/live">${t("lvGo")} ›</a><a href="#/live?demo=${LATEST.edition}">${t("lvDemo")} ›</a></div>
       ${previewHero(race, pv)}
       <div class="filters">
         <div class="toggle"><button class="m ${g === "M" ? "on" : ""}" data-g="M">${t("male")}</button><button class="f ${g === "F" ? "on" : ""}" data-g="F">${t("female")}</button></div>
@@ -874,6 +893,182 @@
     view.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => go(b.dataset.g + cat[1]));
   }
 
+
+  /* ---------- 即時成績（終點人手輸入，Supabase xc_live_feed） ----------
+     #/live           第 48 屆正式資料（event "48"）
+     #/live?ev=test   演練資料
+     #/live?demo=47   以第 47 屆官方成績在本機模擬重播（不連資料庫） */
+  const LIVE_CATS = ["MA", "MB", "FB", "MC", "FC", "FA"]; // 第 48 屆中學組，按起跑次序
+  let LIVE = null;
+  function liveCats() {
+    const sch = (DB.race && DB.race.schedule) || [];
+    const order = sch.slice().sort((a, b) => a.start.localeCompare(b.start)).map((x) => x.cat).filter((c) => LIVE_CATS.includes(c));
+    return order.length ? order : LIVE_CATS;
+  }
+  const heatCount = (cat) => ((DB.race && DB.race.schedule.find((x) => x.cat === cat)) || {}).heats || 1;
+  function liveEntered(cat) {
+    if (LIVE.demo) return LIVE.demoEntered[cat] || {};
+    const m = {};
+    for (const s of (DB.race && DB.race.schools) || []) if (s.n && s.n[cat]) m[s.abbr] = s.n[cat];
+    return m;
+  }
+  const abbrName = new Map();
+  function schoolOfAbbr(a) {
+    if (!abbrName.size) { for (const [zh, s] of Object.entries(DB.schools)) if (s.abbr) abbrName.set(s.abbr, zh); for (const s of (DB.race && DB.race.schools) || []) abbrName.set(s.abbr, s.zh); }
+    return abbrName.get(a) || a;
+  }
+  // 示範重播用虛擬時鐘（加速播放）；正式資料用伺服器校正後的時間
+  function liveNow() { if (LIVE && LIVE.demo) return LIVE.t0 + (Date.now() - LIVE.t0) * LIVE.demoSpeed; return Date.now() + (LIVE ? LIVE.offset : 0); }
+  function fmtClock(ms) {
+    if (ms == null || ms < 0) return "0:00";
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+
+  /* 示範重播：把第 47 屆官方成績壓縮成數分鐘的即時更新 */
+  function demoSetup(edNo) {
+    const ed = DB.editions.find((e) => e.edition === edNo) || LATEST;
+    const speed = 30, t0 = Date.now();
+    LIVE.t0 = t0; LIVE.demoSpeed = speed;
+    LIVE.demoEntered = {}; LIVE.demoRows = [];
+    for (const cat of liveCats()) {
+      const rows = ed.categories[cat].individual;
+      const ent = {};
+      rows.forEach((r) => { const a = abbrOf(r.school_zh); ent[a] = (ent[a] || 0) + 1; });
+      LIVE.demoEntered[cat] = ent;
+      rows.forEach((r) => LIVE.demoRows.push({ id: `${cat}-${r.rank}`, cat, heat: 1, abbr: abbrOf(r.school_zh), pid: r.hidden ? null : r.pid, at_ms: t0 + r.seconds * 1000, seq: r.rank, deleted: false }));
+      LIVE.heats.set(`${cat}|1`, { cat, heat: 1, start_ms: t0, status: "running" });
+    }
+    LIVE.demoSpeed = speed; LIVE.demoEd = ed.edition;
+  }
+  function demoTick() {
+    const now = liveNow();
+    let changed = false;
+    for (const r of LIVE.demoRows) if (r.at_ms <= now && !LIVE.entries.has(r.id)) { LIVE.entries.set(r.id, r); changed = true; }
+    for (const cat of liveCats()) {
+      const h = LIVE.heats.get(`${cat}|1`);
+      const last = Math.max(...LIVE.demoRows.filter((r) => r.cat === cat).map((r) => r.at_ms));
+      if (h.status === "running" && now > last) { h.status = "done"; changed = true; }
+    }
+    return changed;
+  }
+
+  async function livePoll() {
+    if (!LIVE) return;
+    if (LIVE.demo) { if (demoTick()) liveRender(); return; }
+    const c = DB.site && DB.site.views;
+    if (!c || !c.url) return;
+    try {
+      const H = { apikey: c.key, "Content-Type": "application/json" };
+      if (!c.key.startsWith("sb_")) H.Authorization = "Bearer " + c.key;
+      const r = await fetch(`${c.url}/rest/v1/rpc/xc_live_feed`, { method: "POST", headers: H, cache: "no-store", body: JSON.stringify({ p_event: LIVE.event, p_since: LIVE.rev }) });
+      if (!r.ok) throw new Error("live " + r.status);
+      const j = await r.json();
+      if (!LIVE) return;
+      LIVE.offset = j.now - Date.now();
+      let changed = !LIVE.loaded;
+      for (const h of j.heats) { LIVE.heats.set(`${h.cat}|${h.heat}`, h); LIVE.rev = Math.max(LIVE.rev, h.rev); changed = true; }
+      for (const e of j.entries) { LIVE.entries.set(e.id, e); LIVE.rev = Math.max(LIVE.rev, e.rev); changed = true; }
+      LIVE.loaded = true; LIVE.error = false; LIVE.updated = new Date();
+      if (changed) liveRender(); else liveStamp();
+    } catch (e) {
+      console.warn("live feed unavailable", e);
+      if (LIVE) { LIVE.error = true; liveStamp(); }
+    }
+  }
+  function liveStamp() {
+    const el = $("#lvUpdated"); if (!el || !LIVE) return;
+    el.textContent = LIVE.error ? t("lvOffline") : LIVE.updated ? t("lvUpdated", LIVE.updated.toLocaleTimeString(lang === "zh" ? "zh-HK" : "en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })) : "";
+    el.classList.toggle("warn", !!LIVE.error);
+  }
+  function catState(cat) {
+    const n = heatCount(cat);
+    const hs = []; for (let i = 1; i <= n; i++) hs.push(LIVE.heats.get(`${cat}|${i}`) || { heat: i, status: "ready" });
+    const status = hs.every((h) => h.status === "done") ? "done" : hs.some((h) => h.status !== "ready") ? "running" : "ready";
+    const cur = hs.find((h) => h.status === "running") || [...hs].reverse().find((h) => h.status === "done") || hs[0];
+    return { n, hs, status, cur };
+  }
+  // 每秒更新比賽用時及達標倒數（不重繪整頁）
+  function liveClock() {
+    const el = $("#lvClock"); if (!el || !LIVE) return;
+    const st = catState(LIVE.cat), h = st.cur;
+    if (st.status !== "running" || !h || h.start_ms == null || h.status !== "running") { el.textContent = st.status === "done" ? t("lvDone") : "0:00"; return; }
+    const ms = liveNow() - h.start_ms;
+    el.textContent = fmtClock(ms);
+    const cut = $("#lvCut"); if (cut) { const left = XCLive.CUTOFF[LIVE.cat] * 1000 - ms; cut.textContent = left > 0 ? `${t("lvCutoff")} ${fmtClock(left)}` : t("lvCutoffOver"); cut.classList.toggle("over", left <= 0); }
+  }
+
+  function liveRender() {
+    if (!LIVE || !$("#lvBody")) return;
+    const cats = liveCats(), cat = LIVE.cat;
+    const tabs = cats.map((c) => { const st = catState(c).status; return `<button class="chip lv-tab ${c === cat ? "on" : ""}" data-lc="${c}"><span class="lv-dot ${st}"></span>${catLabel(c)}</button>`; }).join("");
+    const st = catState(cat), multi = st.n > 1;
+    const heats = {}; for (const h of st.hs) heats[h.heat] = h;
+    const entries = [...LIVE.entries.values()].filter((e) => e.cat === cat);
+    const ranked = XCLive.rankEntries(entries, heats, multi);
+    const S = XCLive.teamStandings(cat, ranked, liveEntered(cat), st.status === "done");
+    const time = (e) => e.t == null ? "" : fmtClock(e.t);
+    const teamRows = S.teams.map((x) => {
+      const zh = schoolOfAbbr(x.abbr);
+      const chips = x.places.map((p, i) => `<span class="lv-pl ${i < S.n ? "sc" : "ex"}">${p}</span>`).join("") + Array.from({ length: x.missing }, () => `<span class="lv-pl gap">·</span>`).join("");
+      const status = x.out ? t("lvOut") : x.complete ? t("lvComplete") : t("lvMissing", x.missing);
+      return `<a class="lv-team ${x.out ? "out" : ""}" href="${schoolHref(zh)}">
+        <span class="rank ${x.pos && x.pos <= 3 && x.complete ? "r" + x.pos : ""}">${x.pos ?? "-"}</span>${crest(zh, "sm")}
+        <span class="lv-tm"><b>${esc(school(zh))}</b><span class="lv-pls">${chips}</span></span>
+        <span class="lv-sc"><b>${x.out ? "-" : x.complete ? x.score : x.projected}</b><small class="${x.complete ? "ok" : ""}">${x.complete ? status : `${t("lvProv")} · ${status}`}</small></span></a>`;
+    }).join("");
+    const indRows = [...ranked].reverse().map((e) => {
+      const p = e.pid && PEOPLE.get(e.pid);
+      const zh = e.abbr === "?" ? null : schoolOfAbbr(e.abbr);
+      const who = e.abbr === "?" ? `<div class="nm muted">${t("lvUnknown")}</div>` : p && !p.hidden
+        ? `<div class="nm">${personName(p)}</div><div class="sch">${esc(school(zh))}</div>`
+        : `<div class="nm">${esc(school(zh))}</div><div class="sch">${t("lvRunner")}</div>`;
+      const inner = `<span class="rank ${e.place <= 3 ? "r" + e.place : ""}">${e.place}</span>${zh ? crest(zh, "sm") : '<span class="crest sm"></span>'}<span style="min-width:0">${who}</span><span class="tm">${time(e)}${multi ? `<span class="gap">${t("pvHeat", e.heat)}</span>` : ""}</span>`;
+      return p && !p.hidden ? `<a class="row cr" href="#/p/${e.pid}">${inner}</a>` : `<div class="row cr">${inner}</div>`;
+    }).join("");
+    const statusTxt = { ready: t("lvReady"), running: t("lvRunning"), done: t("lvDone") }[st.status];
+    $("#lvTabs").innerHTML = tabs;
+    $("#lvBody").innerHTML = `
+      <section class="lv-head">
+        <div><span class="lv-status ${st.status}">${statusTxt}</span>${multi ? `<span class="lv-heat">${t("lvHeat", st.cur.heat, st.n)}</span>` : ""}<h2>${esc(catLong(cat))}</h2></div>
+        <div class="lv-clock"><b id="lvClock">0:00</b><small id="lvCut"></small></div>
+      </section>
+      ${multi ? `<p class="banner">${t("lvHeatsRule")}</p>` : ""}
+      <div class="board-head"><h2>${t("lvTeam")}</h2><span class="meta">${t("lvFin", S.finishers)}</span></div>
+      ${S.award ? `<div class="board">${teamRows}</div>` : `<p class="banner">${t("lvNoAward")}</p>`}
+      <div class="board-head"><h2>${t("lvInd")}</h2><span class="meta">${t("lvTimeNote")}</span></div>
+      ${ranked.length ? `<div class="board">${indRows}</div>` : `<p class="muted-note">${t("lvWait")}</p>`}
+      <p class="muted-note">${t("lvRule", XCLive.TEAM_N.A, XCLive.TEAM_N.C)}</p>`;
+    $("#lvTabs").querySelectorAll("[data-lc]").forEach((b) => b.onclick = () => { LIVE.cat = b.dataset.lc; const p = new URLSearchParams(location.hash.split("?")[1] || ""); p.set("c", LIVE.cat); location.replace("#/live?" + p); });
+    liveClock(); liveStamp();
+  }
+
+  function renderLive(params) {
+    const demo = Number(params.get("demo")) || 0;
+    const event = demo ? "demo" : (params.get("ev") || String((DB.race && DB.race.edition) || 48)).replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const cats = liveCats();
+    // 同一場資料只換組別：保留已下載的資料
+    if (!LIVE || LIVE.event !== event || LIVE.demo !== demo) LIVE = { event, demo, rev: 0, offset: 0, entries: new Map(), heats: new Map(), loaded: false, cat: null };
+    if (demo && !LIVE.demoRows) demoSetup(demo);
+    const want = params.get("c");
+    if (cats.includes(want)) LIVE.cat = want;
+    if (!LIVE.cat) { const running = cats.find((c) => catState(c).status === "running"); LIVE.cat = running || cats[0]; }
+    view.innerHTML = `
+      <h1 class="page-title lv-title">${esc(t("lvTitle", demo ? LIVE.demoEd : (DB.race && DB.race.edition) || 48))}<span class="lv-pill ${demo || event !== "48" ? "demo" : ""}">${demo ? t("lvDemo") : event !== String((DB.race && DB.race.edition) || 48) ? "TEST" : t("lvLive")}</span></h1>
+      <p class="lv-note">${demo ? t("lvDemoNote", LIVE.demoEd) : t("lvNote")} <span id="lvUpdated" class="lv-upd"></span></p>
+      <div class="chips" id="lvTabs"></div>
+      <div id="lvBody"><div class="skeleton"><i class="sk-row"></i><i class="sk-row"></i></div></div>`;
+    if (LIVE.loaded || demo) liveRender();
+    livePoll();
+    // 有組別進行中每 4 秒更新，否則每 15 秒；用時每秒更新
+    let tick = 0;
+    pageTimers.push(setInterval(() => {
+      tick++;
+      liveClock();
+      const active = liveCats().some((c) => catState(c).status === "running");
+      if (demo ? true : active ? tick % 4 === 0 : tick % 15 === 0) livePoll();
+    }, 1000));
+  }
 
   /* ---------- 運動員名錄／學校名錄 ---------- */
   let ATH = null, SCHOOLS = null;
@@ -1212,6 +1407,7 @@
   }
   function route() {
     if (popTimer) { clearInterval(popTimer); popTimer = null; }
+    while (pageTimers.length) clearInterval(pageTimers.pop());
     const h = location.hash.replace(/^#/, "") || "/";
     const [path, qs] = h.split("?");
     const params = new URLSearchParams(qs || "");
@@ -1220,12 +1416,13 @@
     else if (path === "/rank") { nav = "rank"; renderRank(params); highlight(params.get("hl")); }
     else if (path.startsWith("/p/")) { nav = ""; renderPerson(path.slice(3)); }
     else if (path === "/athletes") { nav = "athletes"; renderAthletes(params); }
+    else if (path === "/live") { nav = ""; renderLive(params); }
     else if (path.startsWith("/s/")) { nav = "athletes"; renderSchool(decodeURIComponent(path.slice(3))); }
     else if (path === "/records") { nav = "records"; renderRecords(params); }
     else if (path === "/preview") { nav = ""; renderPreview(params); }
     else if (path === "/privacy") { nav = ""; renderPrivacy(); }
     else renderNotFound();
-    if ((path.startsWith("/p/") || path.startsWith("/s/") || path === "/preview" || path === "/privacy") && !view.querySelector(".wip")) {
+    if ((path.startsWith("/p/") || path.startsWith("/s/") || path === "/preview" || path === "/privacy" || path === "/live") && !view.querySelector(".wip")) {
       view.insertAdjacentHTML("afterbegin", backButton());
       wireBack();
     }

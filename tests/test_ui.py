@@ -253,7 +253,7 @@ def test_touch_targets_at_least_40px(page, h):
 
 
 def test_no_dash_characters_in_visible_text(page):
-    for h in ["#/", "#/rank?t=team&e=44", "#/records?c=FA", "#/athletes", "#/s/KP", "#/rank?e=46&c=FD"]:
+    for h in ["#/", "#/rank?t=team&e=44", "#/records?c=FA", "#/athletes", "#/s/KP", "#/rank?e=46&c=FD", "#/live?demo=47"]:
         go(page, h)
         txt = page.evaluate("document.body.innerText")
         assert "—" not in txt and "–" not in txt, h
@@ -506,3 +506,165 @@ def test_new_page_still_starts_at_top(page):
     page.wait_for_function("location.hash.startsWith('#/p/')")
     page.wait_for_timeout(80)
     assert page.evaluate("window.scrollY") == 0
+
+
+# ---------- 即時成績：終點輸入（工作人員頁）＋公眾即時頁 ----------
+# 以記憶體模擬 Supabase（登入、讀寫、公眾 feed），絕不連真實資料庫
+import base64, itertools
+
+
+def _fake_jwt(email):
+    enc = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+    return f"{enc({'alg': 'HS256', 'typ': 'JWT'})}.{enc({'sub': 'u1', 'email': email, 'role': 'authenticated', 'exp': int(time.time()) + 3600})}.sig"
+
+
+@pytest.fixture()
+def live(browser, base_url):
+    ctx = browser.new_context(viewport={"width": 375, "height": 812}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="zh-HK")
+    ctx.route("https://fonts.googleapis.com/**", lambda r: r.fulfill(status=200, content_type="text/css", body=""))
+    ctx.route("https://fonts.gstatic.com/**", lambda r: r.fulfill(status=204, body=""))
+    db = {"entries": {}, "heats": {}, "rev": itertools.count(1)}
+    ma = EDS[47]["categories"]["MA"]["individual"]
+    roster = [{"bib": 1001, "cat": "MA", "heat": None, "abbr": "YW", "pid": ma[0]["pid"]},
+              {"bib": 1002, "cat": "MA", "heat": None, "abbr": "HK", "pid": None},
+              {"bib": 2001, "cat": "FB", "heat": None, "abbr": "HK", "pid": None}]
+    email = "helper@example.invalid"
+    user = {"id": "u1", "aud": "authenticated", "role": "authenticated", "email": email, "app_metadata": {}, "user_metadata": {}, "created_at": "2026-01-01T00:00:00Z"}
+    cors = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*"}
+
+    def ok(route, body, status=200):
+        return route.fulfill(status=status, content_type="application/json", body=json.dumps(body), headers=cors)
+
+    def handler(route):
+        req = route.request
+        u = req.url
+        if req.method == "OPTIONS":
+            return route.fulfill(status=200, headers=cors)
+        if "/auth/v1/token" in u:
+            return ok(route, {"access_token": _fake_jwt(email), "token_type": "bearer", "expires_in": 3600, "expires_at": int(time.time()) + 3600, "refresh_token": "r1", "user": user})
+        if "/auth/v1/user" in u:
+            return ok(route, user)
+        if "/auth/v1/logout" in u:
+            return route.fulfill(status=204, headers=cors)
+        if "/rpc/xc_is_admin" in u:
+            return ok(route, True)
+        if "/rpc/xc_now" in u:
+            return ok(route, int(time.time() * 1000))
+        if "/rpc/xc_live_feed" in u:
+            since = json.loads(req.post_data or "{}").get("p_since") or 0
+            return ok(route, {"now": int(time.time() * 1000),
+                              "heats": [h for h in db["heats"].values() if h["rev"] > since],
+                              "entries": [{k: v for k, v in e.items() if k != "bib"} for e in db["entries"].values() if e["rev"] > since]})
+        if "/rest/v1/xc_live_roster" in u:
+            return ok(route, roster)
+        for table, key in (("xc_live_entries", "id"), ("xc_live_heats", None)):
+            if f"/rest/v1/{table}" in u:
+                store = db["entries" if key else "heats"]
+                if req.method == "GET":
+                    since = int(u.split("rev=gt.")[1].split("&")[0]) if "rev=gt." in u else 0
+                    return ok(route, sorted((r for r in store.values() if r["rev"] > since), key=lambda r: r["rev"]))
+                rows = json.loads(req.post_data)
+                for r in rows if isinstance(rows, list) else [rows]:
+                    k = r[key] if key else f"{r['cat']}|{r['heat']}"
+                    store[k] = {**store.get(k, {}), **r, "rev": next(db["rev"])}
+                return route.fulfill(status=201, body="", headers=cors)
+        return route.fulfill(status=404, body="")
+
+    ctx.route("https://*.supabase.co/**", handler)
+    pg = ctx.new_page()
+    pg.errors = []
+    pg.on("pageerror", lambda e: pg.errors.append(str(e)))
+    pg.on("dialog", lambda d: d.accept())  # 確認框一律按「確定」
+    pg.base = base_url
+    pg.db = db
+    yield pg
+    assert not pg.errors, pg.errors
+    ctx.close()
+
+
+def _type_bib(page, bib):
+    for ch in str(bib):
+        page.click(f'#pad [data-k="{ch}"]')
+    page.click('#pad [data-k="ok"]')
+
+
+def _synced(page):
+    page.wait_for_function("document.querySelector('#sync').classList.contains('ok')")
+
+
+def _until(page, cond, ms=5000):
+    """等候模擬資料庫達到條件（上傳是非同步的）"""
+    for _ in range(ms // 50):
+        if cond():
+            return
+        page.wait_for_timeout(50)
+    assert cond()
+
+
+def test_live_admin_flow(live):
+    page = live
+    page.goto(f"{page.base}/live-admin.html")
+    page.fill("#email", "helper@example.invalid")
+    page.fill("#pw", "x")
+    page.click("#loginBtn")
+    expect(page.locator("#app")).to_be_visible()
+    page.select_option("#event", "test")
+    page.click('#cats [data-cat="MA"]')
+    page.click("#startBtn")
+    _until(page, lambda: "MA|1" in page.db["heats"])
+    heat = page.db["heats"]["MA|1"]
+    assert heat["status"] == "running" and heat["event"] == "test" and heat["start_ms"] > 0
+
+    # 1. 輸入號碼：顯示學校；確認後成為第 1 名
+    for ch in "1001":
+        page.click(f'#pad [data-k="{ch}"]')
+    expect(page.locator("#who")).to_contain_text("粵華")
+    page.click('#pad [data-k="ok"]')
+    expect(page.locator("#list li")).to_have_count(1)
+    # 2. 先按「衝線」記時，再輸入號碼：填入空位，不會多一行
+    page.click("#markBtn")
+    expect(page.locator("#list li.slot")).to_have_count(1)
+    _type_bib(page, 1002)
+    expect(page.locator("#list li")).to_have_count(2)
+    expect(page.locator("#list li.slot")).to_have_count(0)
+    # 3. 名單外號碼：確認後以「待確認」記錄
+    _type_bib(page, 9999)
+    expect(page.locator("#list li")).to_have_count(3)
+    _until(page, lambda: len(page.db["entries"]) == 3 and all(r.get("bib") for r in page.db["entries"].values()))
+    rows = sorted(page.db["entries"].values(), key=lambda r: r["seq"])
+    assert [r["bib"] for r in rows] == [1001, 1002, 9999]
+    assert [r["abbr"] for r in rows] == ["YW", "HK", "?"]
+    assert rows[0]["at_ms"] <= rows[1]["at_ms"] <= rows[2]["at_ms"]
+    # 4. 修改：刪除第三行
+    page.locator("#list li", has_text="9999").click()
+    page.click('#sheet button[value="delete"]')
+    _until(page, lambda: sum(1 for r in page.db["entries"].values() if r.get("deleted")) == 1)
+    expect(page.locator("#list li.del")).to_have_count(1)
+    # 5. 對調名次（清單由新到舊：第一行是第 2 名）
+    page.locator("#list li:not(.del)").first.click()
+    page.click('#sheet button[value="up"]')
+    _until(page, lambda: [r["bib"] for r in sorted((r for r in page.db["entries"].values() if not r["deleted"]), key=lambda r: r["seq"])] == [1002, 1001])
+    rows = sorted((r for r in page.db["entries"].values() if not r["deleted"]), key=lambda r: r["seq"])
+    assert [r["bib"] for r in rows] == [1002, 1001]
+
+    # 公眾頁：讀取同一份資料，不含號碼布；有往績者顯示姓名，其他只顯示學校
+    page.goto(f"{page.base}/#/live?ev=test&c=MA")
+    page.wait_for_selector("#lvBody .row")
+    expect(page.locator("#lvBody .row")).to_have_count(2)
+    # 清單由新到舊：第 2 名在上
+    expect(page.locator("#lvBody .row").nth(0)).to_contain_text(EDS[47]["categories"]["MA"]["individual"][0]["name_zh"])
+    expect(page.locator("#lvBody .row").nth(1)).to_contain_text("濠江中學")
+    assert "1002" not in page.locator("#lvBody").inner_text()
+    expect(page.locator(".lv-team").first).to_contain_text("暫計")
+    no_hscroll(page)
+
+
+def test_live_demo_replay(page):
+    # 示範以 30 倍速播放；先把時鐘撥快一小時，令全部運動員已到達
+    page.add_init_script("(() => { const o = Date.now.bind(Date); let first = null; Date.now = () => { const n = o(); if (first === null) first = n; return n + (n - first > 50 ? 3600 * 1000 : 0); }; })()")
+    go(page, "#/live?demo=47&c=MA")
+    page.wait_for_function("document.querySelectorAll('#lvBody .row').length >= 40", timeout=15000)
+    champ = EDS[47]["categories"]["MA"]["team_champion"]["school_zh"]
+    expect(page.locator(".lv-team").first).to_contain_text(champ)
+    expect(page.locator(".lv-team .rank.r1")).to_have_count(1)
+    no_hscroll(page)

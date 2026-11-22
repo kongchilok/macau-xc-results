@@ -728,3 +728,48 @@ a.medal:hover { background: var(--surface-2); }
 .lv-cats button:first-child { width: auto; padding: 0 var(--s3); font-size: 14px; }
 .stats4 .stat span { font-size: 11px; white-space: nowrap; }
 #wx { scroll-margin-top: 130px; }
+
+/* ==========================================================
+   即時成績
+   ========================================================== */
+.lv-title { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.lv-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-pill); font-size: 12px; font-weight: 800; letter-spacing: .04em; background: rgb(255 80 80 / .16); color: #ff8f8f; }
+.lv-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: lvblink 1.4s ease-in-out infinite; }
+.lv-pill.demo { background: var(--surface-2); color: var(--muted); }
+.lv-pill.demo::before { animation: none; }
+@keyframes lvblink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .lv-pill::before { animation: none; } }
+.lv-note { margin: var(--s1) 0 0; font-size: 12.5px; color: var(--muted); }
+.lv-upd { display: inline-block; margin-left: 4px; color: var(--text-2); }
+.lv-upd.warn { color: var(--warn-text); }
+.lv-tab { display: inline-flex; align-items: center; gap: 6px; }
+.lv-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-3); }
+.lv-dot.running { background: #ff6b6b; }
+.lv-dot.done { background: var(--accent); }
+.lv-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); margin: var(--s3) 0; padding: var(--s3) var(--s4); border-radius: var(--r-box); background: var(--surface); }
+.lv-head h2 { margin: 4px 0 0; font-size: 20px; }
+.lv-status { display: inline-flex; padding: 2px 10px; border-radius: var(--r-pill); font-size: 12px; font-weight: 700; background: var(--surface-3); color: var(--text-2); }
+.lv-status.running { background: rgb(255 80 80 / .16); color: #ff8f8f; }
+.lv-status.done { background: var(--accent-soft); color: var(--accent); }
+.lv-heat { margin-left: 6px; font-size: 12px; color: var(--muted); }
+.lv-clock { display: grid; justify-items: end; }
+.lv-clock b { font-family: var(--num); font-weight: 800; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lv-clock small { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.lv-clock small.over { color: var(--warn-text); }
+.lv-team { display: grid; grid-template-columns: 34px 30px 1fr auto; gap: var(--s3) 10px; align-items: center; min-height: 64px; padding: 10px var(--s4) 10px var(--s3); border-bottom: 1px solid var(--line); color: inherit; }
+.lv-team:last-child { border-bottom: 0; }
+.lv-team:hover { background: var(--surface-2); }
+.lv-team.out { opacity: .55; }
+.lv-team .crest.sm { --sz: 30px; }
+.lv-tm { min-width: 0; display: grid; gap: 4px; }
+.lv-tm b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-pls { display: flex; flex-wrap: wrap; gap: 4px; }
+.lv-pl { min-width: 24px; padding: 1px 5px; border-radius: 6px; text-align: center; font-family: var(--num); font-weight: 700; font-size: 13px; background: var(--surface-3); color: var(--text); }
+.lv-pl.ex { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+.lv-pl.gap { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px dashed var(--line); }
+.lv-sc { display: grid; justify-items: end; }
+.lv-sc b { font-family: var(--num); font-weight: 800; font-size: 26px; line-height: 1; }
+.lv-sc small { font-size: 11px; color: var(--warn-text); white-space: nowrap; }
+.lv-sc small.ok { color: var(--accent); }
+.nm.muted { color: var(--muted); font-weight: 500; }
+.race-banner.live { border-color: rgb(255 80 80 / .45); }

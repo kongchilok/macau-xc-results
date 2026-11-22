@@ -1,0 +1,51 @@
+"""產生即時成績用的號碼布對照 SQL（不含姓名）。
+
+輸入：private/startlist48.csv（需有 bib 欄：號碼布）＋ private/preview48_review.csv（preview.py 的配對結果）
+輸出：private/live_roster48.sql —— 只含 號碼布、組別、分組、學校代碼、已公開往績者的學生編號（pid）
+      檔案放在 private/（不入 repo），再於 Supabase 執行一次即可。
+
+用法：python -P -X utf8 scripts/live_roster.py private/startlist48.csv private/preview48_review.csv private/live_roster48.sql [event]
+"""
+import csv, re, sys, pathlib
+
+start_p, review_p, out_p = sys.argv[1:4]
+event = sys.argv[4] if len(sys.argv) > 4 else "48"
+
+rows = list(csv.DictReader(open(start_p, encoding="utf-8-sig")))
+if not rows or "bib" not in rows[0]:
+    sys.exit("startlist 未有 bib 欄：請先在 private/startlist48.csv 加上一欄 bib（號碼布號碼）")
+
+# (組別, 中文名, 拼音) → pid（只取 preview.py 已配對者）
+pid_of = {}
+for r in csv.DictReader(open(review_p, encoding="utf-8-sig")):
+    if r["狀態"].startswith("配對") and r.get("pid"):
+        pid_of[(r["組別"], r["中文名"], r["拼音"])] = r["pid"]
+
+seen, out, problems = set(), [], []
+for r in rows:
+    bib = (r.get("bib") or "").strip()
+    if not bib:
+        problems.append(f"缺號碼布：{r['cat']} 第{r['seq']}位")
+        continue
+    if not re.fullmatch(r"\d{1,5}", bib):
+        problems.append(f"號碼布格式不符：{bib}")
+        continue
+    if bib in seen:
+        problems.append(f"號碼布重複：{bib}")
+        continue
+    seen.add(bib)
+    pid = pid_of.get((r["cat"], r["name_zh"], r["name_pt"]))
+    heat = r.get("heat") or ""
+    out.append((int(bib), r["cat"], int(heat) if heat.strip().isdigit() else None, r["abbr"], pid))
+
+if problems:
+    print("\n".join(problems))
+    sys.exit(f"有 {len(problems)} 個問題，未輸出")
+
+sql = ["-- 第 %s 屆號碼布對照（不含姓名）；由 scripts/live_roster.py 產生" % event,
+       "insert into public.xc_live_roster (event, bib, cat, heat, abbr, pid) values"]
+vals = [f"('{event}', {b}, '{c}', {h if h else 'null'}, '{a}', {repr(p) if p else 'null'})" for b, c, h, a, p in sorted(out)]
+sql.append(",\n".join(vals))
+sql.append("on conflict (event, bib) do update set cat = excluded.cat, heat = excluded.heat, abbr = excluded.abbr, pid = excluded.pid;")
+pathlib.Path(out_p).write_text("\n".join(sql) + "\n", encoding="utf-8")
+print(f"已輸出 {len(out)} 個號碼布（其中 {sum(1 for x in out if x[4])} 人有公開往績）→ {out_p}")
