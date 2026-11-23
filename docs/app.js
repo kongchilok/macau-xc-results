@@ -26,6 +26,19 @@
       langAria: "Switch to English", loadFail: "資料載入失敗", loadFailText: "請檢查網絡連線後再試。", retry: "重新載入",
       pvTitle: (n) => `第${n}屆賽前預覽`, pvBanner: (n) => `第${n}屆學界越野跑比賽`, pvWhen: (d, t, v) => `${d} ${t} · ${v}`,
       pvDays: (n) => n > 1 ? `距離比賽尚有 ${n} 日` : n === 1 ? "明日舉行" : n === 0 ? "今日舉行" : "比賽已結束，成績有待公布", pvGo: "賽前預覽",
+      fcTitle: "比賽當日天氣預測", fcPub: (s) => `地球物理氣象局七天天氣預報（${s} 發布）`, fcWind: "風力", fcSky: "天氣", fcRow: "預測", fcShort: (a, b) => `天氣預測 ${a}–${b}°C`,
+      fcNote: "預報每日更新，比賽前會再核對；跑步影響按預報最高及最低氣溫、濕度的平均值粗略估算，算法與歷屆比賽天氣相同。",
+      meTag: (n) => `第 ${n} 屆出賽`, meHeat: (h) => `第 ${h} 組`, meCall: "檢錄", meStart: "起跑", meStart1: "第 1 組起跑", meGo: "查看賽前預覽",
+      meLater: (h) => `你在第 ${h} 組：第 1 組出發後，各組隨即順序起跑，請留意大會廣播。`, meMore: "換一句打氣", meHi: "比賽日提示",
+      meCheers: {
+        defend: ["衛冕之戰，捍衛榮耀！", "冠軍再臨，全場都在看你！", "保持節奏，終點線等你再次第一個衝過！"],
+        top3: ["上屆登上頒獎台，今年再上一層樓！", "頒獎台記得你，今年再來！", "目標更高，衝刺更快！"],
+        up: ["升組新挑戰，用實力說話！", "新組別、新起點，跑出你的節奏！", "升組第一戰，勇敢迎戰更強的對手！"],
+        back: ["重返賽道，跑出更強的自己！", "再次出發，每一步都比以前更穩！"],
+        top10: ["預測前十，全力爭取獎牌！", "獎牌就在前方，堅持到最後一步！"],
+        close: ["實力接近，最後一段決勝負！", "旗鼓相當，誰撐得住誰就贏！"],
+        all: ["加油！每一步都算數！", "穩住呼吸，享受比賽！", "上斜不放棄，落斜放開跑！", "為學校、為自己，全力以赴！", "跑出最好的自己！", "最後 200 米，咬緊牙關衝線！", "起步別太急，後段才發力！", "全校都在終點為你打氣！"],
+      },
       prTag: "賽前預覽", prCta: "查看預測、時間表及學校名單", prClose: "關閉", prWait: (n) => `${n} 秒後可關閉`, prDays: "日", prToGo: "倒數",
       pvCall: "檢錄", pvStart: "起跑", pvDist: "距離", pvRunners: "參賽人數", pvHeats: (n) => n > 1 ? `分 ${n} 組起跑` : "全組同時起跑",
       pvKnown: (k, n) => `共 ${n} 人參賽，其中 ${k} 人有往績`, pvNew: (n) => `另有 ${n} 人未有公開往績（首次參賽或未能確認身份），不予列出。`,
@@ -41,8 +54,8 @@
       hiddenName: "（應要求隱藏）", hiddenText: "此運動員的資料已應要求隱藏。",
       pvyTitle: "私隱及資料使用", pvyApply: "填寫申請表", pvyPending: "申請渠道正在設立。如需移除或更正資料，請先聯絡所屬學校的體育老師代為轉達。",
       pvySrcH: "資料來源", pvySrc: "本網站的歷屆成績均整理自教育及青年發展局「學界比賽」網頁公開發布的越野跑成績，屬非官方整理，如有出入，以官方公布為準。第 48 屆預測另參考澳門中華學生聯合總會公開的「全澳學生環山跑比賽」獲獎名單（前十名）。比賽當日天氣取自澳門國際機場氣象站的航空天氣報告。",
-      pvyShowH: "顯示的資料", pvyShow: "只顯示官方已公開的資料，包括姓名（中文及葡文拼音）、學校、組別、名次及成績。第 48 屆賽前預覽只列出曾於官方成績或公開獲獎名單出現的參賽者及其今屆學校；運動員頁面的瀏覽次數只用於人氣排名，不會記錄瀏覽者身份。",
-      pvyNoH: "不顯示的資料", pvyNo: "不顯示號碼布號碼、出生日期、聯絡方式或任何未經官方公布的個人資料；未有公開往績的參賽者只計算人數，不列姓名。本網站亦已設定不被搜尋引擎收錄。",
+      pvyShowH: "顯示的資料", pvyShow: "只顯示官方已公開的資料，包括姓名（中文及葡文拼音）、學校、組別、名次及成績。第 48 屆賽前預覽及即時成績按大會秩序冊列出參賽者的姓名、學校及分組，預測另參考公開的環山跑成績；運動員頁面的瀏覽次數只用於人氣排名，不會記錄瀏覽者身份。",
+      pvyNoH: "不顯示的資料", pvyNo: "不顯示號碼布號碼、出生日期、聯絡方式或任何未經官方公布的個人資料。本網站亦已設定不被搜尋引擎收錄。",
       pvyStatusH: "在讀及畢業標示",
       pvyRemoveH: "申請移除或更正", pvyRemove: (d) => `運動員本人、家長或學校老師均可申請隱藏姓名或更正錯誤資料，本網站會於收到申請後 ${d} 日內處理。`,
       pvyStep1: "請提供運動員姓名、學校、參賽年份及組別，以便查找相關紀錄。", pvyStep2: "選擇「隱藏姓名」或「更正資料」，並留下聯絡方式以便回覆（毋須提交身份證明文件）。",
@@ -127,6 +140,19 @@
       langAria: "切換至中文", loadFail: "Data failed to load", loadFailText: "Check your connection and try again.", retry: "Reload",
       pvTitle: (n) => `Edition ${n} preview`, pvBanner: (n) => `Edition ${n} Schools Cross-Country`, pvWhen: (d, t, v) => `${d} ${t} · ${v}`,
       pvDays: (n) => n > 1 ? `${n} days to go` : n === 1 ? "Tomorrow" : n === 0 ? "Race day" : "Race finished, results pending", pvGo: "Preview",
+      fcTitle: "Race-day forecast", fcPub: (s) => `SMG 7-day forecast (issued ${s})`, fcWind: "Wind", fcSky: "Sky", fcRow: "Forecast", fcShort: (a, b) => `Forecast ${a}–${b}°C`,
+      fcNote: "The forecast is updated daily and will be checked again before the race. The running effect is a rough estimate from the average of the forecast high and low, using the same method as past race-day weather.",
+      meTag: (n) => `Racing in edition ${n}`, meHeat: (h) => `Heat ${h}`, meCall: "Call", meStart: "Start", meStart1: "Heat 1 start", meGo: "Open race preview",
+      meLater: (h) => `You are in heat ${h}: heats start one after another once heat 1 is off. Listen for the announcements.`, meMore: "Another cheer", meHi: "Race-day reminder",
+      meCheers: {
+        defend: ["Defend the title!", "The champion is back. Everyone is watching!", "Hold your rhythm and cross the line first again!"],
+        top3: ["Podium last year. Aim one step higher!", "The podium remembers you. Go again!", "Aim higher, finish faster!"],
+        up: ["New category, new challenge. Let your legs do the talking!", "New start, your own rhythm!", "First race up a category. Take on the best!"],
+        back: ["Back on the course and stronger than ever!", "A fresh start. Every step steadier than before!"],
+        top10: ["Predicted top ten. Go for a medal!", "A medal is within reach. Keep going to the last step!"],
+        close: ["Neck and neck. The last stretch decides it!", "Evenly matched. Whoever holds on wins!"],
+        all: ["Go! Every step counts!", "Steady breathing, enjoy the race!", "Push up the hills, fly down the slopes!", "For your school and for yourself!", "Run your best race!", "Last 200 metres. Dig deep!", "Start steady, finish strong!", "Your whole school is cheering at the finish!"],
+      },
       prTag: "Race preview", prCta: "Predictions, schedule and schools", prClose: "Close", prWait: (n) => `Close in ${n}s`, prDays: "days", prToGo: "In",
       pvCall: "Call", pvStart: "Start", pvDist: "Distance", pvRunners: "Runners", pvHeats: (n) => n > 1 ? `${n} heats` : "Single start",
       pvKnown: (k, n) => `${n} runners, ${k} with past results`, pvNew: (n) => `${n} more have no published results yet (first race or name not confirmed) and are not listed.`,
@@ -142,8 +168,8 @@
       hiddenName: "(Hidden on request)", hiddenText: "This student's details have been hidden on request.",
       pvyTitle: "Privacy and data use", pvyApply: "Open the request form", pvyPending: "The request channel is being set up. Meanwhile, please ask the school's PE teacher to pass on removal or correction requests.",
       pvySrcH: "Source", pvySrc: "Past results are compiled from cross-country results published on the DSEDJ School Sports Competitions pages. This is an unofficial site; official publications prevail. The edition 48 projection also uses the publicly posted top-10 award lists of the Macau Students Round-the-Hill Race (AECM).",
-      pvyShowH: "What is shown", pvyShow: "Details already published in official results: name (Chinese and romanised), school, category, placing and time. The edition 48 preview lists only entrants who appear in published results, with their current school.",
-      pvyNoH: "What is not shown", pvyNo: "No bib numbers, birth dates, contact details or other unpublished personal data. Entrants without published results are only counted, not named. The site is also set not to be indexed by search engines.",
+      pvyShowH: "What is shown", pvyShow: "Details already published in official results: name (Chinese and romanised), school, category, placing and time. The edition 48 preview and live results list entrants' names, schools and heats from the official start list; predictions also use published hill-race results. Profile view counts are used only for the popularity ranking and never record who is viewing.",
+      pvyNoH: "What is not shown", pvyNo: "No bib numbers, birth dates, contact details or other unpublished personal data. The site is also set not to be indexed by search engines.",
       pvyStatusH: "Active / graduated labels",
       pvyRemoveH: "Request removal or correction", pvyRemove: (d) => `Students, parents or teachers can ask to hide a name or correct an error. Requests are handled within ${d} days.`,
       pvyStep1: "Give the student's name, school, year and category so the record can be found.", pvyStep2: "Choose \"hide name\" or \"correct details\" and leave a contact for the reply (no ID documents needed).",
@@ -282,6 +308,31 @@
       <div class="wx-impact">${t("wxImpact")}：${esc(wxSlow(w))}</div>
       ${notes.length ? `<p class="wx-note">${esc(notes.join("；"))}</p>` : ""}
       <a class="wx-link" href="#/records?c=${cat}&go=wx">${t("wxRecTitle")} ›</a>
+    </details>`;
+  }
+
+  /* ---------- 比賽當日天氣預測（docs/data/forecast48.json，scripts/forecast.py 產生） ---------- */
+  function fcNow() {
+    const f = DB && DB.forecast, race = DB && DB.race;
+    return f && f.available && race && f.date === race.date && daysTo(f.date) >= 0 ? f : null;
+  }
+  const fcSky = (f) => lang === "zh" ? ((f.desc_zh.split("。").find((x) => /晴|雲|雨|陰|霧|雷/.test(x)) || "").trim()) : ((f.desc_en.split(".").find((x) => /fine|cloud|rain|shower|sunny|fog|thunder/i.test(x)) || "").trim());
+  const fcWind = (f) => lang === "zh" ? (f.wind_zh || "").replace(/^吹/, "") : (f.wind_en || "");
+  function fcCard() {
+    const f = fcNow(); if (!f) return "";
+    const pub = f.published.replace(/^\d{4}-(\d{2})-(\d{2}) /, (m, mo, d) => lang === "zh" ? `${+mo}月${+d}日 ` : `${+d}/${+mo} `);
+    return `<details class="wx wx-fc">
+      <summary><span class="wx-sum"><b>${t("fcTitle")}</b><span>${f.temp_min}-${f.temp_max}°C · ${lang === "zh" ? "濕度" : "RH"} ${f.rh_min}-${f.rh_max}%${f.rain ? " · " + t("wxRainY") : ""}</span></span><span class="wx-badge lv-${f.level}">${t("wx_" + f.level)}</span></summary>
+      <div class="wx-head"><span>${esc(t("wxDayFmt", f.date))} · ${esc(fcSky(f))}</span></div>
+      <div class="wx-grid">
+        <div><span>${t("wxTemp")}</span><b>${f.temp_min}-${f.temp_max}<small>°C</small></b></div>
+        <div><span>${t("wxRh")}</span><b>${f.rh_min}-${f.rh_max}<small>%</small></b></div>
+        <div><span>${t("fcWind")}</span><b class="fc-txt">${esc(fcWind(f))}</b></div>
+        <div><span>${t("fcSky")}</span><b class="fc-txt">${f.rain ? t("wxRainY") : t("wxRainN")}</b></div>
+      </div>
+      <div class="wx-impact">${t("wxImpact")}：${esc(wxSlow(f))}</div>
+      <p class="wx-note">${esc(t("fcPub", pub))}。${esc(t("fcNote"))}</p>
+      <a class="wx-link" href="#/records?c=MA&go=wx">${t("wxRecTitle")} ›</a>
     </details>`;
   }
 
@@ -683,6 +734,26 @@
   }
 
   /* ---------- 個人檔案 ---------- */
+  /* 今屆出賽資料：組別、分組、檢錄及起跑時間（只限有往績、已配對的參賽者） */
+  function meEntry(pid) {
+    const race = DB.race, pv = DB.preview;
+    if (!race || !pv || daysTo(race.date) < 0) return null;
+    for (const c of CATS) {
+      const s = ((pv.categories[c] || {}).starters || []).find((x) => x.pid === pid);
+      if (s) { const sch = race.schedule.find((x) => x.cat === c); return { cat: c, heat: (sch.heats || 1) > 1 && s.heat ? Number(s.heat) : null, sch, school_zh: s.school_zh }; }
+    }
+    return null;
+  }
+  function meRaceBtn(pid) {
+    const m = meEntry(pid); if (!m) return "";
+    const start = m.heat && m.heat > 1 ? `${t("meStart1")} ${m.sch.start}` : `${t("meStart")} ${m.sch.start}`;
+    return `<a class="me-race" href="#/preview?c=${m.cat}&me=${pid}">
+      <span class="mr-tag">${esc(t("meTag", DB.race.edition))}</span>
+      <b>${esc(catLong(m.cat))}${m.heat ? ` · ${esc(t("meHeat", m.heat))}` : ""}</b>
+      <span class="mr-time">${t("meCall")} ${m.sch.call} · ${start}</span>
+      <span class="mr-go">${t("meGo")} ›</span></a>`;
+  }
+
   function renderPerson(pid) {
     const p = PEOPLE.get(pid);
     if (!p) return renderNotFound();
@@ -721,6 +792,7 @@
         <div class="pt">${esc(lang === "zh" ? p.name_pt : p.name_zh)}</div>
         <div class="schools">${schools}</div>
         <div class="st-line">${statusChip(p, true)}</div>
+        ${meRaceBtn(pid)}
         ${popCard(0)}
         <div class="crest-chain${crestSchools.length > 1 ? " multi" : ""}">${crestChain}${lvCorner(0)}</div>
         <div class="stats">
@@ -896,6 +968,7 @@
     const cards = [
       { photo: "arch", cls: "c-green hero-card", title: t("hcTitle"), sub: `${t("dateFmt", new Date(race.date + "T00:00:00"))} ${first[0].start} · ${venue}`,
         body: `<div class="hc-count"><b>${days > 0 ? days : days === 0 ? "0" : "-"}</b><span>${esc(t("pvDays", days))}</span></div>
+               ${(() => { const f = fcNow(); return f ? `<div class="hc-fc">${esc(t("fcShort", f.temp_min, f.temp_max))} · ${esc(fcSky(f))}</div>` : ""; })()}
                <div class="hc-stats"><div><b>${Object.values(race.totals).reduce((a, b) => a + b, 0)}</b><span>${t("hcRunners")}</span></div><div><b>${race.schools.length}</b><span>${t("hcSchools")}</span></div><div><b>10</b><span>${t("hcCats")}</span></div></div>` },
       { photo: "start", cls: "c-steel", title: t("hcSched"), sub: t("hcSchedSub"), body: `<div class="mini">${sched}</div>` },
       { photo: "champ", cls: "c-gold", title: t("hcChamps"), sub: t("hcChampsSub"), body: `<div class="mini">${champs}</div>`, note: t("hcPredNote") },
@@ -947,13 +1020,44 @@
     return `${list ? "" : `<p class="banner">${t("pvRosterFallback")}</p>`}<div class="board pv-schools">${html}</div><p class="muted-note">${t("pvSchNote")}</p>`;
   }
 
+  function cheerPool(pid, cat, info) {
+    const p = PEOPLE.get(pid), C = t("meCheers"), last = p.recs.at(-1), lastEd = LATEST.edition;
+    const keys = [];
+    if (last.edition === lastEd && last.cat === cat && last.rank === 1) keys.push("defend");
+    else if (last.edition === lastEd && last.cat === cat && last.rank <= 3) keys.push("top3");
+    else if (last.edition === lastEd && last.cat !== cat) keys.push("up");
+    else if (last.edition < lastEd) keys.push("back");
+    const pi = (info.prediction || []).findIndex((x) => x.pid === pid);
+    if (pi >= 0 && pi < 10 && !keys.includes("defend")) keys.push("top10");
+    if (pi >= 0 && info.prediction[pi].close) keys.push("close");
+    const pool = [...keys.flatMap((k) => C[k]), ...C.all];
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    // 有特別身份者（衛冕、升組等）第一句先用專屬打氣語
+    if (keys.length) { const first = C[keys[0]][Math.floor(Math.random() * C[keys[0]].length)]; pool.splice(pool.indexOf(first), 1); pool.unshift(first); }
+    return pool;
+  }
+  function meCard(pid, cat, info) {
+    const m = meEntry(pid), p = PEOPLE.get(pid);
+    if (!m || m.cat !== cat || !p || p.hidden) return "";
+    const pool = cheerPool(pid, cat, info);
+    return `<section class="me-card" id="meCard" data-pool="${esc(JSON.stringify(pool))}" data-i="0">
+      <div class="mc-tag">${esc(t("meHi"))}</div>
+      <div class="mc-head">${crest(m.school_zh, "md")}<span><b>${personName(p, false)}</b><small>${esc(school(m.school_zh))} · ${esc(catLong(cat))}${m.heat ? ` · ${esc(t("meHeat", m.heat))}` : ""}</small></span></div>
+      <div class="mc-times"><div><span>${t("meCall")}</span><b>${m.sch.call}</b></div><div><span>${m.heat && m.heat > 1 ? t("meStart1") : t("meStart")}</span><b>${m.sch.start}</b></div></div>
+      ${m.heat && m.heat > 1 ? `<p class="mc-note">${esc(t("meLater", m.heat))}</p>` : ""}
+      <p class="mc-cheer" id="meCheer" aria-live="polite">${esc(pool[0])}</p>
+      <button type="button" class="mc-more" id="meMore">${t("meMore")}</button>
+    </section>`;
+  }
+
   function renderPreview(params) {
     const race = DB.race, pv = DB.preview;
     if (!race || !pv) return renderNotFound();
     const cat = CATS.includes(params.get("c")) ? params.get("c") : "MA";
     const g = cat[0];
     const mode = params.get("v") === "pred" && pv.categories[cat].prediction ? "pred" : params.get("v") === "sch" ? "sch" : "past";
-    const go = (c, v = mode) => { location.replace("#/preview?c=" + c + (v !== "past" ? "&v=" + v : "")); };
+    const me = /^p\d{2}[MF][A-E]\d{3}$/.test(params.get("me") || "") && PEOPLE.has(params.get("me")) ? params.get("me") : "";
+    const go = (c, v = mode) => { location.replace("#/preview?c=" + c + (v !== "past" ? "&v=" + v : "") + (me && c === cat ? "&me=" + me : "")); };
     const ev = String(race.edition);
     // 學校名單需要出戰名單（公開函數，含秩序冊姓名）；未載入時先顯示有往績者，載入後重繪
     if (mode === "sch" && !ROSTERS.has(ev) && !PV_TRIED.has(ev)) { PV_TRIED.add(ev); loadRoster(ev).then(() => { if (location.hash.startsWith("#/preview")) renderPreview(params); }); }
@@ -995,6 +1099,7 @@
     const catBtns = (letters) => letters.split("").map((l) => `<button class="${cat === g + l ? "on" : ""}" data-c="${g + l}">${l}</button>`).join("");
     view.innerHTML = `
       <h1 class="page-title pv-title">${esc(t("pvTitleZh"))}<small lang="pt">${esc(t("pvTitlePt"))}</small></h1>
+      ${me ? meCard(me, cat, info) : ""}
       <div class="link-row"><a href="#/live">${t("lvGo")} ›</a><a href="#/live?demo=${LATEST.edition}">${t("lvDemo")} ›</a>
         <button class="lv-refresh" id="pvRefresh" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${t("lvRefresh")}</button></div>
       ${previewHero(race, pv)}
@@ -1015,12 +1120,18 @@
           ? `<span><b>${t("distSched")}</b>${m(dist)}</span><span><b>${t("distRules")}</b>${m(distRules)}</span><em>${t("distDiffer")}</em>`
           : `<span><b>${t("distSched")}</b>${m(dist)}</span><span><b>${t("distRules")}</b>${distRules ? m(distRules) : "-"}</span><em>${t("distSame")}</em>`}</div>
       </section>
+      ${fcCard()}
       <div class="board-head pv-head"><h2>${esc(mode === "pred" ? t("pdHead", (info.prediction || []).length, info.total) : mode === "sch" ? t("pvSchHead", race.schools.filter((x) => x.n && x.n[cat]).length, info.total) : t("pvKnown", info.starters.length, info.total))}</h2>
         <div class="mini-seg" role="tablist"><button role="tab" data-v="past" class="${mode === "past" ? "on" : ""}" aria-selected="${mode === "past"}">${t("pdPast")}</button><button role="tab" data-v="pred" class="${mode === "pred" ? "on" : ""}" aria-selected="${mode === "pred"}">${t("pdPred")}</button><button role="tab" data-v="sch" class="${mode === "sch" ? "on" : ""}" aria-selected="${mode === "sch"}">${t("pdSchools")}</button></div></div>
       ${mode === "pred" ? predictionBoard(info, cat) : mode === "sch" ? previewSchools(cat, info) : `${rows.length ? `<div class="board">${html}</div>` : `<p class="muted-note">${t("pvNone")}</p>`}
       ${info.unmatched ? `<p class="muted-note">${esc(t("pvNew", info.unmatched))}</p>` : ""}
       <p class="muted-note">${t("pvNote")}</p>`}`;
     view.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => go(cat, b.dataset.v));
+    if (me) {
+      view.querySelectorAll(`.pv-row[href="#/p/${me}"], .pd-row[href="#/p/${me}"]`).forEach((a) => a.classList.add("mine", "me-glow"));
+      const mc = $("#meCard");
+      if (mc) $("#meMore").onclick = () => { const pool = JSON.parse(mc.dataset.pool), i = (Number(mc.dataset.i) + 1) % pool.length; mc.dataset.i = i; $("#meCheer").textContent = pool[i]; };
+    }
     $("#pvRefresh").onclick = async () => { const b = $("#pvRefresh"); b.classList.add("busy"); b.disabled = true; await loadRoster(ev, true); if (location.hash.startsWith("#/preview")) renderPreview(params); };
     const car = $("#pvCarousel"), dots = [...($("#pvDots") || { children: [] }).children];
     if (car) car.addEventListener("scroll", () => { const i = Math.round(car.scrollLeft / (car.firstElementChild.offsetWidth + 12)); dots.forEach((d, j) => d.classList.toggle("on", j === i)); }, { passive: true });
@@ -1690,9 +1801,17 @@
         <span class="wx-champ">${champ ? fmt(champ.seconds) : "-"}<small>${t("champTime")}</small></span>
       </a>`;
     }).join("");
+    const f = fcNow();
+    const fcRow = f ? `<div class="wxrow fc-row">
+        <span class="yr">${t("fcRow")}<small>${t("edition", DB.race.edition)}</small></span>
+        <span class="wx-mid"><b>${to(f.temp_min, f.temp_max)}°C · ${lang === "zh" ? "濕度" : "RH"} ${f.rh_min}-${f.rh_max}%${f.rain ? " · " + t("wxRainY") : ""}</b>
+          <small>${esc(t("wxDayFmt", f.date))} · ${esc(fcSky(f))}</small>
+          <span class="wx-badge lv-${f.level}">${t("wx_" + f.level)} · ${esc(wxSlow(f))}</span></span>
+        <span class="wx-champ">-<small>${t("champTime")}</small></span>
+      </div>` : "";
     return `<div class="section-title" id="wx"><h2>${t("wxRecTitle")}</h2></div>
       <p class="muted-note" style="margin-top:-4px">${t("wxRecSub")}</p>
-      <div class="board">${rows}</div>
+      <div class="board">${fcRow}${rows}</div>
       <p class="muted-note">${t("wxPlannedFoot")}${t("wxNote")}</p>`;
   }
   function renderNotFound() { view.innerHTML = `<div class="wip"><h2>${t("notFound")}</h2><a class="btn" href="#/">${t("back")}</a></div>`; }
@@ -1815,8 +1934,8 @@
   // 每次都向伺服器確認資料是否更新（ETag），避免新舊檔案混用
   const get = (u) => fetch(u, { cache: "no-cache" });
   const opt = (u) => get(u).then((r) => r.ok ? r.json() : null).catch(() => null);
-  Promise.all([get("data/results.json").then((r) => r.json()), opt("data/distances.json"), opt("data/race48.json"), opt("data/preview48.json"), opt("data/crests.json"), opt("data/site.json"), opt("data/weather.json")]).then(([d, dist, race, pv, crests, site, weather]) => {
-    DB = d; DB.site = site || {}; DB.weather = weather;
+  Promise.all([get("data/results.json").then((r) => r.json()), opt("data/distances.json"), opt("data/race48.json"), opt("data/preview48.json"), opt("data/crests.json"), opt("data/site.json"), opt("data/weather.json"), opt("data/forecast48.json")]).then(([d, dist, race, pv, crests, site, weather, forecast]) => {
+    DB = d; DB.site = site || {}; DB.weather = weather; DB.forecast = forecast;
     DB = d; DB.distances = dist; DB.race = race; DB.preview = pv && pv.data_version === d.data_version ? pv : null; DB.crests = (crests && crests.images) || {}; derive(); deriveStatus();
     $("#srcLink").href = d.source;
     window.addEventListener("hashchange", route);

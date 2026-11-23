@@ -451,6 +451,77 @@ def test_preview_heat_badges(page):
     expect(page.locator(".pv-heat")).to_have_count(0)
 
 
+def _race_open():
+    import datetime
+    race = json.loads((ROOT / "docs/data/race48.json").read_text(encoding="utf-8"))
+    return datetime.date.fromisoformat(race["date"]) >= datetime.date.today(), race
+
+
+def test_athlete_race_button_and_glow_card(page):
+    """今屆出賽者：運動員頁有出賽按鈕（組別、分組、檢錄／起跑時間）→ 賽前預覽螢光提示卡、打氣語、名單行螢光"""
+    open_, race = _race_open()
+    if not open_:
+        pytest.skip("比賽日已過")
+    pv = json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"]
+    sch = {x["cat"]: x for x in race["schedule"]}
+    s = next(x for x in pv["MC"]["starters"] if x.get("heat") == "2")
+    go(page, f"#/p/{s['pid']}")
+    btn = page.locator(".me-race")
+    expect(btn).to_contain_text("男子C組 · 第 2 組")
+    expect(btn).to_contain_text(f"檢錄 {sch['MC']['call']}")
+    expect(btn).to_contain_text(sch["MC"]["start"])
+    btn.click()
+    page.wait_for_function("location.hash.includes('me=')")
+    card = page.locator("#meCard")
+    expect(card).to_be_visible()
+    expect(card.locator(".mc-times")).to_contain_text(sch["MC"]["call"])
+    expect(card.locator(".mc-note")).to_contain_text("第 2 組")
+    first = card.locator("#meCheer").inner_text()
+    assert first.strip()
+    page.click("#meMore")
+    assert card.locator("#meCheer").inner_text() != first
+    expect(page.locator(f'.pv-row.me-glow[href="#/p/{s["pid"]}"]')).to_have_count(1)
+    page.click('[data-v="pred"]')                     # 切換預測：保留提示卡
+    expect(page.locator("#meCard")).to_be_visible()
+    no_hscroll(page)
+    # 不分組的組別：沒有分組提示
+    a = pv["MA"]["starters"][0]
+    go(page, f"#/preview?c=MA&me={a['pid']}")
+    expect(page.locator("#meCard .mc-times")).to_contain_text(sch["MA"]["start"])
+    expect(page.locator("#meCard .mc-note")).to_have_count(0)
+    # 不合格式或非本組參賽者：不顯示
+    go(page, '#/preview?c=MA&me=x"]')
+    expect(page.locator("#meCard")).to_have_count(0)
+
+
+def test_athlete_without_entry_has_no_race_button(page):
+    pv = json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"]
+    entered = {s["pid"] for c in pv.values() for s in c["starters"]}
+    pid = next(r["pid"] for r in EDS[38]["categories"]["MA"]["individual"] if r["pid"] not in entered and not r.get("hidden"))
+    go(page, f"#/p/{pid}")
+    expect(page.locator(".hero h1")).to_be_visible()
+    expect(page.locator(".me-race")).to_have_count(0)
+
+
+def test_race_day_forecast(page):
+    """比賽當日天氣預測：賽前預覽、首頁資訊卡、紀錄頁歷屆比賽天氣（與往年同一格式）"""
+    open_, race = _race_open()
+    fc = json.loads((ROOT / "docs/data/forecast48.json").read_text(encoding="utf-8"))
+    assert fc["date"] == race["date"] and fc["source"].startswith("澳門地球物理氣象局")
+    if not open_ or not fc.get("available"):
+        pytest.skip("沒有有效預報")
+    assert fc["temp_min"] <= fc["temp_max"] and fc["rh_min"] <= fc["rh_max"] and fc["level"] in ("good", "mild", "hard", "severe")
+    rng = f"{fc['temp_min']}-{fc['temp_max']}°C"
+    go(page, "#/preview?c=MA")
+    expect(page.locator(".wx-fc summary")).to_contain_text(rng)
+    page.click(".wx-fc summary")
+    expect(page.locator(".wx-fc")).to_contain_text("地球物理氣象局七天天氣預報")
+    expect(page.locator("#pvCarousel .hero-card .hc-fc")).to_contain_text(f"{fc['temp_min']}–{fc['temp_max']}°C")
+    go(page, "#/records?c=MA&go=wx")
+    expect(page.locator(".wxrow.fc-row")).to_contain_text("預測")
+    no_hscroll(page)
+
+
 # ---------- 第六輪：運動員／學校名錄、互相連結、比賽天氣 ----------
 WX = json.loads((ROOT / "docs/data/weather.json").read_text(encoding="utf-8"))
 
@@ -509,7 +580,7 @@ def test_weather_on_rank_and_records(page):
     page.click(".wx summary")
     expect(page.locator(".wx .wx-note")).to_contain_text("天雨延期")
     go(page, "#/records?c=MA&go=wx")
-    expect(page.locator(".wxrow")).to_have_count(len(DATA["editions"]))
+    expect(page.locator(".wxrow:not(.fc-row)")).to_have_count(len(DATA["editions"]))   # 另加今屆預測一行（比賽日前）
     no_hscroll(page)
 
 

@@ -1,0 +1,26 @@
+{
+ "_note": "第 48 屆比賽當日天氣預測，取自澳門地球物理氣象局七天天氣預報；跑步影響以預報最高／最低氣溫及濕度的平均值粗略估算。",
+ "source": "澳門地球物理氣象局七天天氣預報",
+ "source_en": "Macao Meteorological and Geophysical Bureau 7-day forecast",
+ "source_url": "https://www.smg.gov.mo/",
+ "date": "2026-11-29",
+ "published": "2026-11-23 15:00",
+ "generated": "2026-11-23",
+ "available": true,
+ "status": "01",
+ "temp_min": 18,
+ "temp_max": 25,
+ "rh_min": 45,
+ "rh_max": 80,
+ "desc_zh": "天氣乾燥。大致天晴。吹3至4級北至東北風。",
+ "desc_en": "Dry. Mainly fine. Force 3 to 4 north to northeasterly winds.",
+ "wind_zh": "吹3至4級北至東北風",
+ "wind_en": "Force 3 to 4 north to northeasterly winds",
+ "rain": false,
+ "run_index": 128,
+ "slow_pct": [
+  1,
+  2
+ ],
+ "level": "mild"
+}

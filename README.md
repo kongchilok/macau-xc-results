@@ -16,6 +16,7 @@
 | `docs/data/race48.json` | 第 48 屆賽程、距離（秩序冊／章程）、各校人數 |
 | `docs/data/crests.json` | 真校徽圖片對照（代碼 → `img/crest/…`），未登記者自動生成盾形徽章 |
 | `docs/data/site.json` | 網站設定（移除申請渠道） |
+| `scripts/forecast.py` | 第 48 屆比賽當日天氣預測（地球物理氣象局七天天氣預報 XML）→ `docs/data/forecast48.json`；比賽日不在七天內時輸出 `available: false` |
 | `scripts/weather.py` | 歷屆比賽當日天氣（澳門國際機場 METAR，經 Ogimet）→ `docs/data/weather.json`；比賽日期及其來源寫在腳本內 |
 | `docs/` | 網站本體（GitHub Pages 發布此資料夾） |
 
@@ -29,6 +30,7 @@ python -P -X utf8 scripts/check.py docs/data/results.json
 python -P -X utf8 scripts/preview.py docs/data/results.json docs/data/race48.json private/startlist48.csv docs/data/preview48.json private/preview48_review.csv
 python -P -X utf8 scripts/predict.py docs/data/results.json docs/data/preview48.json   # 預測排名＋回測（須在 preview.py 之後）
 python -P -X utf8 scripts/weather.py docs/data/weather.json   # 新增一屆時先在 RACES 加入比賽日期
+python -P -X utf8 scripts/forecast.py docs/data/race48.json docs/data/forecast48.json   # 比賽前每日重跑一次再 push（預報每日更新；瀏覽器不能直接讀氣象局 XML）
 ```
 
 學生編號（pid）固定為「第一次出賽的屆數＋組別＋名次」（如 `p47MB002`），重建資料不會改變，連結與隱藏清單長期有效。
@@ -69,6 +71,8 @@ python -m http.server 8765 --directory docs
 
 網站設 `noindex` 及 `robots.txt` 禁止搜尋引擎收錄，頁尾有非官方聲明及移除申請連結。
 
+第 48 屆賽前預覽（學校名單）及即時成績按大會秩序冊顯示參賽者姓名、學校及分組（`xc_live_roster_public`，不含號碼布）；私隱頁文字已按此說明。
+
 ## 熱門人氣（Supabase）
 
 - 資料庫結構：`supabase/001_xc_views.sql`（`xc_pids` 學生名單、`xc_views` 瀏覽次數、`xc_hit()` 唯一寫入函數，每次 +1、只接受名單內編號；公眾只可讀）
@@ -99,3 +103,13 @@ python -m http.server 8765 --directory docs
 - 三個版本：冠軍（金框＋皇冠）、獎牌（銀／銅框）、參賽紀念（綠框，標題「歷屆成績」）
 - QR 碼連去該運動員頁面（`qrcode-generator@1.4.4`，按下匯出時才載入；載入失敗則不畫 QR 碼）
 - 只用已公開資料；檔名「姓名_榮譽卡.png」；手機支援「分享」存入相簿
+
+## 賽前預覽補充（第 48 屆）
+
+- 首頁宣傳海報：每次進入首頁彈出（`showPromo`），按海報進入賽前預覽；右上角關閉按鈕 3 秒後才可按；比賽日之後不再顯示。測試以 `window.XC_NO_PROMO = true` 關閉
+- 資訊卡次序：比賽日（含天氣預測一行）→ 時間表 → 各組冠軍預測 → 人氣運動員 → 新晉焦點
+- 男C／女C：往績、預測、資訊卡以 `C1`–`C3` 標示分組
+- 學校名單按預測團體名次排列：每校取預測名次最前的 n 人（A、B 組 5 人，C、D、E 組 4 人）相加；未能預測的隊員當作排在全部已預測者之後；不足 n 人者排最後
+- 運動員頁「今屆出賽」按鈕（只限已配對往績者）：組別、分組、檢錄及起跑時間 → `#/preview?c=<組別>&me=<編號>`，頂部螢光提示卡（檢錄／起跑時間、分組說明、按身份挑選的打氣語，可「換一句」）及名單行螢光
+- 時間表只有每組第 1 組的起跑時間；第 2 組起顯示「第 1 組出發後各組隨即順序起跑」
+- 比賽當日天氣預測：賽前預覽、首頁比賽日卡、紀錄頁「歷屆比賽天氣」最頂一行；跑步影響按預報最高／最低氣溫及濕度平均值估算（算法同歷屆）
