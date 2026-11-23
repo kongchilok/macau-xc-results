@@ -16,7 +16,7 @@
   const catLabel = (c) => `${c[0] === "M" ? "男" : "女"}${c[1]}`;
   const PRACTICE = new URLSearchParams(location.search).has("practice");
 
-  let sb = null, RACE = null, RES = null, SCHOOL = new Map(), NAME = new Map(), ROSTER = new Map();
+  let PRED = {}, sb = null, RACE = null, RES = null, SCHOOL = new Map(), NAME = new Map(), ROSTER = new Map();
   let offset = 0, rev = 0, bibBuf = "";
   const entries = new Map(), heats = new Map();
   let queue = PRACTICE ? [] : store.get("xc-live-queue", []);
@@ -34,10 +34,11 @@
     for (const [zh, s] of Object.entries(res.schools)) if (s.abbr) SCHOOL.set(s.abbr, zh);
     for (const s of race.schools) SCHOOL.set(s.abbr, s.zh);
     for (const e of res.editions) for (const c of Object.values(e.categories)) for (const r of c.individual) if (!r.hidden) NAME.set(r.pid, r.name_zh || r.name_pt);
-    if (!PRACTICE) sb = supabase.createClient(site.views.url, site.views.key, { auth: { persistSession: true, autoRefreshToken: true } });
+    sb = supabase.createClient(site.views.url, site.views.key, { auth: { persistSession: true, autoRefreshToken: true } });
+    try { PRED = (await fetch("data/preview48.json", { cache: "no-cache" }).then((r) => r.json())).categories || {}; } catch (e) { PRED = {}; }
   }
   const cats = () => RACE.schedule.slice().sort((a, b) => a.start.localeCompare(b.start)).map((x) => x.cat).filter((c) => LIVE_CATS.includes(c));
-  const heatN = (cat) => PRACTICE ? 1 : (RACE.schedule.find((x) => x.cat === cat) || {}).heats || 1;
+  const heatN = (cat) => PRACTICE && !practice.real ? 1 : (RACE.schedule.find((x) => x.cat === cat) || {}).heats || 1;
   const lapsN = (cat = st.cat) => XCLive.lapsOf(RACE, cat);
   const gapSec = (cat = st.cat) => (XCLive.MIN_GAP[cat] || 60) / (PRACTICE ? practice.speed : 1);
   const schoolsIn = (cat) => RACE.schools.filter((s) => s.n && s.n[cat]).sort((a, b) => b.n[cat] - a.n[cat] || a.abbr.localeCompare(b.abbr));
@@ -65,7 +66,7 @@
     setInterval(syncClock, 60000);
     keepAwake();
   }
-  function showApp() { $("#login").hidden = true; $("#app").hidden = false; $("#logout").hidden = PRACTICE; }
+  function showApp() { $("#login").hidden = true; $("#app").hidden = false; $("#logout").hidden = PRACTICE; document.body.classList.add("app-on"); }
   function startTimers() { setInterval(tickClock, 100); setInterval(tickEta, 1000); }
 
   /* ---------- 時差校正：取往返時間最短的一次 ---------- */
@@ -149,13 +150,26 @@
 
   /* ---------- 組別／分組 ---------- */
   const heatRow = (cat = st.cat, heat = st.heat) => heats.get(`${cat}|${heat}`) || { event: st.event, cat, heat, start_ms: null, status: "ready" };
+  // 組別及分組：同一時間只有一組比賽，以一個下拉選單選擇（按賽程次序；男C、女C 分組逐一列出）
+  const grpName = (cat, heat) => `${catLabel(cat)}${heatN(cat) > 1 ? ` 第 ${heat} 組` : ""}`;
   function renderBar() {
-    $("#cats").innerHTML = cats().map((c) => { const hs = Array.from({ length: heatN(c) }, (_, i) => heatRow(c, i + 1).status); const s = hs.every((x) => x === "done") ? "done" : hs.some((x) => x === "running") ? "running" : "ready";
-      return `<button role="tab" class="${c === st.cat ? "on" : ""}" data-cat="${c}"><i class="dot ${s}"></i>${catLabel(c)}<small>${lapsN(c)}圈</small></button>`; }).join("");
-    const n = heatN(st.cat);
-    $("#heats").innerHTML = n > 1 ? Array.from({ length: n }, (_, i) => `<button class="${st.heat === i + 1 ? "on" : ""}" data-heat="${i + 1}">第 ${i + 1} 組</button>`).join("") : "";
-    $("#cats").querySelectorAll("[data-cat]").forEach((b) => b.onclick = () => { st.cat = b.dataset.cat; st.heat = 1; lockOrder = []; save(); clearBib(); renderAll(); });
-    $("#heats").querySelectorAll("[data-heat]").forEach((b) => b.onclick = () => { st.heat = Number(b.dataset.heat); lockOrder = []; save(); renderAll(); });
+    if (!cats().includes(st.cat)) st.cat = cats()[0];
+    if (!(st.heat >= 1 && st.heat <= heatN(st.cat))) st.heat = 1;
+    const opts = [];
+    for (const c of cats()) for (let h = 1; h <= heatN(c); h++) {
+      const s = heatRow(c, h).status;
+      const mark = s === "running" ? "▶ " : s === "done" ? "✓ " : "";
+      opts.push(`<option value="${c}|${h}" ${c === st.cat && h === st.heat ? "selected" : ""}>${mark}${grpName(c, h)}（${lapsN(c)} 圈）${s === "running" ? " · 進行中" : s === "done" ? " · 已完成" : ""}</option>`);
+    }
+    const sel = $("#grp");
+    if (sel.dataset.h !== opts.join("")) { sel.innerHTML = opts.join(""); sel.dataset.h = opts.join(""); }
+    sel.value = `${st.cat}|${st.heat}`;
+    $("#grpLabel").textContent = `${grpName(st.cat, st.heat)} · ${lapsN()} 圈`;
+  }
+  function chooseGroup(v) {
+    const [c, h] = String(v || "").split("|");
+    if (!cats().includes(c)) { renderBar(); return; }
+    st.cat = c; st.heat = Number(h) || 1; lockOrder = []; save(); clearBib(); renderAll();
   }
   const mmss = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
   function tickClock() {
@@ -167,7 +181,7 @@
       const left = XCLive.CUTOFF[st.cat] * 1000 / (PRACTICE ? practice.speed : 1) - ms;
       cut.textContent = left > 0 ? `距達標時間 ${mmss(left)}` : "已到達標時間：停止記錄";
       cut.className = left <= 0 ? "over" : left < 60000 ? "warn" : "";
-    } else { el.textContent = h.status === "done" ? "已完成" : "0:00.0"; cut.textContent = h.status === "done" ? "如需補錄，按「重新開放」" : `${catLabel(st.cat)} 共 ${lapsN()} 圈 · 按「開賽計時」開始`; cut.className = ""; }
+    } else { el.textContent = h.status === "done" ? "已完成" : "0:00.0"; cut.textContent = h.status === "done" ? "如需補錄，按「重新開放」" : "按「開賽計時」開始"; cut.className = ""; }
     if (PRACTICE) practiceTick();
   }
   function renderClockBtns() {
@@ -285,19 +299,23 @@
   function firstSlot() { return curEntries().filter((e) => !e.deleted && XCLive.isSlot(e)).sort((a, b) => a.seq - b.seq)[0]; }
   function runnerOf(bib) { return ranked().runners.find((x) => x.key === `b${bib}`); }
   // r：名單一行（bib, abbr, pid, name）；回傳 true＝已記錄
+  let lastReason = "";
+  // opt.voice：語音輸入，不彈確認框；不記錄時以 lastReason 說明原因
   function recordPass(r, tapped, opt = {}) {
     const h = heatRow();
     const run = runnerOf(r.bib);
-    if (run && run.fin && !opt.finish) { flash(`${r.bib} 已完賽（${run.laps} 圈），不再記圈`, true); buzz(); return false; }
+    lastReason = "";
+    if (run && run.fin && !opt.finish) { lastReason = "已完賽，未記錄"; flash(`${r.bib} 已完賽（${run.laps} 圈），不再記圈`, true); buzz(); return false; }
     let force = false;
     if (run) {
       const gap = (tapped - run.last.at_ms) / 1000;
       if (gap < gapSec()) {
+        if (opt.voice) { lastReason = `${Math.round(gap)} 秒前剛記錄，疑似重複，已略過`; flash(`${r.bib} 疑似重複，已略過`, true); return false; }
         if (!confirm(`${r.bib} 在 ${Math.round(gap)} 秒前剛記錄第 ${run.laps} 圈，疑似重複。\n仍要再記一圈？`)) { flash("已略過（疑似重複）", true); return false; }
         force = true;
       }
     }
-    if (h.status === "ready" && !confirm("本組尚未按「開賽計時」，仍要記錄？（將沒有用時）")) return false;
+    if (h.status === "ready" && (opt.voice || !confirm("本組尚未按「開賽計時」，仍要記錄？（將沒有用時）"))) { lastReason = "本組尚未開賽，未記錄"; return false; }
     const slot = firstSlot();
     const base = slot || { id: uuid(), event: st.event, cat: st.cat, heat: st.heat, at_ms: tapped, seq: nextSeq(), deleted: false };
     const lap = (run ? run.laps : 0) + 1;
@@ -305,6 +323,7 @@
     act(strip({ ...base, bib: Number(r.bib), abbr: r.abbr || "?", pid: r.pid || null, name: r.name || null, force: force || !!base.force, fin: !!opt.finish }),
       `${r.bib} ${fin ? "完賽" : `第 ${lap} 圈`}`);
     flash(`${r.bib} ${fin ? "完賽 ✓" : `第 ${lap} 圈`}${slot ? "（填入空位）" : ""}`);
+    lastReason = fin ? "完賽" : `第 ${lap} 圈`;
     buzz();
     return true;
   }
@@ -348,19 +367,32 @@
     const R = ranked();
     const on = R.runners.filter((r) => !r.fin), fin = R.runners.filter((r) => r.fin);
     const all = curEntries();
-    $("#listTabs").innerHTML = [["course", `跑道上 ${on.length}`], ["fin", `已完賽 ${fin.length}`], ["all", `全部紀錄 ${all.filter((e) => !e.deleted).length}`]]
+    $("#listTabs").innerHTML = [["grid", "號碼格"], ["course", `跑道上 ${on.length}`], ["fin", `已完賽 ${fin.length}`], ["all", `紀錄 ${all.filter((e) => !e.deleted).length}`]]
       .map(([k, l]) => `<button class="${st.tab === k ? "on" : ""}" data-tab="${k}">${l}</button>`).join("");
     $("#listTabs").querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { st.tab = b.dataset.tab; save(); renderList(); });
     $("#lockBtn").hidden = st.tab !== "course";
+    $("#bubbles").classList.toggle("off", st.tab === "grid"); // 號碼格已包含全部號碼，不再顯示泡泡
+    document.body.classList.toggle("grid-mode", st.tab === "grid"); // 號碼格取代數字鍵，騰出位置
     $("#lockBtn").textContent = st.lock ? "🔒 已鎖定排序" : "鎖定排序";
     $("#lockBtn").classList.toggle("on", st.lock);
+    renderBubbles(R);
     $("#slotNote").hidden = !R.slots.length;
     $("#slotNote").textContent = `有 ${R.slots.length} 個空位待補號碼：下一個輸入或按下的運動員會填入最早的空位。`;
     const L = lapsN();
     const box = $("#list");
     const keep = box.dataset.tab === st.tab ? box.scrollTop : 0; // 重繪時保留捲動位置（按完一行不會跳回頂）
     box.dataset.tab = st.tab;
-    if (st.tab === "course") {
+    if (st.tab === "grid") {
+      // 號碼格：本組（分組）全部號碼，按預測排名排列（其餘按號碼）；按一下記一圈
+      const order = new Map(predictedBibs().map((r, i) => [String(r.bib), i]));
+      const byKey = new Map(R.runners.map((x) => [x.key, x]));
+      const list = inCat().sort((a, b) => (order.has(String(a.bib)) ? order.get(String(a.bib)) : 1e4) - (order.has(String(b.bib)) ? order.get(String(b.bib)) : 1e4) || a.bib - b.bib);
+      box.className = "grid";
+      box.innerHTML = list.length ? list.map((r) => { const x = byKey.get(`b${r.bib}`), n = x ? x.laps : 0;
+        return `<li class="${x && x.fin ? "fin" : n ? "run" : ""}"><button data-gb="${r.bib}"><b>${r.bib}</b><span>${esc(personOf(r) || r.abbr)}</span><i>${x && x.fin ? "完賽" : `${n}／${L}`}</i></button></li>`; }).join("")
+        : `<li class="empty">${ROSTER.size ? "本組未有號碼布名單。" : "未載入號碼布名單。"}</li>`;
+      box.querySelectorAll("[data-gb]").forEach((b) => b.onclick = () => { const r = ROSTER.get(b.dataset.gb); if (r) recordPass(r, now()); });
+    } else if (st.tab === "course") {
       let list = on.map((r) => ({ r, eta: XCLive.eta(r, R.hs) }));
       list.sort((a, b) => a.eta - b.eta || a.r.last.seq - b.r.last.seq);
       if (st.lock) {
@@ -406,7 +438,31 @@
     }
     box.scrollTop = keep;
     $("#undoBtn").disabled = !undoLog.length;
-    $("#undoBtn").textContent = undoLog.length ? `↶ 撤銷：${undoLog[undoLog.length - 1].label}` : "↶ 撤銷上一下";
+    $("#undoBtn").textContent = undoLog.length ? `↶ 撤銷 ${undoLog[undoLog.length - 1].label}` : "↶ 撤銷";
+  }
+  /* 第一圈快速記錄：本組（分組）預測排名最前、尚未記第一圈的 5 人以泡泡顯示，按一下即記第一圈
+     預測來自賽前預覽（preview48.json）：有往績者以學生編號對應名單，其餘以姓名及學校對應 */
+  function predictedBibs() {
+    const pred = (PRED[st.cat] || {}).prediction || [];
+    const list = inCat();
+    const byPid = new Map(list.filter((r) => r.pid).map((r) => [r.pid, r]));
+    const out = [];
+    for (const x of pred) {
+      const r = x.pid ? byPid.get(x.pid) : list.find((y) => y.name && y.name === x.name_zh && SCHOOL.get(y.abbr) === x.school_zh);
+      if (r && !out.includes(r)) out.push(r);
+    }
+    return out;
+  }
+  function renderBubbles(R) {
+    const box = $("#bubbles"), h = heatRow();
+    const seen = new Set(R.runners.map((r) => r.key));
+    const top = h.status === "done" ? [] : predictedBibs().filter((r) => !seen.has(`b${r.bib}`)).slice(0, 5);
+    box.hidden = !top.length;
+    const html = top.map((r) => `<button data-pb="${r.bib}"><b>${r.bib}</b><span>${esc(personOf(r) || SCHOOL.get(r.abbr) || r.abbr)}</span></button>`).join("");
+    if (box.dataset.h !== html) {
+      box.innerHTML = `<small>預測前列 · 按一下記第 1 圈</small>${html}`; box.dataset.h = html;
+      box.querySelectorAll("[data-pb]").forEach((b) => b.onclick = () => { const r = ROSTER.get(b.dataset.pb); if (r) recordPass(r, now()); });
+    }
   }
   // 每秒更新「預計到達」倒數（不重排，避免清單跳動）
   function tickEta() {
@@ -481,16 +537,41 @@
     });
   }
 
-  /* ---------- 練習模式：以第 47 屆成績模擬多圈比賽 ---------- */
-  const practice = { speed: 2, sims: {}, };
+  /* ---------- 練習模式：不寫入資料庫 ----------
+     已在此瀏覽器登入並獲授權：使用今屆真實號碼布及姓名（演練資料 event "test"），按分組練習；
+     各人的模擬時間取自第 47 屆同組成績分布（按預測排名先後分配）
+     未登入：以第 47 屆成績及示範號碼示範 */
+  const practice = { speed: 2, sims: {}, real: false };
   const P_BASE = { MA: 1000, MB: 1100, FB: 1200, MC: 1300, FC: 1400, FA: 1500 };
-  function practiceSetup() {
+  async function practiceSetup() {
     const ed = RES.editions.find((e) => e.edition === 47);
-    for (const cat of LIVE_CATS) {
-      ed.categories[cat].individual.forEach((r, j) => {
-        const bib = P_BASE[cat] + j + 1;
-        ROSTER.set(String(bib), { bib, cat, heat: null, abbr: abbrOfZh(r.school_zh), pid: r.hidden ? null : r.pid, name: r.hidden ? null : r.name_zh || r.name_pt, seconds: r.seconds });
-      });
+    let real = null;
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data.session) {
+        const ok = await sb.rpc("xc_is_admin");
+        if (ok.data) { const r = await sb.from("xc_live_roster").select("bib,cat,heat,abbr,pid,name").eq("event", "test").lte("bib", 999).limit(5000); if (!r.error && r.data.length) real = r.data; }
+      }
+    } catch (e) { real = null; }
+    if (real) {
+      practice.real = true;
+      let pv = {};
+      try { pv = (await fetch("data/preview48.json", { cache: "no-cache" }).then((x) => x.json())).categories || {}; } catch (e) { /* 沒有預測時按號碼次序 */ }
+      for (const cat of LIVE_CATS) {
+        const times = ed.categories[cat].individual.map((r) => r.seconds).sort((a, b) => a - b);
+        const order = new Map(((pv[cat] || {}).prediction || []).filter((x) => x.pid).map((x, i) => [x.pid, i]));
+        const mine = real.filter((r) => r.cat === cat).sort((a, b) => (order.has(a.pid) ? order.get(a.pid) : 999) - (order.has(b.pid) ? order.get(b.pid) : 999) || ((a.bib * 7919) % 101) - ((b.bib * 7919) % 101));
+        mine.forEach((r, i) => { const t0 = times[Math.round(i * (times.length - 1) / Math.max(1, mine.length - 1))]; ROSTER.set(String(r.bib), { ...r, seconds: t0 + ((r.bib * 37) % 9) - 4 }); });
+      }
+      $("#pSrc").textContent = "今屆真實名單";
+    } else {
+      for (const cat of LIVE_CATS) {
+        ed.categories[cat].individual.forEach((r, j) => {
+          const bib = P_BASE[cat] + j + 1;
+          ROSTER.set(String(bib), { bib, cat, heat: null, abbr: abbrOfZh(r.school_zh), pid: r.hidden ? null : r.pid, name: r.hidden ? null : r.name_zh || r.name_pt, seconds: r.seconds });
+        });
+      }
+      $("#pSrc").textContent = "第 47 屆示範名單（登入後可用今屆名單）";
     }
     $("#event").hidden = true;
     $("#practiceBar").hidden = false;
@@ -499,11 +580,11 @@
   }
   function practiceStart(t0) {
     const L = lapsN();
-    practice.sims[st.cat] = inCat().map((r, j) => ({ bib: r.bib, at: XCLive.simSplits(r.seconds, L, j + 1).map((ms) => t0 + ms / practice.speed) }));
+    practice.sims[`${st.cat}|${st.heat}`] = inCat().map((r, j) => ({ bib: r.bib, at: XCLive.simSplits(r.seconds, L, j + 1).map((ms) => t0 + ms / practice.speed) }));
     $("#pSpeed").disabled = true;
   }
   function practiceTick() {
-    const sim = practice.sims[st.cat], strip_ = $("#passing"), score = $("#pScore");
+    const sim = practice.sims[`${st.cat}|${st.heat}`], strip_ = $("#passing"), score = $("#pScore");
     if (!sim) { strip_.innerHTML = `<span class="muted">按「開賽計時」後，經過終點的號碼會在這裏出現（時間已按倍速壓縮）。</span>`; score.textContent = ""; return; }
     const t = now();
     const passing = [];
@@ -521,6 +602,75 @@
     if (strip_.dataset.h !== html) { strip_.innerHTML = html; strip_.dataset.h = html; }
     score.textContent = `應記 ${due} · 漏記 ${miss} · 多記 ${extra}`;
     score.className = miss || extra ? "warn" : "ok";
+  }
+
+  /* ---------- 語音輸入（試驗）----------
+     瀏覽器內置語音識別（Android Chrome 經 Google、iPhone Safari 經 Apple 聽寫）；先用粵語 yue-Hant-HK，不支援時改用 zh-HK
+     只在目前組別／分組名單內配對；講「撤銷」或「取消」＝撤銷上一下
+     時間以識別完成時計（較實際經過約遲 0.5 至 2 秒） */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voice = { on: false, rec: null, lang: "yue-Hant-HK", log: [] };
+  function voiceInit() {
+    const b = $("#micBtn");
+    b.hidden = false;
+    if (!SR) { b.disabled = true; b.title = "此瀏覽器不支援語音輸入"; return; }
+    b.onclick = () => (voice.on ? voiceStop() : voiceStart());
+  }
+  function voiceStart() {
+    let rec;
+    try { rec = new SR(); } catch (e) { voiceLog("未能啟動語音識別", "bad"); return; }
+    rec.lang = voice.lang; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 3;
+    rec.onresult = (ev) => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const r = ev.results[i];
+        if (r.isFinal) voiceHandle([...r].map((a) => a.transcript), now());
+        else { const w = $("#who"); w.textContent = `聽到：${r[0].transcript}`; w.className = "who"; }
+      }
+    };
+    rec.onerror = (e) => {
+      if (e.error === "language-not-supported" && voice.lang !== "zh-HK") { voice.lang = "zh-HK"; voiceLog("此裝置不支援 yue-Hant-HK，改用 zh-HK", "bad"); try { rec.abort(); } catch (x) { /* 已停止 */ } setTimeout(() => { if (voice.on) { voice.on = false; voiceStart(); } }, 300); }
+      else if (e.error === "not-allowed" || e.error === "service-not-allowed") { voiceLog("未獲准使用麥克風：請在瀏覽器設定容許", "bad"); voiceStop(); }
+      else if (e.error !== "no-speech" && e.error !== "aborted") voiceLog(`語音識別錯誤：${e.error}`, "bad");
+    };
+    rec.onend = () => { if (voice.on && voice.rec === rec) { try { rec.start(); } catch (x) { /* 稍後再試 */ } } };
+    voice.rec = rec; voice.on = true;
+    try { rec.start(); } catch (e) { voiceLog("未能啟動語音識別", "bad"); voice.on = false; }
+    renderVoice();
+  }
+  function voiceStop() { voice.on = false; const r = voice.rec; voice.rec = null; try { r && r.stop(); } catch (e) { /* 已停止 */ } renderVoice(); showBib(); }
+  function voiceLog(msg, cls = "ok", cand) { voice.log.unshift({ msg, cls, cand, at: Date.now() }); voice.log = voice.log.slice(0, 20); renderVoice(); }
+  function voiceHandle(alts, t) {
+    const said = alts[0] || "";
+    if (alts.some((a) => /撤銷|取消/.test(a))) { undo(); voiceLog(`「${esc(said)}」→ 撤銷上一下`); return; }
+    const valid = new Set(inCat().map((r) => String(r.bib)));
+    let best = null;
+    for (const a of alts) {
+      const groups = XCLive.spokenGroups(a);
+      if (!groups.length) continue;
+      const segs = groups.map((g) => ({ g, ...XCLive.segmentBibs(g, valid) }));
+      const c = { a, segs, ok: segs.every((x) => x.ok) };
+      if (c.ok) { best = c; break; }
+      if (!best) best = c;
+    }
+    if (!best) { voiceLog(`「${esc(said)}」→ 聽不到號碼`, "bad"); return; }
+    for (const sg of best.segs) {
+      if (sg.ok) {
+        for (const bib of sg.ok) {
+          const r = ROSTER.get(bib), ok = recordPass(r, t, { voice: true });
+          voiceLog(`「${esc(best.a)}」→ ${bib} ${esc(personOf(r) || "")} ${lastReason}${sg.guess ? "（拆分屬推斷）" : ""}`, ok ? (sg.guess ? "warn" : "ok") : "bad");
+        }
+      } else if (sg.cand.length) voiceLog(`「${esc(best.a)}」→ 無法確定號碼，請選擇：`, "warn", sg.cand);
+      else { const o = ROSTER.get(sg.g); voiceLog(`「${esc(best.a)}」→ ${sg.g} ${o ? `屬${where(o)}，未記錄` : "名單內沒有此號碼"}`, "bad"); }
+    }
+  }
+  function renderVoice() {
+    const b = $("#micBtn"), box = $("#vlog");
+    b.classList.toggle("on", voice.on);
+    b.setAttribute("aria-pressed", voice.on);
+    box.hidden = !voice.on && !voice.log.length;
+    box.innerHTML = `<div class="vh"><b>${voice.on ? "收聽中" : "語音已停止"}</b><small>${voice.lang} · 時間以識別完成時計</small></div>` +
+      voice.log.slice(0, 4).map((x) => `<div class="vl ${x.cls}">${x.msg}${x.cand ? x.cand.map((c) => `<button data-vc="${c}">${c}</button>`).join("") : ""}</div>`).join("");
+    box.querySelectorAll("[data-vc]").forEach((el) => el.onclick = () => { const r = ROSTER.get(el.dataset.vc); if (r) { const ok = recordPass(r, now(), { voice: true }); voiceLog(`已選 ${el.dataset.vc} → ${lastReason}`, ok ? "ok" : "bad"); } });
   }
 
   /* ---------- 對話框 ---------- */
@@ -545,6 +695,8 @@
   $("#markBtn").onclick = markFinish;
   $("#schoolBtn").onclick = bySchool;
   $("#undoBtn").onclick = undo;
+  $("#grp").onchange = (e) => chooseGroup(e.target.value);
+  voiceInit();
   $("#lockBtn").onclick = () => { st.lock = !st.lock; save(); renderList(); };
   $("#startBtn").onclick = startHeat;
   $("#doneBtn").onclick = toggleDone;
@@ -556,7 +708,7 @@
   window.addEventListener("beforeunload", (e) => { if (queue.length) { e.preventDefault(); e.returnValue = ""; } });
 
   loadStatic().then(async () => {
-    if (PRACTICE) { practiceSetup(); showApp(); renderAll(); startTimers(); return; }
+    if (PRACTICE) { await practiceSetup(); showApp(); renderAll(); startTimers(); return; }
     const { data } = await sb.auth.getSession();
     if (data.session) await afterLogin();
   }).catch((e) => { console.error(e); $("#loginMsg").textContent = "資料載入失敗，請檢查網絡後重新整理。"; });

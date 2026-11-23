@@ -125,4 +125,11 @@ const B = (entries, opt) => L.buildRunners(entries, H, { laps: 5, minGap: 119, .
   // 分組未完成：不判斷鎖定／出局
   out.title3 = tr(B, { 甲: 4, 乙: 4, 丙: 4 }, true);
 }
+// 2k. 語音輸入：口語號碼解析及拆分
+{
+  const cases = ["四零五", "四百零五", "六十", "三十五", "一百二", "廿三", "二百五", "405, 353", "4 0 5", "四零五，三五三", "十二號", "三五三 六十", "啊"];
+  out.spoken = cases.map((c) => L.spokenGroups(c));
+  const v = new Set(["405", "353", "60", "40", "5", "35"]);
+  out.seg = [L.segmentBibs("405353", v), L.segmentBibs("4035", v), L.segmentBibs("405", v), L.segmentBibs("999", v)];
+}
 process.stdout.write(JSON.stringify(out));

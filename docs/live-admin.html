@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="live-admin.css?v=20261123d">
+<link rel="stylesheet" href="live-admin.css?v=20261124d">
 </head>
 <body>
 <header class="top">
@@ -28,7 +28,7 @@
   <button id="loginBtn" class="primary">登入</button>
   <p id="loginMsg" class="msg" role="alert"></p>
   <hr>
-  <a class="practice-link" href="live-admin.html?practice=1">練習模式（不需登入，以第 47 屆成績模擬多圈比賽）›</a>
+  <a class="practice-link" href="live-admin.html?practice=1">練習模式（不寫入資料庫；已登入者使用今屆真實名單，否則以第 47 屆成績示範）›</a>
 </section>
 
 <!-- 主畫面 -->
@@ -38,17 +38,16 @@
       <option value="48">正式（第 48 屆）</option>
       <option value="test">演練（不公開）</option>
     </select>
-    <div id="cats" class="cats" role="tablist" aria-label="組別"></div>
-    <div id="heats" class="heats" aria-label="分組"></div>
+    <select id="grp" aria-label="組別及分組"></select>
   </section>
 
   <section id="practiceBar" class="practice" hidden>
-    <div class="p-head"><b>練習模式</b><label class="p-speed">倍速<select id="pSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label><span id="pScore"></span></div>
+    <div class="p-head"><b>練習模式</b><small id="pSrc"></small><label class="p-speed">倍速<select id="pSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label><span id="pScore"></span></div>
     <div id="passing" class="passing" aria-live="polite"></div>
   </section>
 
   <section class="clock">
-    <div><b id="clock">0:00.0</b><small id="cut"></small></div>
+    <div><span id="grpLabel" class="grp-label"></span><b id="clock">0:00.0</b><small id="cut"></small></div>
     <div class="clock-btns">
       <button id="startBtn" class="go">開賽計時</button>
       <button id="doneBtn" class="ghost" hidden>本組完成</button>
@@ -60,7 +59,10 @@
     <div class="display">
       <span id="bib" class="bib" aria-live="polite"></span>
       <span id="who" class="who">輸入號碼布</span>
+      <button id="micBtn" class="mic" type="button" aria-label="語音輸入（試驗）" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
+    <div id="vlog" class="vlog" hidden aria-live="polite"></div>
+    <div id="bubbles" class="bubbles" hidden></div>
     <div class="list">
       <div class="list-head"><div id="listTabs" class="list-tabs" role="tablist"></div><button id="lockBtn" class="ghost lock">鎖定排序</button></div>
       <p id="slotNote" class="slot-note" hidden></p>
@@ -74,8 +76,8 @@
     </div>
     <div class="extra">
       <button id="markBtn" class="mark">⏱ 先記時間</button>
-      <button id="schoolBtn" class="ghost">看不到號碼：按學校</button>
-      <button id="undoBtn" class="undo" disabled>↶ 撤銷上一下</button>
+      <button id="schoolBtn" class="ghost">按學校記錄</button>
+      <button id="undoBtn" class="undo" disabled>↶ 撤銷</button>
     </div>
   </section>
 
@@ -85,7 +87,7 @@
 <dialog id="sheet"><form method="dialog" id="sheetBody"></form></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="live-core.js?v=20261124a"></script>
-<script src="live-admin.js?v=20261123e"></script>
+<script src="live-core.js?v=20261124d"></script>
+<script src="live-admin.js?v=20261124d"></script>
 </body>
 </html>

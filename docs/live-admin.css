@@ -132,3 +132,69 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
 .sch-grid button { display: grid; gap: 2px; padding: 8px 4px; background: var(--surface-2); min-height: 60px; }
 .sch-grid b { font-family: var(--num); font-size: 18px; }
 .sch-grid small { font-size: 11px; color: var(--muted); line-height: 1.25; }
+
+/* 組別下拉、分組大字 */
+.bar { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: center; }
+.bar > select { min-width: 0; width: 100%; text-overflow: ellipsis; }
+#grp { min-height: 48px; font-size: 16px; font-weight: 700; }
+.grp-label { display: block; font-size: 15px; font-weight: 800; color: var(--gold); margin-bottom: 2px; }
+.p-head small { color: var(--text-2); font-size: 12px; }
+
+/* 輸入版面固定：整頁不捲動，只有中間清單捲動；數字鍵固定在底部 */
+body.app-on { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
+body.app-on #app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+body.app-on .clock { margin-top: 8px; padding: 8px 12px; }
+body.app-on .clock b#clock { font-size: 32px; }
+body.app-on .clock-btns button { min-height: 44px; }
+body.app-on .go { min-height: 48px; }
+body.app-on .entry { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 8px; }
+body.app-on .display { min-height: 56px; padding: 6px 12px; }
+body.app-on .bib { font-size: 38px; }
+body.app-on .list { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 6px; }
+body.app-on #list { flex: 1; min-height: 80px; max-height: none; }
+body.app-on .pad { flex: 0 0 auto; gap: 6px; margin-top: 6px; }
+body.app-on .pad button { min-height: 52px; }
+body.app-on .extra { flex: 0 0 auto; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+body.app-on .extra button { min-height: 44px; font-size: 13px; padding: 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.app-on .extra .undo { grid-column: auto; }
+body.app-on .practice { margin-top: 6px; padding: 6px 10px; gap: 4px; }
+body.app-on .passing { min-height: 30px; }
+.bar:has(#event[hidden]) { grid-template-columns: 1fr; }
+
+/* 第一圈泡泡：預測前列 5 人 */
+.bubbles { display: flex; gap: 6px; margin-top: 6px; overflow-x: auto; scrollbar-width: none; flex: 0 0 auto; align-items: center; }
+.bubbles small { flex: 0 0 auto; width: 46px; font-size: 11px; line-height: 1.25; color: var(--muted); }
+.bubbles button { flex: 0 0 auto; display: grid; justify-items: center; min-height: 52px; min-width: 64px; padding: 4px 10px; border-radius: 999px; background: rgb(25 230 140 / .14); color: var(--text); box-shadow: inset 0 0 0 1px rgb(25 230 140 / .35); }
+.bubbles button b { font-family: var(--num); font-size: 22px; line-height: 1; color: var(--accent); }
+.bubbles button span { font-size: 11px; color: var(--text-2); max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bubbles button:active { background: var(--accent); }
+.bubbles button:active b, .bubbles button:active span { color: var(--accent-ink); }
+
+/* 語音輸入（試驗） */
+.display { position: relative; }
+.mic { margin-left: auto; flex: 0 0 auto; width: 52px; height: 52px; min-height: 52px; border-radius: 50%; background: var(--surface); color: var(--text-2); display: grid; place-items: center; }
+.mic svg { width: 26px; height: 26px; }
+.mic.on { background: var(--red); color: #fff; animation: micpulse 1.2s ease-in-out infinite; }
+.mic:disabled { opacity: .3; }
+@keyframes micpulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(255 107 107 / .5); } 50% { box-shadow: 0 0 0 8px rgb(255 107 107 / 0); } }
+.vlog { flex: 0 0 auto; margin-top: 6px; padding: 6px 10px; border-radius: 12px; background: var(--surface); font-size: 13px; display: grid; gap: 3px; max-height: 112px; overflow-y: auto; }
+.vlog .vh { display: flex; gap: 8px; align-items: baseline; }
+.vlog .vh small { color: var(--muted); font-size: 11px; }
+.vlog .vl.ok { color: var(--accent); } .vlog .vl.bad { color: var(--red); } .vlog .vl.warn { color: var(--warn); }
+.vlog .vl button { margin-left: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; background: var(--surface-3); font-family: var(--num); font-size: 17px; }
+@media (prefers-reduced-motion: reduce) { .mic.on { animation: none; } }
+
+/* 號碼格：全部號碼一格格，按一下記一圈 */
+.bubbles.off { display: none; }
+#list.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px; align-content: start; }
+#list.grid li { border: 0; }
+#list.grid li.empty { grid-column: 1 / -1; }
+#list.grid button { width: 100%; min-height: 64px; display: grid; justify-items: center; gap: 1px; padding: 4px 2px; border-radius: 12px; background: var(--surface-2); }
+#list.grid button b { font-family: var(--num); font-size: 24px; line-height: 1; }
+#list.grid button span { max-width: 100%; font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#list.grid button i { font-style: normal; font-family: var(--num); font-size: 12px; color: var(--muted); }
+#list.grid li.run button { box-shadow: inset 0 0 0 1px rgb(25 230 140 / .4); }
+#list.grid li.run button i { color: var(--accent); }
+#list.grid li.fin button { opacity: .4; }
+#list.grid button:active { background: var(--accent); color: var(--accent-ink); }
+body.grid-mode .pad { display: none; }

@@ -9,6 +9,7 @@ from playwright.sync_api import sync_playwright, expect
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = json.loads((ROOT / "docs/data/results.json").read_text(encoding="utf-8"))
 EDS = {e["edition"]: e for e in DATA["editions"]}
+PRED_MA_TOP = next(x["pid"] for x in json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"]["MA"]["prediction"] if x.get("pid"))
 
 
 def free_port():
@@ -530,6 +531,7 @@ def live(browser, base_url):
     roster = [{"bib": 1001, "cat": "MA", "heat": None, "abbr": "YW", "pid": ma[0]["pid"], "name": None},
               {"bib": 1002, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試甲"},
               {"bib": 1012, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試乙"},
+              {"bib": 1003, "cat": "MA", "heat": None, "abbr": "YW", "pid": PRED_MA_TOP, "name": None},
               {"bib": 2001, "cat": "FB", "heat": None, "abbr": "HK", "pid": None, "name": None},
               # 男C 分組（第 48 屆實際號碼：C1 陳浩天 405；C2 羅焯饒 7）
               {"bib": 405, "cat": "MC", "heat": 1, "abbr": "IV", "pid": None, "name": "陳浩天"},
@@ -619,7 +621,7 @@ def _login_ma(page):
     page.click("#loginBtn")
     expect(page.locator("#app")).to_be_visible()
     page.select_option("#event", "test")
-    page.click('#cats [data-cat="MA"]')
+    page.select_option("#grp", "MA|1")
 
 
 def _passes(page, bib):
@@ -737,8 +739,10 @@ def test_live_admin_heats_and_full_bibs(live):
     """號碼按學校編配（同組沒有共同前綴）：須輸入完整號碼；分組比賽按組顯示，他組號碼會提示"""
     page = live
     _login_ma(page)
-    page.click('#cats [data-cat="MC"]')
-    expect(page.locator("#heats button")).to_have_count(3)
+    expect(page.locator('#grp option[value^="MC|"]')).to_have_count(3)   # 男C 第 1、2、3 組逐一列出
+    expect(page.locator('#grp option[value^="FC|"]')).to_have_count(2)   # 女C 第 1、2 組
+    page.select_option("#grp", "MC|1")
+    expect(page.locator("#grpLabel")).to_have_text("男C 第 1 組 · 2 圈")
     expect(page.locator("#who")).to_contain_text("男C 第 1 組 共 2 人")
     page.click('#pad [data-k="4"]')
     expect(page.locator("#who")).to_contain_text("輸入中")
@@ -755,6 +759,95 @@ def test_live_admin_heats_and_full_bibs(live):
     _until(page, lambda: len(_passes(page, 405)) == 1)
     r = _passes(page, 405)[0]
     assert r["cat"] == "MC" and r["heat"] == 1 and r["name"] == "陳浩天"
+
+
+def test_live_admin_first_lap_bubbles(live):
+    """第一圈泡泡：預測排名最前、未記第一圈者；按一下即記第一圈並消失"""
+    page = live
+    _login_ma(page)
+    page.click("#startBtn")
+    first = page.locator("#bubbles [data-pb]").first
+    expect(first).to_have_attribute("data-pb", "1003")
+    first.click()
+    _until(page, lambda: len(_passes(page, 1003)) == 1)
+    expect(page.locator('#bubbles [data-pb="1003"]')).to_have_count(0)
+    expect(page.locator('#list.runners li[data-key="b1003"]')).to_have_count(1)
+
+
+FAKE_SR = """
+window.webkitSpeechRecognition = class {
+  start() { window.__sr = this; this.started = (this.started || 0) + 1; }
+  stop() { this.stopped = true; }
+  abort() {}
+};
+window.SpeechRecognition = window.webkitSpeechRecognition;
+window.__say = (text) => { const r = [{ transcript: text }]; r.isFinal = true; window.__sr.onresult({ resultIndex: 0, results: [r] }); };
+"""
+
+
+def test_live_admin_voice_input(live):
+    """語音輸入（以模擬識別測試）：粵語數字轉號碼、他組號碼不記錄、「撤銷」"""
+    page = live
+    page.add_init_script(FAKE_SR)
+    _login_ma(page)
+    page.select_option("#grp", "MC|1")
+    page.click("#startBtn")
+    page.click("#micBtn")
+    expect(page.locator("#micBtn")).to_have_class(re.compile("on"))
+    page.evaluate("__say('四零五')")
+    _until(page, lambda: len(_passes(page, 405)) == 1)
+    expect(page.locator("#vlog")).to_contain_text("405")
+    page.evaluate("__say('七')")
+    expect(page.locator("#vlog")).to_contain_text("屬男C 第 2 組，未記錄")
+    page.evaluate("__say('四十')")
+    _until(page, lambda: len(_passes(page, 40)) == 1)
+    page.evaluate("__say('撤銷')")
+    _until(page, lambda: len(_passes(page, 40)) == 0)
+    page.evaluate("__say('四零五')")   # 剛記錄：疑似重複，不彈確認框、不記錄
+    expect(page.locator("#vlog")).to_contain_text("疑似重複")
+    assert len(_passes(page, 405)) == 1
+    page.click("#micBtn")
+    expect(page.locator("#micBtn")).not_to_have_class(re.compile("on"))
+
+
+def test_live_admin_number_grid(live):
+    page = live
+    _login_ma(page)
+    page.select_option("#grp", "MC|1")
+    page.click("#startBtn")
+    page.click('#listTabs [data-tab="grid"]')
+    expect(page.locator("#list.grid [data-gb]")).to_have_count(2)       # 男C 第 1 組：405、40
+    page.click('#list.grid [data-gb="40"]')
+    _until(page, lambda: len(_passes(page, 40)) == 1)
+    expect(page.locator('#list.grid li.run [data-gb="40"]')).to_contain_text("1／2")
+    expect(page.locator("#bubbles")).to_be_hidden()
+    no_hscroll(page)
+
+
+def test_live_admin_fixed_layout(live):
+    """輸入版面固定：整頁不捲動，數字鍵及確認鍵一直在畫面內"""
+    page = live
+    _login_ma(page)
+    for _ in range(3):
+        page.click("#markBtn")   # 加幾行紀錄
+    assert page.evaluate("document.scrollingElement.scrollHeight <= innerHeight + 1"), "整頁出現捲動"
+    assert page.evaluate("document.querySelector('#pad [data-k=ok]').getBoundingClientRect().bottom <= innerHeight"), "確認鍵不在畫面內"
+    assert page.evaluate("document.querySelector('#undoBtn').getBoundingClientRect().bottom <= innerHeight"), "撤銷鍵不在畫面內"
+    no_hscroll(page)
+
+
+def test_live_practice_real_roster_when_logged_in(live):
+    page = live
+    _login_ma(page)
+    page.goto(f"{page.base}/live-admin.html?practice=1")
+    expect(page.locator("#pSrc")).to_have_text("今屆真實名單")
+    page.select_option("#grp", "MC|1")
+    expect(page.locator("#who")).to_contain_text("男C 第 1 組 共 2 人")
+    page.click("#startBtn")
+    _type_bib(page, 405)
+    expect(page.locator("#list.runners li[data-key]")).to_have_count(1)
+    expect(page.locator("#list.runners")).to_contain_text("陳浩天")
+    assert not page.db["entries"]   # 練習模式不寫入資料庫
 
 
 def test_live_practice_mode(live):

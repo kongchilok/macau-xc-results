@@ -157,6 +157,67 @@
     return res;
   }
 
+  /* 語音輸入：把識別文字轉為號碼
+     接受「四零五」（逐位）、「四百零五」「六十」「三十五」「廿三」「一百二」（粵語＝120）、「405」「4 0 5」等寫法；
+     其他文字視為分隔，故「四零五，三五三」得到 405、353 */
+  const CN_D = { "零": 0, "〇": 0, "○": 0, "洞": 0, "一": 1, "壹": 1, "幺": 1, "二": 2, "兩": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
+  const digitOf = (c) => (/[0-9]/.test(c) ? Number(c) : /[０-９]/.test(c) ? c.charCodeAt(0) - 0xff10 : CN_D[c]);
+  function positional(s) {
+    s = s.replace(/^廿/, "二十").replace(/^卅/, "三十");
+    let v = 0, m = s.match(/^(.)?百(.*)$/);
+    if (m) {
+      if (m[1] != null && digitOf(m[1]) == null) return null;
+      v += (m[1] != null ? digitOf(m[1]) : 1) * 100; s = m[2];
+      if (s.length === 1 && digitOf(s) != null) return v + digitOf(s) * 10; // 一百二＝120
+      if (s.startsWith("零") || s.startsWith("〇")) s = s.slice(1);
+    }
+    m = s.match(/^(.)?十(.*)$/);
+    if (m) {
+      if (m[1] != null && digitOf(m[1]) == null) return null;
+      v += (m[1] != null ? digitOf(m[1]) : 1) * 10; s = m[2];
+    }
+    if (s.length === 1 && digitOf(s) != null) { v += digitOf(s); s = ""; }
+    return s === "" ? v : null;
+  }
+  function chunkToDigits(c) {
+    if (/[十百廿卅]/.test(c)) { const v = positional(c); if (v != null) return String(v); }
+    return [...c].map(digitOf).filter((d) => d != null).join("");
+  }
+  function spokenGroups(text) {
+    const toks = String(text || "").split(/\s+/).filter(Boolean);
+    // 「4 0 5」：連續的單一數字合併為一個號碼
+    const merged = [];
+    for (const t of toks) {
+      const single = /^[0-9０-９零〇一二兩三四五六七八九]$/.test(t), prev = merged[merged.length - 1];
+      if (single && prev && prev.single) prev.s += t; else merged.push({ s: t, single });
+    }
+    const out = [];
+    for (const { s } of merged) for (const m of s.matchAll(/[零〇○洞一壹幺二兩两三四五六七八九十百廿卅0-9０-９]+/g)) { const d = chunkToDigits(m[0]); if (d) out.push(d); }
+    return out;
+  }
+  /* 把一串數字拆成本組名單內的號碼：唯一拆法 → ok；多於一種或無法拆 → 列出候選 */
+  function segmentBibs(str, valid) {
+    if (valid.has(str)) return { ok: [str] };
+    const maxLen = Math.max(1, ...[...valid].map((b) => b.length));
+    const res = [];
+    (function go(i, acc) {
+      if (res.length > 4) return;
+      if (i === str.length) { res.push(acc.slice()); return; }
+      for (let L = 1; L <= maxLen && i + L <= str.length; L++) {
+        const t = str.slice(i, i + L);
+        if (t[0] !== "0" && valid.has(t)) { acc.push(t); go(i + L, acc); acc.pop(); }
+      }
+    })(0, []);
+    if (res.length === 1) return { ok: res[0] };
+    if (res.length > 1) { // 多於一種拆法：取號碼數目最少者（一般人會讀出完整號碼），並標明為推斷
+      const min = Math.min(...res.map((x) => x.length)), best = res.filter((x) => x.length === min);
+      if (best.length === 1) return { ok: best[0], guess: true };
+    }
+    const cand = new Set();
+    for (let i = 0; i < str.length; i++) for (let L = 1; L <= maxLen && i + L <= str.length; L++) { const t = str.slice(i, i + L); if (t[0] !== "0" && valid.has(t)) cand.add(t); }
+    return { cand: [...cand] };
+  }
+
   /* 演練／示範用：按全程時間合成各圈經過時間（毫秒）。每人配速略有不同（有人先快後慢），最後一圈＝官方成績 */
   function simSplits(seconds, laps, seed) {
     const rnd = (n) => { const x = Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453; return x - Math.floor(x); };
@@ -170,5 +231,5 @@
     return out;
   }
 
-  root.XCLive = { TEAM_N, CUTOFF, MIN_GAP, keyOf, isSlot, lapsOf, buildRunners, eta, rankEntries, teamStandings, titleRace, simSplits };
+  root.XCLive = { TEAM_N, CUTOFF, MIN_GAP, keyOf, isSlot, lapsOf, buildRunners, eta, rankEntries, teamStandings, titleRace, simSplits, spokenGroups, segmentBibs };
 })(typeof window !== "undefined" ? window : globalThis);

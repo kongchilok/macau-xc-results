@@ -87,3 +87,16 @@ def test_title_race_pending_heats_no_lock(R):
     t = R["title3"]
     assert t["甲"]["state"] == "open" and t["乙"]["state"] == "open"
     assert t["乙"]["need"]["max"] < 0 or t["乙"]["need"]["r"] == 3
+
+
+def test_spoken_numbers(R):
+    assert R["spoken"] == [["405"], ["405"], ["60"], ["35"], ["120"], ["23"], ["250"], ["405", "353"], ["405"],
+                           ["405", "353"], ["12"], ["353", "60"], []]
+
+
+def test_segment_run_on_numbers(R):
+    a, b, c, d = R["seg"]
+    assert a == {"ok": ["405", "353"], "guess": True}   # 405353：取號碼最少的拆法，標明推斷
+    assert b == {"ok": ["40", "35"]}
+    assert c == {"ok": ["405"]}
+    assert d == {"cand": []}
