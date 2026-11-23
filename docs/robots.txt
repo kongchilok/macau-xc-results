@@ -1,2 +1,21 @@
+# 只放行社交平台的連結預覽程式（讀取 og 標籤及 og.png）；搜尋引擎一律不收錄（網頁亦設 noindex）
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
 User-agent: *
 Disallow: /

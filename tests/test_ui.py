@@ -97,6 +97,19 @@ def test_noindex_and_robots(page):
     go(page, "#/")
     assert page.locator('meta[name="robots"]').get_attribute("content") == "noindex, nofollow"
     assert "Disallow: /" in page.request.get(f"{page.base}/robots.txt").text()
+    robots = page.request.get(f"{page.base}/robots.txt").text().replace("\r\n", "\n")
+    assert "User-agent: *\nDisallow: /" in robots and "User-agent: facebookexternalhit\nAllow: /" in robots
+
+
+def test_share_preview_tags(page):
+    """分享預覽：og 標籤齊全，預覽圖存在且為 1200×630"""
+    go(page, "#/")
+    og = lambda k: page.locator(f'meta[property="og:{k}"]').get_attribute("content")
+    assert og("title") and og("description") and og("image").endswith("/og.png")
+    r = page.request.get(f"{page.base}/og.png")
+    assert r.ok and r.headers["content-type"] == "image/png"
+    body = r.body()
+    assert int.from_bytes(body[16:20], "big") == 1200 and int.from_bytes(body[20:24], "big") == 630
     expect(page.locator(".disclaimer")).to_contain_text("非官方")
     assert page.locator(".disclaimer a").nth(1).get_attribute("href") == "#/privacy"
 
