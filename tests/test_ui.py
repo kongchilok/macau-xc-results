@@ -1016,7 +1016,10 @@ def _card_png(page, pid):
         const b = await (await fetch(img.src)).blob();
         const buf = new Uint8Array(await b.arrayBuffer());
         let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-        return { w: img.naturalWidth, h: img.naturalHeight, name: document.querySelector('#cmSave').download, b64: btoa(s) };
+        const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+        const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+        const qrCorner = [...cx.getImageData(1080 - 58 - 184 + 5, 1350 - 40 - 184 + 5, 1, 1).data];   // QR 碼白底
+        return { w: img.naturalWidth, h: img.naturalHeight, name: document.querySelector('#cmSave').download, b64: btoa(s), qrCorner };
     }""")
     out = __import__("os").environ.get("XC_CARD_OUT")
     if out:
@@ -1035,16 +1038,18 @@ def _pid_by(pred):
     return next(pid for pid, recs in people.items() if pred(recs))
 
 
-@pytest.mark.parametrize("kind", ["champion", "medal", "base"])
+@pytest.mark.parametrize("kind", ["champion", "medal", "top10", "base"])
 def test_honours_card_export(page, kind):
     preds = {
         "champion": lambda recs: sum(r["rank"] == 1 for r in recs) >= 3 and not recs[0].get("hidden"),
         "medal": lambda recs: min(r["rank"] for r in recs) == 2 and len(recs) >= 3 and not recs[0].get("hidden"),
-        "base": lambda recs: min(r["rank"] for r in recs) > 3 and len(recs) >= 3 and not recs[0].get("hidden"),
+        "top10": lambda recs: 4 <= min(r["rank"] for r in recs) <= 10 and len(recs) >= 3 and not recs[0].get("hidden"),
+        "base": lambda recs: min(r["rank"] for r in recs) > 10 and len(recs) >= 3 and not recs[0].get("hidden"),
     }
     pid = _pid_by(preds[kind])
     info = _card_png(page, pid)
     assert (info["w"], info["h"]) == (1080, 1350)
     assert info["name"].endswith("_榮譽卡.png")
+    assert info["qrCorner"][:3] == [255, 255, 255], "榮譽卡沒有 QR 碼"
     page.click("#cmClose")
     expect(page.locator(".card-modal")).to_have_count(0)

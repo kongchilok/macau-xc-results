@@ -742,25 +742,28 @@
   }
 
   /* ---------- 榮譽卡（docs/card.js 繪製） ---------- */
+  const CARD_MEDAL = 10;
   function cardData(p) {
     const last = p.recs.at(-1), zh = (p.status && p.status.code === "active" && p.status.school) || last.school_zh;
     const info = DB.schools[zh] || {}, abbr = info.abbr || zh.slice(0, 2);
-    const medals = p.recs.filter((r) => r.rank <= 3), wins = medals.filter((r) => r.rank === 1).length;
+    // 本賽事頒獎至第 10 名：榮譽卡「獎牌」＝頭十名（包括第 10 名）
+    const medals = p.recs.filter((r) => r.rank <= CARD_MEDAL), wins = medals.filter((r) => r.rank === 1).length;
     const best = Math.min(...p.recs.map((r) => r.rank));
     const newest = [...p.recs].reverse();
-    const rows = [...medals].reverse();
-    for (const r of newest) { if (rows.length >= 5) break; if (r.rank > 3) rows.push(r); }
+    const rows = [...medals].sort((a, b) => a.rank - b.rank || b.edition - a.edition).slice(0, 5);
+    for (const r of newest) { if (rows.length >= 5) break; if (r.rank > CARD_MEDAL) rows.push(r); }
     const catZh = (c) => `${c[0] === "M" ? "男子" : "女子"}${c[1]}組`;
     const pbRecs = p.recs.filter((r) => r.cat === last.cat && r.seconds);
     const pb = pbRecs.length ? pbRecs.reduce((a, b) => (b.seconds < a.seconds ? b : a)) : null;
     const st = p.status;
     const status = !st ? null : st.code === "active" ? `在讀・第 ${DB.race.edition} 屆參賽` : st.code === "unsure" ? null : t("st_" + st.code);
-    const url = "kongchilok.github.io/macau-xc-results";
+    // QR 碼指向本網站的個人頁（開啟即累積人氣）；網站搬遷後自動跟隨目前網址
+    const url = /\.github\.io$/.test(location.hostname) ? (location.host + location.pathname).replace(/index\.html$/, "").replace(/\/$/, "") : "kongchilok.github.io/macau-xc-results";
     return {
       name: p.name_zh || p.name_pt, namePt: p.name_zh ? p.name_pt : "", school: zh, crestImg: DB.crests[abbr] || null, crestAbbr: abbr, crestHue: hueOf(abbr),
       status, statusMuted: !!st && st.code !== "active",
       stats: { races: p.recs.length, wins, medals: medals.length, best },
-      tier: wins ? "gold" : medals.length ? (best === 2 ? "silver" : "bronze") : "base",
+      tier: wins ? "gold" : best === 2 ? "silver" : medals.length ? "bronze" : "base",
       title: medals.length ? "榮譽紀錄" : "歷屆成績",
       rows: rows.slice(0, 5).sort((a, b) => b.edition - a.edition).map((r) => ({ place: r.rank, year: r.year, edition: r.edition, cat: catZh(r.cat), gender: r.cat[0], time: fmt(r.seconds) })),
       pb: pb ? { label: catZh(pb.cat), time: fmt(pb.seconds), year: pb.year } : null,

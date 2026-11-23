@@ -1,6 +1,6 @@
 /* 運動員榮譽卡：以 Canvas 繪製 1080×1350（4:5）PNG
    版面依使用者提供的示範圖（陳曉晴_榮譽卡）：頂部標誌、主角區（姓名／拼音／校徽／狀態）、四格數據、
-   榮譽紀錄（最多 5 行）、最佳成績、網址＋資料來源＋QR 碼。
+   榮譽紀錄（最多 5 行；獎牌＝頭十名）、最佳成績、網址＋資料來源＋QR 碼（連到個人頁，開啟即累積人氣）。
    三種版本：冠軍（金框＋皇冠）、獎牌（銀／銅框）、參賽紀念（綠框，標題改「歷屆成績」）。 */
 (function (root) {
   "use strict";
@@ -122,14 +122,15 @@
     ctx.fillStyle = C.accent; ctx.fillRect(M, ty - 30, 4, 30); ctx.fillRect(M, ty - 30, 22, 4);
     ctx.textAlign = "left"; ctx.font = `800 48px ${CJK}`; ctx.fillText(d.title, M + 40, ty);
     const rows = d.rows.slice(0, 5);
-    const rowH = rows.length >= 5 ? 84 : Math.min(112, 420 / Math.max(rows.length, 1)), ry = ty + 26; // 少於 5 行時加大行距，避免中間留空
+    const rowH = rows.length >= 5 ? 80 : Math.min(112, 420 / Math.max(rows.length, 1)), ry = ty + 26; // 少於 5 行時加大行距，避免中間留空
     rows.forEach((r, i) => {
       const y = ry + i * rowH + rowH / 2;
       const medal = r.place <= 3 ? [C.gold, C.silver, C.bronze][r.place - 1] : null;
+      const award = !medal && r.place <= 10;   // 第 4 至 10 名亦獲獎牌：綠色獎牌，內寫名次
       ctx.beginPath(); ctx.arc(M + 50, y, 36, 0, Math.PI * 2);
-      ctx.fillStyle = medal || C.surface2; ctx.fill();
-      ctx.lineWidth = 3; ctx.strokeStyle = medal ? "rgba(0,0,0,.25)" : C.line; ctx.stroke();
-      ctx.fillStyle = medal ? "#2a1e00" : C.text; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = medal || (award ? C.accent : C.surface2); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = medal || award ? "rgba(0,0,0,.25)" : C.line; ctx.stroke();
+      ctx.fillStyle = medal ? "#2a1e00" : award ? C.ink : C.text; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       if (medal) { ctx.font = `800 34px ${CJK}`; ctx.fillText(["金", "銀", "銅"][r.place - 1], M + 50, y + 1); }
       else { fit(ctx, String(r.place), 56, 36, 22, 800, NUM); ctx.fillText(String(r.place), M + 50, y + 2); }
       ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `700 46px ${NUM}`;
@@ -145,7 +146,7 @@
     });
 
     // 最佳成績
-    const py = H - 160;
+    const py = H - 176;
     if (d.pb) {
       ctx.textAlign = "left"; ctx.fillStyle = C.accent; ctx.font = `700 44px ${CJK}`;
       const a = `${d.pb.label}最佳 `; ctx.fillText(a, M + 20, py);
@@ -155,12 +156,14 @@
     }
 
     // 頁尾
-    const qs = 148, qx = W - M - qs, qy = H - 40 - qs;
+    const qs = 184, qx = W - M - qs, qy = H - 40 - qs;
     const qr = qrLib && d.qrUrl ? (() => { try { const q = qrLib(0, "M"); q.addData(d.qrUrl); q.make(); return q; } catch (e) { return null; } })() : null;
     ctx.fillStyle = C.accent; ctx.fillRect(M, H - 128, (qr ? qx - 24 : W - M) - M, 3);
     ctx.textAlign = "left"; ctx.fillStyle = C.muted; ctx.font = `500 30px ${NUM}`; ctx.fillText(d.url, M, H - 80);
     ctx.font = `500 27px ${CJK}`; ctx.fillText("資料來源：教育及青年發展局公布成績", M, H - 40);
     if (qr) {
+      ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `700 28px ${CJK}`; ctx.fillText("掃描查看個人頁 ›", qx - 24, H - 142);
+      ctx.textAlign = "left";
       rr(ctx, qx, qy, qs, qs, 14); ctx.fillStyle = "#fff"; ctx.fill();
       const n = qr.getModuleCount(), pad = 10, cell = (qs - pad * 2) / n;
       ctx.fillStyle = "#000";
