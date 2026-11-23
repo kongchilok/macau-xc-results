@@ -100,3 +100,8 @@ def test_segment_run_on_numbers(R):
     assert b == {"ok": ["40", "35"]}
     assert c == {"ok": ["405"]}
     assert d == {"cand": []}
+
+
+def test_voice_separators(R):
+    assert R["sep"] == [{"done": ["四零五"], "rest": "三五三"}, {"done": ["四零五", "三五三"], "rest": "六十"},
+                        {"done": [], "rest": "四零五"}, {"done": ["四零五"], "rest": ""}]

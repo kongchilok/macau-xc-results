@@ -26,6 +26,7 @@
       langAria: "Switch to English", loadFail: "資料載入失敗", loadFailText: "請檢查網絡連線後再試。", retry: "重新載入",
       pvTitle: (n) => `第${n}屆賽前預覽`, pvBanner: (n) => `第${n}屆學界越野跑比賽`, pvWhen: (d, t, v) => `${d} ${t} · ${v}`,
       pvDays: (n) => n > 1 ? `距離比賽尚有 ${n} 日` : n === 1 ? "明日舉行" : n === 0 ? "今日舉行" : "比賽已結束，成績有待公布", pvGo: "賽前預覽",
+      prTag: "賽前預覽", prCta: "查看預測、時間表及學校名單", prClose: "關閉", prWait: (n) => `${n} 秒後可關閉`, prDays: "日", prToGo: "倒數",
       pvCall: "檢錄", pvStart: "起跑", pvDist: "距離", pvRunners: "參賽人數", pvHeats: (n) => n > 1 ? `分 ${n} 組起跑` : "全組同時起跑",
       pvKnown: (k, n) => `共 ${n} 人參賽，其中 ${k} 人有往績`, pvNew: (n) => `另有 ${n} 人未有公開往績（首次參賽或未能確認身份），不予列出。`,
       pvSame: "上屆同組參賽", pvUp: "今屆升組", pvOlder: "較早屆別往績", pvLast: "上屆", pvBest: "最佳",
@@ -63,7 +64,7 @@
       pvTitleZh: "第四十八屆學界越野跑比賽", pvTitlePt: "48° Campeonato Escolar de Corta-Mato",
       hcTitle: "比賽日", hcRunners: "運動員", hcSchools: "學校", hcCats: "組別", hcChamps: "各組冠軍預測", hcChampsSub: "按往績及近期成績推算，點選可查看該組預測",
       hcPredNote: "推算結果並非賽果，僅供參考。", hcPopular: "人氣運動員", hcHorse: "新晉焦點", hcHorseSub: "一星期前環山跑前三名、未有學界往績的運動員",
-      hcSched: "比賽時間表", hcSchedSub: "按起跑時間排列", hcLast: "上屆賽事回顧", hcLastSub: (n) => `第${n}屆學界越野跑比賽頒獎典禮`, hcPhotoNote: "相片：上屆賽事",
+      hcSched: "比賽時間表", hcSchedSub: "按起跑時間排列",
       pdAecmShort: (r) => `環山跑第${r}名`, pvRunnersUnit: " 人",
       back: "返回", notFound: "找不到此頁面", placeShort: (n) => `第${n}名`, searchSchool: "學校",
       more: "查看全部", seeRecords: "本組紀錄與趨勢", seeRank: "查看該屆成績", seeSchool: "查看學校資料",
@@ -126,6 +127,7 @@
       langAria: "切換至中文", loadFail: "Data failed to load", loadFailText: "Check your connection and try again.", retry: "Reload",
       pvTitle: (n) => `Edition ${n} preview`, pvBanner: (n) => `Edition ${n} Schools Cross-Country`, pvWhen: (d, t, v) => `${d} ${t} · ${v}`,
       pvDays: (n) => n > 1 ? `${n} days to go` : n === 1 ? "Tomorrow" : n === 0 ? "Race day" : "Race finished, results pending", pvGo: "Preview",
+      prTag: "Race preview", prCta: "Predictions, schedule and schools", prClose: "Close", prWait: (n) => `Close in ${n}s`, prDays: "days", prToGo: "In",
       pvCall: "Call", pvStart: "Start", pvDist: "Distance", pvRunners: "Runners", pvHeats: (n) => n > 1 ? `${n} heats` : "Single start",
       pvKnown: (k, n) => `${n} runners, ${k} with past results`, pvNew: (n) => `${n} more have no published results yet (first race or name not confirmed) and are not listed.`,
       pvSame: "Same category last year", pvUp: "Moving up", pvOlder: "Earlier results", pvLast: "Last year", pvBest: "Best",
@@ -163,7 +165,7 @@
       pvTitleZh: "第四十八屆學界越野跑比賽", pvTitlePt: "48° Campeonato Escolar de Corta-Mato",
       hcTitle: "Race day", hcRunners: "Runners", hcSchools: "Schools", hcCats: "Categories", hcChamps: "Predicted winners", hcChampsSub: "From past results and recent form; tap for the full projection",
       hcPredNote: "A projection, not a result. Watch for dark horses.", hcPopular: "Most viewed", hcHorse: "Ones to watch", hcHorseSub: "Top 3 in last week's round-the-hill race, new to schools XC",
-      hcSched: "Race schedule", hcSchedSub: "By start time", hcLast: "Last year", hcLastSub: (n) => `Edition ${n} prize-giving`, hcPhotoNote: "Photo: last year's race",
+      hcSched: "Race schedule", hcSchedSub: "By start time",
       pdAecmShort: (r) => `RTH #${r}`, pvRunnersUnit: " runners",
       back: "Back", notFound: "Page not found", placeShort: (n) => `#${n}`, searchSchool: "School",
       more: "See all", seeRecords: "Records for this category", seeRank: "See results", seeSchool: "School profile",
@@ -822,12 +824,17 @@
   }
 
 
+  /* 分組標記：男C、女C 分組出發，列出所屬分組（C1、C2…） */
+  const multiHeat = (cat) => ((DB.race && DB.race.schedule.find((x) => x.cat === cat)) || {}).heats > 1;
+  const heatTag = (cat, h) => (h && multiHeat(cat) ? `<b class="pv-heat">${cat[1]}${h}</b>` : "");
+
   /* 預測排名：只列出能以往績推算的選手；相鄰差距小於門檻者合併成「實力接近」組 */
-  function predictionBoard(info) {
+  function predictionBoard(info, cat) {
     const list = info.prediction || [];
     const meta = DB.preview.prediction_meta || {};
     if (!list.length) return `<p class="muted-note">${t("pdNone")}</p>`;
     const schoolOf = new Map(info.starters.map((s) => [s.pid, s.school_zh]));
+    const heatOf = new Map(info.starters.map((s) => [s.pid, s.heat]));
     const lead = list[0].idx;
     let html = "", openGroup = null, shown = 0;
     list.forEach((x, i) => {
@@ -848,7 +855,7 @@
       html += `<${tagName} class="row cr pd-row" ${x.pid ? `href="#/p/${x.pid}"` : ""}>
         <span class="rank ${i < 3 ? "r" + (i + 1) : ""}">${i + 1}</span>
         ${crest(sch, "sm")}
-        <span style="min-width:0"><div class="nm">${name}</div><div class="sch">${esc(school(sch))}</div>${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}</span>
+        <span style="min-width:0"><div class="nm">${name}</div><div class="sch">${heatTag(cat, x.pid ? heatOf.get(x.pid) : x.heat)}${esc(school(sch))}</div>${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}</span>
         <span class="pv-res"><b>${i === 0 ? t("pdTop") : "+" + gap.toFixed(1) + "%"}</b><span class="pd-last">${last ? `${t("pvLast")} ${catLabel(last.cat)} ${t("placeShort", last.rank)}` : t("pdNoHist")}</span></span>
       </${tagName}>`;
     });
@@ -877,23 +884,23 @@
     };
     const champs = CATS.map((c) => {
       const top = (pv.categories[c].prediction || [])[0]; if (!top) return "";
-      const sch = top.pid ? (pv.categories[c].starters.find((s) => s.pid === top.pid) || {}).school_zh : top.school_zh;
+      const st = top.pid ? pv.categories[c].starters.find((s) => s.pid === top.pid) || {} : top;
+      const sch = st.school_zh, hh = multiHeat(c) && st.heat ? st.heat : "";
       const n = nm(top).name;
-      return `<a class="mini-row ${c[0] === "M" ? "m" : "f"}" href="#/preview?c=${c}&v=pred"><span class="cat">${catLabel(c)}</span><span class="who">${crest(sch, "xs")}${esc(n)}<small>${esc(school(sch))}</small></span><span class="t">${top.close ? `<small class="cl">${t("pdClose")}</small>` : ""}</span></a>`;
+      return `<a class="mini-row ${c[0] === "M" ? "m" : "f"}" href="#/preview?c=${c}&v=pred"><span class="cat">${catLabel(c)}${hh}</span><span class="who">${crest(sch, "xs")}${esc(n)}<small>${esc(school(sch))}</small></span><span class="t">${top.close ? `<small class="cl">${t("pdClose")}</small>` : ""}</span></a>`;
     }).join("");
     const horses = CATS.flatMap((c) => (pv.categories[c].prediction || []).filter((x) => !x.pid && x.aecm_rank && x.aecm_rank <= 3).map((x) => ({ ...x, c })))
       .sort((a, b) => a.aecm_rank - b.aecm_rank).slice(0, 8)
-      .map((x) => `<div class="mini-row ${x.c[0] === "M" ? "m" : "f"}"><span class="cat">${catLabel(x.c)}</span><span class="who">${crest(x.school_zh, "xs")}${esc(x.name_zh)}<small>${esc(school(x.school_zh))}</small></span><span class="t">${t("pdAecmShort", x.aecm_rank)}</span></div>`).join("");
+      .map((x) => `<div class="mini-row ${x.c[0] === "M" ? "m" : "f"}"><span class="cat">${catLabel(x.c)}${multiHeat(x.c) && x.heat ? x.heat : ""}</span><span class="who">${crest(x.school_zh, "xs")}${esc(x.name_zh)}<small>${esc(school(x.school_zh))}</small></span><span class="t">${t("pdAecmShort", x.aecm_rank)}</span></div>`).join("");
     const sched = first.map((x) => `<div class="mini-row ${x.cat[0] === "M" ? "m" : "f"}"><span class="cat">${catLabel(x.cat)}</span><span class="who">${x.distance.toLocaleString()}${lang === "zh" ? " 米" : " m"}<small>${x.runners}${t("pvRunnersUnit")}</small></span><span class="t">${x.start}</span></div>`).join("");
     const cards = [
       { photo: "arch", cls: "c-green hero-card", title: t("hcTitle"), sub: `${t("dateFmt", new Date(race.date + "T00:00:00"))} ${first[0].start} · ${venue}`,
         body: `<div class="hc-count"><b>${days > 0 ? days : days === 0 ? "0" : "-"}</b><span>${esc(t("pvDays", days))}</span></div>
                <div class="hc-stats"><div><b>${Object.values(race.totals).reduce((a, b) => a + b, 0)}</b><span>${t("hcRunners")}</span></div><div><b>${race.schools.length}</b><span>${t("hcSchools")}</span></div><div><b>10</b><span>${t("hcCats")}</span></div></div>` },
+      { photo: "start", cls: "c-steel", title: t("hcSched"), sub: t("hcSchedSub"), body: `<div class="mini">${sched}</div>` },
       { photo: "champ", cls: "c-gold", title: t("hcChamps"), sub: t("hcChampsSub"), body: `<div class="mini">${champs}</div>`, note: t("hcPredNote") },
       { photo: "runner", cls: "c-steel", title: t("hcPopular"), sub: Views.live() ? t("popLive") : t("popDemo"), body: `<div class="mini" id="heroPop"><div class="empty">${t("popEmpty")}</div></div>` },
       { photo: "girls", cls: "c-green", title: t("hcHorse"), sub: t("hcHorseSub"), body: `<div class="mini">${horses || `<div class="empty">-</div>`}</div>` },
-      { photo: "start", cls: "c-steel", title: t("hcSched"), sub: t("hcSchedSub"), body: `<div class="mini">${sched}</div>` },
-      { photo: "podium", cls: "c-gold", title: t("hcLast"), sub: t("hcLastSub", race.edition - 1), body: "", note: t("hcPhotoNote") },
     ];
     return `<div class="carousel pv-carousel" id="pvCarousel">${cards.map((k) => `<article class="card photo ${k.cls}" style="--photo:url(img/race/${k.photo}.jpg)"><h3>${esc(k.title)}</h3><div class="sub">${esc(k.sub)}</div>${k.body}${k.note ? `<div class="note">${esc(k.note)}</div>` : ""}</article>`).join("")}</div>
       <div class="dots" id="pvDots">${cards.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>`;
@@ -915,7 +922,14 @@
     const list = ROSTERS.get(ev);
     const sch = race.schedule.find((x) => x.cat === cat), multi = (sch.heats || 1) > 1;
     const n = XCLive.TEAM_N[cat[1]];
-    const schools = race.schools.filter((x) => x.n && x.n[cat]).sort((a, b) => b.n[cat] - a.n[cat] || a.abbr.localeCompare(b.abbr));
+    // 按預測團體名次排列：每校取預測名次最前的 n 人相加；未能預測者當作排在全部已預測者之後；不足 n 人者排最後
+    const pred = info.prediction || [], P = pred.length, schoolOfPid = new Map(info.starters.map((s) => [s.pid, s.school_zh]));
+    const places = {};
+    pred.forEach((x, i) => { const a = abbrOf(x.pid ? schoolOfPid.get(x.pid) : x.school_zh); (places[a] = places[a] || []).push(i + 1); });
+    const teamScore = (x) => { const pl = (places[x.abbr] || []).slice(0, n); return pl.reduce((s, v) => s + v, 0) + (n - pl.length) * (P + 1); };
+    const best = (x) => (places[x.abbr] || [Infinity])[0];
+    const schools = race.schools.filter((x) => x.n && x.n[cat]).sort((a, b) => (b.n[cat] >= n) - (a.n[cat] >= n)
+      || (a.n[cat] >= n ? teamScore(a) - teamScore(b) || best(a) - best(b) : 0) || b.n[cat] - a.n[cat] || a.abbr.localeCompare(b.abbr));
     const members = list ? list.filter((r) => r.cat === cat) : info.starters.map((x) => ({ abbr: abbrOf(x.school_zh), heat: x.heat ? Number(x.heat) : null, pid: x.pid, name: null }));
     const html = schools.map((x) => {
       const mine = members.filter((m) => m.abbr === x.abbr).sort((a, b) => (a.heat || 0) - (b.heat || 0) || String(a.name || "").localeCompare(String(b.name || ""), "zh-Hant"));
@@ -972,7 +986,7 @@
         <span class="rank ${x.group === "same" && x.last.rank <= 3 ? "r" + x.last.rank : ""}">${x.group === "same" ? x.last.rank : "·"}</span>
         ${crest(x.s.school_zh, "sm")}
         <span style="min-width:0"><div class="nm">${personName(x.p)}</div>
-          <div class="sch">${esc(school(x.s.school_zh))}${x.s.heat ? ` · ${t("pvHeat", x.s.heat)}` : ""}</div>
+          <div class="sch">${heatTag(cat, x.s.heat)}${esc(school(x.s.school_zh))}</div>
           ${x.last.school_zh !== x.s.school_zh && (DB.schools[x.last.school_zh] || {}).abbr !== (DB.schools[x.s.school_zh] || {}).abbr ? `<div class="prev-school"><span>${t("prevSchool")}</span>${schoolLine(x.last.school_zh)}</div>` : ""}
           ${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}</span>
         <span class="pv-res"><b>${esc(lastTxt)}</b><span>${fmt(x.last.seconds)}</span></span>
@@ -1003,7 +1017,7 @@
       </section>
       <div class="board-head pv-head"><h2>${esc(mode === "pred" ? t("pdHead", (info.prediction || []).length, info.total) : mode === "sch" ? t("pvSchHead", race.schools.filter((x) => x.n && x.n[cat]).length, info.total) : t("pvKnown", info.starters.length, info.total))}</h2>
         <div class="mini-seg" role="tablist"><button role="tab" data-v="past" class="${mode === "past" ? "on" : ""}" aria-selected="${mode === "past"}">${t("pdPast")}</button><button role="tab" data-v="pred" class="${mode === "pred" ? "on" : ""}" aria-selected="${mode === "pred"}">${t("pdPred")}</button><button role="tab" data-v="sch" class="${mode === "sch" ? "on" : ""}" aria-selected="${mode === "sch"}">${t("pdSchools")}</button></div></div>
-      ${mode === "pred" ? predictionBoard(info) : mode === "sch" ? previewSchools(cat, info) : `${rows.length ? `<div class="board">${html}</div>` : `<p class="muted-note">${t("pvNone")}</p>`}
+      ${mode === "pred" ? predictionBoard(info, cat) : mode === "sch" ? previewSchools(cat, info) : `${rows.length ? `<div class="board">${html}</div>` : `<p class="muted-note">${t("pvNone")}</p>`}
       ${info.unmatched ? `<p class="muted-note">${esc(t("pvNew", info.unmatched))}</p>` : ""}
       <p class="muted-note">${t("pvNote")}</p>`}`;
     view.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => go(cat, b.dataset.v));
@@ -1696,6 +1710,48 @@
     // 由站內點入 → 回上一頁；直接開啟連結 → 回首頁
     b.onclick = () => { if (navDepth > 0) history.back(); else location.hash = "#/"; };
   }
+  /* 首頁宣傳海報：每次進入首頁彈出；按海報進入賽前預覽；關閉按鈕須等 3 秒 */
+  const PROMO_WAIT = 3;
+  function closePromo() { const b = document.querySelector(".promo"); if (b) { clearInterval(b._tick); b.remove(); document.removeEventListener("keydown", b._onKey); } }
+  function showPromo() {
+    const race = DB.race;
+    if (!race || !DB.preview || window.XC_NO_PROMO || document.querySelector(".promo")) return;
+    const days = daysTo(race.date);
+    if (days < 0) return; // 比賽日之後不再宣傳
+    const first = race.schedule.slice().sort((a, b) => a.start.localeCompare(b.start))[0];
+    const venue = lang === "zh" ? race.venue_zh : race.venue_pt;
+    const total = Object.values(race.totals).reduce((a, b) => a + b, 0);
+    const box = document.createElement("div");
+    box.className = "promo"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", t("pvTitleZh"));
+    box.innerHTML = `<div class="promo-wrap">
+      <a class="promo-card" href="#/preview" style="--photo:url(img/race/start.jpg)">
+        <span class="pr-tag">${esc(t("prTag"))}</span>
+        <span class="pr-title">${esc(t("pvTitleZh")).replace("屆", "屆<br>")}</span>
+        <span class="pr-pt" lang="pt">${esc(t("pvTitlePt"))}</span>
+        <span class="pr-count"><small>${esc(t("prToGo"))}</small><b>${days}</b><small>${esc(t("prDays"))}</small></span>
+        <span class="pr-when">${esc(t("pvWhen", t("dateFmt", new Date(race.date + "T00:00:00")), first.start, venue))}</span>
+        <span class="pr-stats"><span><b>${total}</b>${esc(t("hcRunners"))}</span><span><b>${race.schools.length}</b>${esc(t("hcSchools"))}</span><span><b>${race.schedule.length}</b>${esc(t("hcCats"))}</span></span>
+        <span class="pr-cta">${esc(t("prCta"))}<i aria-hidden="true">›</i></span>
+      </a>
+      <button type="button" class="promo-x" disabled aria-label="${esc(t("prWait", PROMO_WAIT))}">
+        <svg viewBox="0 0 44 44" aria-hidden="true"><circle class="ring-bg" cx="22" cy="22" r="19"/><circle class="ring" cx="22" cy="22" r="19" pathLength="100"/></svg>
+        <b class="px-n">${PROMO_WAIT}</b><svg class="px-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button></div>`;
+    document.body.appendChild(box);
+    const x = box.querySelector(".promo-x"), n = box.querySelector(".px-n");
+    let left = PROMO_WAIT;
+    box._tick = setInterval(() => {
+      left--;
+      if (left > 0) { n.textContent = left; x.setAttribute("aria-label", t("prWait", left)); return; }
+      clearInterval(box._tick); x.disabled = false; box.classList.add("ready"); x.setAttribute("aria-label", t("prClose"));
+    }, 1000);
+    box._onKey = (e) => { if (e.key === "Escape" && !x.disabled) closePromo(); };
+    document.addEventListener("keydown", box._onKey);
+    x.onclick = () => { if (!x.disabled) closePromo(); };
+    box.querySelector(".promo-card").addEventListener("click", closePromo);
+    box.querySelector(".promo-card").focus({ preventScroll: true });
+  }
+
   function route() {
     if (popTimer) { clearInterval(popTimer); popTimer = null; }
     while (pageTimers.length) clearInterval(pageTimers.pop());
@@ -1703,7 +1759,8 @@
     const [path, qs] = h.split("?");
     const params = new URLSearchParams(qs || "");
     let nav = "home";
-    if (path === "/" || path === "") renderHome();
+    if (!(path === "/" || path === "")) closePromo();
+    if (path === "/" || path === "") { renderHome(); showPromo(); }
     else if (path === "/rank") { nav = "rank"; renderRank(params); highlight(params.get("hl")); }
     else if (path.startsWith("/p/")) { nav = ""; renderPerson(path.slice(3)); }
     else if (path === "/athletes") { nav = "athletes"; renderAthletes(params); }

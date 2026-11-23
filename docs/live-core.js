@@ -195,6 +195,13 @@
     for (const { s } of merged) for (const m of s.matchAll(/[零〇○洞一壹幺二兩两三四五六七八九十百廿卅0-9０-９]+/g)) { const d = chunkToDigits(m[0]); if (d) out.push(d); }
     return out;
   }
+  /* 語音分隔：說「…號」或識別結果出現「、」「，」「,」「。」即當一個號碼已講完。
+     done＝已講完的各段（可即時記錄），rest＝最後未有分隔的一段 */
+  const VOICE_SEP = /[號号、，,。；;]/;
+  function voiceSegments(text) {
+    const parts = String(text || "").split(VOICE_SEP);
+    return { done: parts.slice(0, -1), rest: parts[parts.length - 1] };
+  }
   /* 把一串數字拆成本組名單內的號碼：唯一拆法 → ok；多於一種或無法拆 → 列出候選 */
   function segmentBibs(str, valid) {
     if (valid.has(str)) return { ok: [str] };
@@ -231,5 +238,5 @@
     return out;
   }
 
-  root.XCLive = { TEAM_N, CUTOFF, MIN_GAP, keyOf, isSlot, lapsOf, buildRunners, eta, rankEntries, teamStandings, titleRace, simSplits, spokenGroups, segmentBibs };
+  root.XCLive = { TEAM_N, CUTOFF, MIN_GAP, keyOf, isSlot, lapsOf, buildRunners, eta, rankEntries, teamStandings, titleRace, simSplits, spokenGroups, segmentBibs, voiceSegments };
 })(typeof window !== "undefined" ? window : globalThis);

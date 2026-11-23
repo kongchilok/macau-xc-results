@@ -611,9 +611,9 @@
   /* ---------- 語音輸入（試驗）----------
      瀏覽器內置語音識別（Android Chrome 經 Google、iPhone Safari 經 Apple 聽寫）；先用粵語 yue-Hant-HK，不支援時改用 zh-HK
      只在目前組別／分組名單內配對；講「撤銷」或「取消」＝撤銷上一下
-     時間以識別完成時計（較實際經過約遲 0.5 至 2 秒） */
+     時間：說「…號」或停頓出現「、」「，」即時記錄（⚡）；否則以識別完成時計（較實際經過約遲 0.5 至 2 秒） */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const voice = { on: false, rec: null, lang: "yue-Hant-HK", log: [], fellBack: false };
+  const voice = { on: false, rec: null, lang: "yue-Hant-HK", log: [], fellBack: false, sent: {} };
   const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   function voiceInit() {
     const b = $("#micBtn");
@@ -628,8 +628,18 @@
     rec.onresult = (ev) => {
       for (let i = ev.resultIndex; i < ev.results.length; i++) {
         const r = ev.results[i];
-        if (r.isFinal) voiceHandle([...r].map((a) => a.transcript), now());
-        else { const w = $("#who"); w.textContent = `聽到：${r[0].transcript}`; w.className = "who"; }
+        const t = now(), alts = [...r].map((a) => a.transcript);
+        // 即時記錄：未完句時一聽到分隔（…號、「、」「，」）即記錄已講完的號碼，時間較準
+        if (!r.isFinal) {
+          const n = voice.sent[i] || 0, seg = XCLive.voiceSegments(alts[0]);
+          seg.done.slice(n).forEach((txt) => { if (/\S/.test(txt)) voiceHandle([txt], t, true); });
+          voice.sent[i] = Math.max(n, seg.done.length);
+        }
+        if (r.isFinal) {
+          // 完句：只處理未記錄的部分（已即時記錄的段落不再重複）
+          const sent = voice.sent[i] || 0, rest = alts.map((a) => XCLive.voiceSegments(a).done.slice(sent).concat(XCLive.voiceSegments(a).rest).join(" ")).filter((a) => /\S/.test(a));
+          if (!sent) voiceHandle(alts, t); else if (rest.length) voiceHandle(rest, t);
+        } else { const w = $("#who"); w.textContent = `聽到：${r[0].transcript}`; w.className = "who"; }
       }
     };
     rec.onerror = (e) => {
@@ -650,20 +660,20 @@
       else { voiceLog(`語音識別錯誤：${code}`, "bad"); return; }
       voiceStop();
     };
-    rec.onstart = () => { voice.restarting = false; };
+    rec.onstart = () => { voice.restarting = false; voice.sent = {}; };   // 新一節識別：結果編號由 0 重新計
     rec.onend = () => {
       if (!(voice.on && voice.rec === rec)) return;
       voice.restarting = true;
       try { rec.start(); } catch (x) { voiceLog("收聽已暫停：請再按一次麥克風", "warn"); voiceStop(); }
     };
-    voice.rec = rec; voice.on = true; voice.restarting = false;
+    voice.rec = rec; voice.on = true; voice.restarting = false; voice.sent = {};
     try { rec.start(); } catch (e) { voiceLog("未能啟動語音識別", "bad"); voice.on = false; }
     renderVoice();
   }
   function voiceStop() { voice.on = false; const r = voice.rec; voice.rec = null; try { r && r.stop(); } catch (e) { /* 已停止 */ } renderVoice(); showBib(); }
   function voiceLog(msg, cls = "ok", cand) { voice.log.unshift({ msg, cls, cand, at: Date.now() }); voice.log = voice.log.slice(0, 20); renderVoice(); }
-  function voiceHandle(alts, t) {
-    const said = alts[0] || "";
+  function voiceHandle(alts, t, live) {
+    const said = alts[0] || "", tag = live ? "⚡" : "";
     if (alts.some((a) => /撤銷|取消/.test(a))) { undo(); voiceLog(`「${esc(said)}」→ 撤銷上一下`); return; }
     const valid = new Set(inCat().map((r) => String(r.bib)));
     let best = null;
@@ -675,12 +685,12 @@
       if (c.ok) { best = c; break; }
       if (!best) best = c;
     }
-    if (!best) { voiceLog(`「${esc(said)}」→ 聽不到號碼`, "bad"); return; }
+    if (!best) { if (!live) voiceLog(`「${esc(said)}」→ 聽不到號碼`, "bad"); return; }
     for (const sg of best.segs) {
       if (sg.ok) {
         for (const bib of sg.ok) {
           const r = ROSTER.get(bib), ok = recordPass(r, t, { voice: true });
-          voiceLog(`「${esc(best.a)}」→ ${bib} ${esc(personOf(r) || "")} ${lastReason}${sg.guess ? "（拆分屬推斷）" : ""}`, ok ? (sg.guess ? "warn" : "ok") : "bad");
+          voiceLog(`${tag}「${esc(best.a)}」→ ${bib} ${esc(personOf(r) || "")} ${lastReason}${sg.guess ? "（拆分屬推斷）" : ""}`, ok ? (sg.guess ? "warn" : "ok") : "bad");
         }
       } else if (sg.cand.length) voiceLog(`「${esc(best.a)}」→ 無法確定號碼，請選擇：`, "warn", sg.cand);
       else { const o = ROSTER.get(sg.g); voiceLog(`「${esc(best.a)}」→ ${sg.g} ${o ? `屬${where(o)}，未記錄` : "名單內沒有此號碼"}`, "bad"); }
@@ -691,7 +701,7 @@
     b.classList.toggle("on", voice.on);
     b.setAttribute("aria-pressed", voice.on);
     box.hidden = !voice.on && !voice.log.length;
-    box.innerHTML = `<div class="vh"><b>${voice.on ? "收聽中" : "語音已停止"}</b><small>${voice.lang} · 時間以識別完成時計</small></div>` +
+    box.innerHTML = `<div class="vh"><b>${voice.on ? "收聽中" : "語音已停止"}</b><small>${voice.lang} · 每個號碼後說「號」即時記錄</small></div>` +
       voice.log.slice(0, 4).map((x) => `<div class="vl ${x.cls}">${x.msg}${x.cand ? x.cand.map((c) => `<button data-vc="${c}">${c}</button>`).join("") : ""}</div>`).join("");
     box.querySelectorAll("[data-vc]").forEach((el) => el.onclick = () => { const r = ROSTER.get(el.dataset.vc); if (r) { const ok = recordPass(r, now(), { voice: true }); voiceLog(`已選 ${el.dataset.vc} → ${lastReason}`, ok ? "ok" : "bad"); } });
   }

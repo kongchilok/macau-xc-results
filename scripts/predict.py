@@ -154,6 +154,7 @@ for c, v in PV["categories"].items():
         abbr = next((x["abbr"] for x in RACE["schools"] if x["zh"] == s["school_zh"]), None)
         pid_of[(name_of.get(s["pid"], ""), abbr)] = s["pid"]
     entrants = {(r["name_zh"], r["abbr"]) for r in start if r["cat"] == c}
+    heat_of = {(r["name_zh"], r["abbr"]): (r.get("heat") or None) for r in start if r["cat"] == c}  # 分組（男C／女C）
     near = {k: val for k, val in aecm.get(c, {}).items() if k in entrants}  # 只計今屆有報名者
     both = [(pid_of[k], val[2]) for k, val in near.items() if k in pid_of and pid_of[k] in hist_pred]
     off = statistics.median([hist_pred[p] - a for p, a in both]) if len(both) >= 2 else None
@@ -169,7 +170,7 @@ for c, v in PV["categories"].items():
         elif pid:
             items[("pid", pid)] = {"pid": pid, "idx": a2, "src": "aecm"}
         else:  # 新人：未有學界往績，但今日環山跑入三甲十名
-            items[("new", k)] = {"pid": None, "name_zh": k[0], "school_zh": ZH_OF.get(k[1], k[1]), "idx": a2, "src": "aecm"}
+            items[("new", k)] = {"pid": None, "name_zh": k[0], "school_zh": ZH_OF.get(k[1], k[1]), "heat": heat_of.get(k), "idx": a2, "src": "aecm"}
         (items[("pid", pid)] if pid else items[("new", k)]).update({"aecm_rank": rank, "aecm_time": tm})
     order = sorted(items.values(), key=lambda x: x["idx"])
     group = 0

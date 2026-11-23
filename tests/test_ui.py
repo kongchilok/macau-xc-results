@@ -41,6 +41,7 @@ def browser():
 @pytest.fixture()
 def page(browser, base_url):
     ctx = browser.new_context(viewport={"width": 375, "height": 812}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="zh-HK")
+    ctx.add_init_script("window.XC_NO_PROMO = true")   # 首頁海報只在專門測試開啟
     # 測試不依賴外部網絡：Google 字體以空樣式表代替
     ctx.route("https://fonts.googleapis.com/**", lambda r: r.fulfill(status=200, content_type="text/css", body=""))
     ctx.route("https://fonts.gstatic.com/**", lambda r: r.fulfill(status=204, body=""))
@@ -268,6 +269,33 @@ def test_dock_marks_current_page(page):
 
 
 # ---------- 第 48 屆預覽、校徽、在讀／畢業 ----------
+def test_home_promo_poster(page):
+    """每次進入首頁彈出海報；關閉按鈕 3 秒後才可按；按海報進入賽前預覽"""
+    race = json.loads((ROOT / "docs/data/race48.json").read_text(encoding="utf-8"))
+    import datetime
+    if datetime.date.fromisoformat(race["date"]) < datetime.date.today():
+        pytest.skip("比賽日已過，海報不再顯示")
+    page.add_init_script("window.XC_NO_PROMO = false")
+    go(page, "#/")
+    expect(page.locator(".promo")).to_be_visible()
+    expect(page.locator(".promo-card")).to_contain_text("第四十八屆學界越野跑比賽")
+    expect(page.locator(".promo-x")).to_be_disabled()
+    page.wait_for_timeout(1500)
+    expect(page.locator(".promo-x")).to_be_disabled()
+    expect(page.locator(".promo-x")).to_be_enabled(timeout=3000)
+    page.click(".promo-x")
+    expect(page.locator(".promo")).to_have_count(0)
+    no_hscroll(page)
+    page.click('.dock a[data-nav="rank"]')   # 再回首頁：再次彈出
+    page.wait_for_function("location.hash.startsWith('#/rank')")
+    page.click('.dock a[data-nav="home"]')
+    expect(page.locator(".promo")).to_be_visible()
+    page.click(".promo-card")
+    page.wait_for_function("location.hash.startsWith('#/preview')")
+    expect(page.locator(".promo")).to_have_count(0)
+    expect(page.locator(".pv-title")).to_be_visible()
+
+
 def test_home_race_banner(page):
     go(page, "#/")
     expect(page.locator(".race-banner")).to_be_visible()
@@ -329,7 +357,7 @@ def test_all_preview_rows_render_exactly(page):
     for c, v in pv["categories"].items():
         go(page, f"#/preview?c={c}")
         got = page.evaluate("""() => [...document.querySelectorAll('.pv-row')].map(r => [r.getAttribute('href').slice(4),
-            r.querySelector('.nm').childNodes[0].textContent.trim(), r.querySelector('.sch').textContent.split(' · ')[0].trim(),
+            r.querySelector('.nm').childNodes[0].textContent.trim(), [...r.querySelector('.sch').childNodes].filter((n) => !(n.classList && n.classList.contains('pv-heat'))).map((n) => n.textContent).join('').split(' · ')[0].trim(),
             r.querySelector('.crest').getAttribute('title')])""")
         exp = {s["pid"]: s["school_zh"] for s in v["starters"]}
         assert len(got) == len(exp), c
@@ -398,11 +426,29 @@ def test_preview_title_and_hero(page):
     go(page, "#/preview?c=MA")
     expect(page.locator(".pv-title")).to_contain_text("第四十八屆學界越野跑比賽")
     expect(page.locator(".pv-title small")).to_have_text("48° Campeonato Escolar de Corta-Mato")
-    expect(page.locator("#pvCarousel .card")).to_have_count(6)
-    for img in ["arch", "champ", "runner", "girls", "start", "podium"]:
+    # 次序：比賽日 → 比賽時間表 → 各組冠軍預測 → 人氣運動員 → 新晉焦點（上屆回顧已刪除）
+    assert page.locator("#pvCarousel .card h3").all_inner_texts() == ["比賽日", "比賽時間表", "各組冠軍預測", "人氣運動員", "新晉焦點"]
+    for img in ["arch", "start", "champ", "runner", "girls"]:
         assert page.request.get(f"{page.base}/img/race/{img}.jpg").ok, img
-    expect(page.locator("#pvCarousel .card").nth(1).locator(".mini-row")).to_have_count(10)
+    expect(page.locator("#pvCarousel .card").nth(2).locator(".mini-row")).to_have_count(10)
     no_hscroll(page)
+
+
+def test_preview_heat_badges(page):
+    """男C／女C 分組出發：往績及預測名單均列出所屬分組（C1、C2…）；不分組的組別不顯示"""
+    pv = json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"]
+    go(page, "#/preview?c=MC")
+    expect(page.locator(".pv-row")).to_have_count(len(pv["MC"]["starters"]))
+    expect(page.locator(".pv-row .pv-heat")).to_have_count(len(pv["MC"]["starters"]))
+    assert set(page.locator(".pv-row .pv-heat").all_inner_texts()) <= {"C1", "C2", "C3"}
+    go(page, "#/preview?c=FC&v=pred")
+    rows = page.locator(".pd-row")
+    expect(rows.first).to_be_visible()
+    assert rows.count() == rows.locator(".pv-heat").count()   # 包括未有學界往績的新人
+    assert set(rows.locator(".pv-heat").all_inner_texts()) <= {"C1", "C2"}
+    go(page, "#/preview?c=MA")
+    expect(page.locator(".pv-row").first).to_be_visible()
+    expect(page.locator(".pv-heat")).to_have_count(0)
 
 
 # ---------- 第六輪：運動員／學校名錄、互相連結、比賽天氣 ----------
@@ -524,6 +570,7 @@ def _fake_jwt(email):
 @pytest.fixture()
 def live(browser, base_url):
     ctx = browser.new_context(viewport={"width": 375, "height": 812}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="zh-HK")
+    ctx.add_init_script("window.XC_NO_PROMO = true")   # 首頁海報只在專門測試開啟
     ctx.route("https://fonts.googleapis.com/**", lambda r: r.fulfill(status=200, content_type="text/css", body=""))
     ctx.route("https://fonts.gstatic.com/**", lambda r: r.fulfill(status=204, body=""))
     db = {"entries": {}, "heats": {}, "rev": itertools.count(1)}
@@ -782,6 +829,7 @@ window.webkitSpeechRecognition = class {
 };
 window.SpeechRecognition = window.webkitSpeechRecognition;
 window.__say = (text) => { const r = [{ transcript: text }]; r.isFinal = true; window.__sr.onresult({ resultIndex: 0, results: [r] }); };
+window.__part = (text, final, i = 0) => { const r = [{ transcript: text }]; r.isFinal = !!final; const results = []; results[i] = r; window.__sr.onresult({ resultIndex: i, results }); };
 """
 
 
@@ -808,6 +856,33 @@ def test_live_admin_voice_input(live):
     assert len(_passes(page, 405)) == 1
     page.click("#micBtn")
     expect(page.locator("#micBtn")).not_to_have_class(re.compile("on"))
+
+
+def test_live_admin_voice_instant_on_separator(live):
+    """未完句時一聽到「號」／「、」即記錄已講完的號碼；完句時不重複記錄"""
+    page = live
+    page.add_init_script(FAKE_SR)
+    _login_ma(page)
+    page.select_option("#grp", "MC|1")
+    page.click("#startBtn")
+    page.click("#micBtn")
+    page.evaluate("__part('四零')")
+    page.wait_for_timeout(200)
+    assert not _passes(page, 405)                       # 未講完：不記錄
+    page.evaluate("__part('四零五號')")
+    _until(page, lambda: len(_passes(page, 405)) == 1)  # 一聽到「號」即記錄
+    expect(page.locator("#vlog")).to_contain_text("⚡")
+    page.evaluate("__part('四零五號四十')")
+    page.wait_for_timeout(200)
+    assert not _passes(page, 40)                        # 最後一段未有分隔：等完句
+    page.evaluate("__part('四零五號四十', true)")
+    _until(page, lambda: len(_passes(page, 40)) == 1)
+    assert len(_passes(page, 405)) == 1                 # 完句不重複記錄 405
+    page.evaluate("__part('四十、', false, 1)")          # 下一句（結果編號 1）：「、」亦即時記錄（相隔太短→疑似重複，不記錄）
+    expect(page.locator("#vlog")).to_contain_text("疑似重複")
+    page.evaluate("__part('四十、', true, 1)")
+    page.wait_for_timeout(200)
+    assert len(_passes(page, 40)) == 1
 
 
 def test_live_admin_number_grid(live):
@@ -1003,6 +1078,33 @@ def test_preview_school_roster(live):
     page.click("#pvRefresh")
     _until(page, lambda: page.db.get("roster_calls", 0) > n0)
     no_hscroll(page)
+
+
+def _team_order(cat):
+    """按預測團體名次的學校次序（與 app.js previewSchools 相同規則）"""
+    race = json.loads((ROOT / "docs/data/race48.json").read_text(encoding="utf-8"))
+    info = json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"][cat]
+    n = 5 if cat[1] in "AB" else 4
+    abbr = {s["zh"]: s["abbr"] for s in race["schools"]}
+    sch_of = {s["pid"]: s["school_zh"] for s in info["starters"]}
+    pred = info.get("prediction") or []
+    places = {}
+    for i, x in enumerate(pred):
+        places.setdefault(abbr.get(sch_of[x["pid"]] if x["pid"] else x["school_zh"]), []).append(i + 1)
+    def key(s):
+        k = s["n"][cat]; pl = places.get(s["abbr"], [])[:n]
+        score = sum(pl) + (n - len(pl)) * (len(pred) + 1)
+        return (0, score, (places.get(s["abbr"]) or [float("inf")])[0], -k, s["abbr"]) if k >= n else (1, 0, 0, -k, s["abbr"])
+    return [s["zh"] for s in sorted([s for s in race["schools"] if (s.get("n") or {}).get(cat)], key=key)]
+
+
+@pytest.mark.parametrize("cat", ["MA", "MC", "FB", "FC"])
+def test_preview_schools_ordered_by_team_prediction(live, cat):
+    page = live
+    page.goto(f"{page.base}/#/preview?c={cat}&v=sch")
+    page.wait_for_selector(".pv-sch")
+    got = page.locator(".pv-sch .ps-n b").all_inner_texts()
+    assert got == _team_order(cat), (got[:6], _team_order(cat)[:6])
 
 
 # ---------- 榮譽卡 ----------

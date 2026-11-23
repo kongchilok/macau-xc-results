@@ -132,4 +132,6 @@ const B = (entries, opt) => L.buildRunners(entries, H, { laps: 5, minGap: 119, .
   const v = new Set(["405", "353", "60", "40", "5", "35"]);
   out.seg = [L.segmentBibs("405353", v), L.segmentBibs("4035", v), L.segmentBibs("405", v), L.segmentBibs("999", v)];
 }
+// 2l. 語音分隔：「號」「、」「，」後即當講完
+out.sep = ["四零五號三五三", "四零五、三五三，六十", "四零五", "四零五號"].map((x) => L.voiceSegments(x));
 process.stdout.write(JSON.stringify(out));
