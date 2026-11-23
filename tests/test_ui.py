@@ -1,7 +1,7 @@
 """介面自動測試（Playwright＋本機 Chrome，手機尺寸 375×812）。
 用法：python -P -X utf8 -m pytest tests/test_ui.py
 """
-import json, pathlib, socket, subprocess, sys, time
+import json, pathlib, re, socket, subprocess, sys, time
 
 import pytest
 from playwright.sync_api import sync_playwright, expect
@@ -51,6 +51,8 @@ def page(browser, base_url):
             pid = json.loads(req.post_data or "{}").get("p_pid")
             views[pid] = views.get(pid, 0) + 1
             return route.fulfill(status=200, content_type="application/json", body=str(views[pid]))
+        if "/rpc/xc_live_roster_public" in req.url:
+            return route.fulfill(status=200, content_type="application/json", body="[]")
         if "/rest/v1/xc_views" in req.url:
             if "pid=eq." in req.url:
                 pid = req.url.split("pid=eq.")[1].split("&")[0]
@@ -561,6 +563,9 @@ def live(browser, base_url):
                               "heats": [h for h in db["heats"].values() if h["rev"] > since],
                               "entries": [{**{k: v for k, v in e.items() if k != "bib"}, "k": f"h{e['bib']}" if e.get("bib") else None}
                                           for e in db["entries"].values() if e["rev"] > since]})
+        if "/rpc/xc_live_roster_public" in u:
+            db["roster_calls"] = db.get("roster_calls", 0) + 1
+            return ok(route, [{"k": f"h{r['bib']}", **{k: v for k, v in r.items() if k != "bib"}} for r in roster])
         if "/rest/v1/xc_live_roster" in u:
             return ok(route, roster)
         for table, key in (("xc_live_entries", "id"), ("xc_live_heats", None)):
@@ -705,11 +710,26 @@ def test_live_admin_flow(live):
     expect(rows.nth(1)).to_contain_text("1／5 圈")
     body = page.locator("#lvBody").inner_text()
     assert "1002" not in body and "1001" not in body
-    expect(page.locator(".lv-team").first).to_contain_text("暫計")
+    expect(page.locator(".lv-team")).to_have_count(0)            # 預設只顯示個人即時排名
     # 按一下展開各圈用時：1001 共 5 次經過，最後一次為完賽
     rows.nth(0).locator("button").click()
     expect(page.locator(".lv-splits span")).to_have_count(5)
     expect(page.locator(".lv-splits")).to_contain_text("完賽")
+    no_hscroll(page)
+    # 切換至團體即時排名；按學校展開出戰名單（含未起跑者）
+    page.click('[data-lv="team"]')
+    expect(page.locator("#lvBody .lv-run")).to_have_count(0)
+    hk = page.locator(".lv-tw", has_text="濠江中學")
+    expect(hk.locator(".lv-team")).to_contain_text("暫計")
+    hk.locator(".lv-team").click()
+    expect(hk.locator(".lv-roster")).to_contain_text("測試甲")
+    expect(hk.locator(".lv-roster")).to_contain_text("已完成 1／5 圈")
+    expect(hk.locator(".lv-roster")).to_contain_text("測試乙")
+    expect(hk.locator(".lv-roster")).to_contain_text("未有經過終點紀錄")
+    # 更新按鈕：重新下載出戰名單及即時紀錄
+    n0 = page.db.get("roster_calls", 0)
+    page.click("#lvRefresh")
+    _until(page, lambda: page.db.get("roster_calls", 0) > n0)
     no_hscroll(page)
 
 
@@ -756,24 +776,63 @@ def test_live_practice_mode(live):
 def test_live_demo_replay(page):
     # 示範以 30 倍速播放；先把時鐘撥快一小時，令全部運動員已到達
     page.add_init_script("(() => { const o = Date.now.bind(Date); let first = null; Date.now = () => { const n = o(); if (first === null) first = n; return n + (n - first > 50 ? 3600 * 1000 : 0); }; })()")
-    go(page, "#/live?demo=47&c=MA")
-    page.wait_for_function("document.querySelectorAll('#lvBody .row').length >= 40", timeout=15000)
+    go(page, "#/live?demo=47&c=MA&v=team")
+    page.wait_for_function("document.querySelectorAll('#lvBody .lv-team').length >= 3", timeout=15000)
+    page.wait_for_function("document.querySelector('.lv-status.done')", timeout=15000)
     champ = EDS[47]["categories"]["MA"]["team_champion"]["school_zh"]
     expect(page.locator(".lv-team").first).to_contain_text(champ)
+    expect(page.locator(".lv-team").first).to_contain_text("團體冠軍")
     expect(page.locator(".lv-team .rank.r1")).to_have_count(1)
+    go(page, "#/live?demo=47&c=MA")
+    page.wait_for_function("document.querySelectorAll('#lvBody .lv-run').length >= 40", timeout=15000)
     # 個人榜：多圈合成後最終名次與官方一致（首名在頂、顯示官方時間）
     win = EDS[47]["categories"]["MA"]["individual"][0]
     expect(page.locator("#lvBody .lv-run").first).to_contain_text(win["name_zh"])
     expect(page.locator("#lvBody .lv-run").first).to_contain_text(win["time"])
     # 分組組別（男C 分 3 組）：全部完成後合併時間，首名＝官方冠軍，顯示分組名次；團體冠軍與官方一致
-    go(page, "#/live?demo=47&c=MC")
+    go(page, "#/live?demo=47&c=MC&h=all")
     page.wait_for_function("document.querySelectorAll('#lvBody .lv-run').length >= 40", timeout=15000)
     expect(page.locator("#lvBody .board-head").first).to_contain_text("已完成 3／3 組")
     mc = EDS[47]["categories"]["MC"]
     expect(page.locator("#lvBody .lv-run").first).to_contain_text(mc["individual"][0]["name_zh"])
     expect(page.locator("#lvBody .lv-run").first).to_contain_text("C1 第 1 名")
+    # 分組切換：第 1／2／3 組＋全組合併；選第 2 組只顯示該組，名次為分組名次
+    expect(page.locator(".lv-heats .chip")).to_have_count(4)
+    page.click('.lv-heats [data-lh="2"]')
+    expect(page.locator("#lvBody .lv-run").first).to_contain_text("全組第")
+    expect(page.locator("#lvBody .lv-run .rank").first).to_have_text("1")
+    go(page, "#/live?demo=47&c=MC&v=team")
     expect(page.locator(".lv-team").first).to_contain_text(mc["team_champion"]["school_zh"])
     expect(page.locator(".lv-team").first).not_to_contain_text("暫計")
+    # 下拉名單按分組列出
+    page.locator(".lv-team").first.click()
+    expect(page.locator(".lv-roster .lv-rh").first).to_contain_text("組（已完成）")   # 只列出有隊員的分組
+    no_hscroll(page)
+
+
+def test_live_defaults_and_moves(page):
+    """未指定分組時按最新進度（示範開始時第 1 組進行中）；排位變動顯示 ▲／▼"""
+    go(page, "#/live?demo=47&c=MC")
+    expect(page.locator(".lv-heats .chip.on")).to_contain_text("第 1 組")
+    expect(page.locator('[data-lv="ind"]')).to_have_class(re.compile("on"))
+    go(page, "#/live?demo=47&c=MA")
+    page.wait_for_selector("#lvBody .lv-mv", timeout=20000)
+    no_hscroll(page)
+
+
+def test_preview_school_roster(live):
+    page = live
+    page.goto(f"{page.base}/#/preview?c=MC&v=sch")
+    page.wait_for_selector(".pv-sch")
+    n_sch = sum(1 for s in json.loads((ROOT / "docs/data/race48.json").read_text(encoding="utf-8"))["schools"] if (s.get("n") or {}).get("MC"))
+    expect(page.locator(".pv-sch")).to_have_count(n_sch)
+    iv = page.locator(".pv-sch", has_text="青洲")
+    iv.locator("summary").click()
+    expect(iv).to_contain_text("陳浩天")
+    expect(iv).to_contain_text("C1")
+    n0 = page.db.get("roster_calls", 0)
+    page.click("#pvRefresh")
+    _until(page, lambda: page.db.get("roster_calls", 0) > n0)
     no_hscroll(page)
 
 

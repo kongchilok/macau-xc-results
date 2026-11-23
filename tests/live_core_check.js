@@ -111,4 +111,18 @@ const B = (entries, opt) => L.buildRunners(entries, H, { laps: 5, minGap: 119, .
   const T2 = L.teamStandings("MC", x.runners, { 甲: 4, 乙: 5 }, true, false);
   out.heatTeams = { pending: T1.teams.map((t) => [t.abbr, t.score, t.complete]), final: T2.teams.map((t) => [t.abbr, t.pos, t.score, t.complete]) };
 }
+// 2j. 奪冠形勢（C 組每隊 4 人；只以已完賽者計）
+{
+  const H1 = { 1: { start_ms: 0, status: "running" } };
+  const mk = (list) => list.map(([abbr, place], i) => ({ id: `w${i}`, bib: 5000 + i, heat: 1, abbr, at_ms: (100 + place) * S, seq: place, deleted: false }));
+  const tr = (list, entered, pending) => { const x = L.buildRunners(mk(list), H1, { laps: 1 }); return L.titleRace("MC", x.runners, entered, pending); };
+  // 甲 1、6、7、8＝22 分已齊；乙 2、3、5 已完賽，尚欠 1 人：最佳 10＋9＝19，仍有機會；須取得第 11 名或更前（22−10−1）
+  const A = [["甲", 1], ["乙", 2], ["乙", 3], ["丙", 4], ["乙", 5], ["甲", 6], ["甲", 7], ["甲", 8]];
+  out.title1 = tr(A, { 甲: 4, 乙: 4, 丙: 4 }, false);
+  // 甲 1–4＝10 分已齊；其他學校最佳亦不可能少於 10 → 甲已鎖定，乙丙已無法奪冠
+  const B = [["甲", 1], ["甲", 2], ["甲", 3], ["甲", 4], ["乙", 5], ["丙", 6]];
+  out.title2 = tr(B, { 甲: 4, 乙: 4, 丙: 4 }, false);
+  // 分組未完成：不判斷鎖定／出局
+  out.title3 = tr(B, { 甲: 4, 乙: 4, 丙: 4 }, true);
+}
 process.stdout.write(JSON.stringify(out));

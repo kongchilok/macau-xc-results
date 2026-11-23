@@ -120,6 +120,43 @@
     return { n, teams, award: teams.length >= 2, finishers: ranked.filter((e) => e.fin !== false && e.place != null).length, onCourse: ranked.filter((e) => e.fin === false && e.place != null).length };
   }
 
+  /* 奪冠形勢：只以已到達終點者的名次計算（其後到達者只會排在後面，名次已定）
+     每校：f＝已完賽計分人數，sumF＝其名次和；best＝餘下計分隊員緊接目前最後一名之後到達的最佳總分
+     state：locked（已鎖定團體冠軍）、out（已無法奪得團體冠軍）、open（仍有機會）
+     need：未齊人的學校要超越目前最佳的已齊人學校，餘下 r 名計分隊員名次總和的上限 max
+     分組出發而未完成全部分組（pending）：其後分組的時間可插入前列，名次未定，故只計 need，不判斷鎖定／出局 */
+  function titleRace(cat, ranked, entered, pending) {
+    const n = TEAM_N[cat[1]];
+    const fins = ranked.filter((e) => e.fin !== false && e.place != null);
+    const F = fins.length;
+    const T = [];
+    for (const [abbr, k] of Object.entries(entered)) {
+      if (k < n) continue;
+      const fp = fins.filter((e) => e.abbr === abbr).map((e) => e.place).sort((a, b) => a - b);
+      const dnf = ranked.filter((e) => e.abbr === abbr && e.dnf).length;
+      const f = Math.min(fp.length, n), complete = fp.length >= n;
+      const sumF = fp.slice(0, n).reduce((s, p) => s + p, 0);
+      let best = sumF;
+      for (let i = 1; i <= n - f; i++) best += F + i;
+      T.push({ abbr, f, r: n - f, sumF, complete, best, first: fp[0] ?? F + 1, cannot: !complete && fp.length + (k - fp.length - dnf) < n });
+    }
+    const beats = (a, b) => a.s < b.s || (a.s === b.s && a.first < b.first);
+    const top = T.filter((x) => x.complete).sort((a, b) => a.best - b.best || a.first - b.first)[0];
+    const res = {};
+    for (const x of T) {
+      let state = "open", need = null;
+      if (x.cannot && !pending) state = "out";
+      else if (top && x !== top && !pending && !beats({ s: x.best, first: x.first }, { s: top.best, first: top.first })) state = "out";
+      if (state === "open" && top && x !== top && !x.complete) {
+        const tieWin = x.f > 0 && x.first < top.first; // 同分時首名名次較前者勝
+        need = { r: x.r, max: top.best - x.sumF - (tieWin ? 0 : 1), vs: top.abbr, vsScore: top.best };
+      }
+      if (x === top && !pending && T.every((y) => y === x || (y.cannot) || !beats({ s: y.best, first: y.first }, { s: x.best, first: x.first }))) state = "locked";
+      res[x.abbr] = { state, need, complete: x.complete, f: x.f, r: x.r };
+    }
+    return res;
+  }
+
   /* 演練／示範用：按全程時間合成各圈經過時間（毫秒）。每人配速略有不同（有人先快後慢），最後一圈＝官方成績 */
   function simSplits(seconds, laps, seed) {
     const rnd = (n) => { const x = Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453; return x - Math.floor(x); };
@@ -133,5 +170,5 @@
     return out;
   }
 
-  root.XCLive = { TEAM_N, CUTOFF, MIN_GAP, keyOf, isSlot, lapsOf, buildRunners, eta, rankEntries, teamStandings, simSplits };
+  root.XCLive = { TEAM_N, CUTOFF, MIN_GAP, keyOf, isSlot, lapsOf, buildRunners, eta, rankEntries, teamStandings, titleRace, simSplits };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -88,6 +88,17 @@
       lvRule: (a, c) => `計分方法：A、B 組取每校首 ${a} 名、C 組取每校首 ${c} 名的名次相加，分數最低者勝；同分時以首名隊員名次較前者為勝。比賽途中按目前跑位推算（完成圈數較多者在前，同圈數按經過終點次序），以「暫計」顯示；未有足夠隊員經過終點的隊伍，假設餘下隊員緊接目前最後一名之後。`,
       lvHeatsRule: (n) => `本組分 ${n} 組出發，按章程合併各組時間定名次（人手計時，或與官方晶片計時略有出入）。每完成一組即更新；全部分組完成前，名次及團體分只屬暫計。`,
       lvHeatsDone: (d, n) => `已完成 ${d}／${n} 組`, lvHeatPlace: (g, p) => `${g} 第 ${p} 名`,
+      pdSchools: "學校名單", pvSchHead: (s, r) => `${s} 間學校 · ${r} 名運動員`, pvSchCount: (n) => `${n} 人`, pvTeamYes: "計團體成績", pvTeamNo: (n) => `不足 ${n} 人，不計團體成績`,
+      pvFirstTime: "未有往績", pvMore: (n) => `另有 ${n} 名未有往績的隊員（完整名單載入後顯示）`, pvRosterFallback: "暫時未能載入完整出戰名單，現只列出有往績的運動員。", pvSchNote: "名單依據大會秩序冊；按學校可展開出戰隊員。",
+      lvHeatTab: (h) => `第 ${h} 組`, lvAllHeats: "全組合併", lvOverall: (p) => `全組第 ${p} 名`, lvHeatNotStarted: "本分組尚未開始。",
+      lvRefresh: "更新", lvMvUp: (n) => `名次上升 ${n} 位`, lvMvDown: (n) => `名次下跌 ${n} 位`,
+      lvLocked: "已鎖定團體冠軍", lvNoTitle: "已無法奪得團體冠軍", lvChampion: "團體冠軍", lvLeadProv: "暫列第 1 名", lvBehind: (d) => `暫計落後第 1 名 ${d} 分`,
+      lvNeed1: (p, s, v) => `餘下 1 名計分隊員須取得第 ${p} 名或更前，方可超越${s}（${v} 分）`,
+      lvNeedN: (r, m, s, v) => `餘下 ${r} 名計分隊員名次總和須不多於 ${m}，方可超越${s}（${v} 分）`,
+      lvTeamHint: "按學校可查看出戰名單及奪冠條件。奪冠條件以已到達終點者的名次計算。",
+      lvRoster: "出戰名單", lvEntered: (n) => `報名 ${n} 人`, lvRosterErr: "暫時未能載入出戰名單。", lvSchoolPage: "學校資料",
+      lvMemFin: (p, tm) => `第 ${p} 名 · ${tm}`, lvMemLap: (n, l, p) => `已完成 ${n}／${l} 圈 · 暫列第 ${p} 名`, lvMemNotStarted: "未起跑", lvMemNoPass: "未有經過終點紀錄", lvMemNoFin: "未有完賽紀錄", lvScorer: "計分",
+      lvHeatGroup: (h, s) => `第 ${h} 組（${s}）`,
       lvUpdated: (s) => `更新於 ${s}`, lvOffline: "暫時未能連線，稍後自動重試。", lvTimeNote: "人手計時，只供參考",
       cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
       cardNote: "圖片只使用本網站已公開的成績資料。手機可按「分享」儲存至相簿或傳送給朋友。",
@@ -177,6 +188,17 @@
       lvRule: (a, c) => `Scoring: the places of each school's first ${a} finishers (A and B) or first ${c} finishers (C) are added; lowest total wins, ties go to the team whose first runner placed higher. During the race, standings are projected from current positions (more laps first, then order past the finish line) and marked provisional; teams with too few runners recorded assume the rest come in right after the current last place.`,
       lvHeatsRule: (n) => `This category runs in ${n} heats, merged and ranked by time (hand timing may differ slightly from official chip times). Places and team points update after each heat and stay provisional until all heats finish.`,
       lvHeatsDone: (d, n) => `${d}/${n} heats done`, lvHeatPlace: (g, p) => `${g} #${p}`,
+      pdSchools: "Schools", pvSchHead: (s, r) => `${s} schools · ${r} runners`, pvSchCount: (n) => `${n} runners`, pvTeamYes: "Team scored", pvTeamNo: (n) => `Fewer than ${n}, no team score`,
+      pvFirstTime: "No past results", pvMore: (n) => `${n} more runners without past results (shown once the full list loads)`, pvRosterFallback: "Full runner list unavailable for now; only runners with past results are shown.", pvSchNote: "From the official start list. Tap a school to see its runners.",
+      lvHeatTab: (h) => `Heat ${h}`, lvAllHeats: "All heats", lvOverall: (p) => `Overall #${p}`, lvHeatNotStarted: "This heat has not started.",
+      lvRefresh: "Refresh", lvMvUp: (n) => `Up ${n}`, lvMvDown: (n) => `Down ${n}`,
+      lvLocked: "Team title secured", lvNoTitle: "Can no longer win the team title", lvChampion: "Team champion", lvLeadProv: "Provisionally first", lvBehind: (d) => `Provisionally ${d} points behind first`,
+      lvNeed1: (p, s, v) => `Last scoring runner must finish ${p}th or better to beat ${s} (${v} points)`,
+      lvNeedN: (r, m, s, v) => `Remaining ${r} scoring runners must total ${m} places or fewer to beat ${s} (${v} points)`,
+      lvTeamHint: "Tap a school for its runners and what it needs to win. Requirements use places of runners already finished.",
+      lvRoster: "Runners", lvEntered: (n) => `${n} entered`, lvRosterErr: "Runner list unavailable for now.", lvSchoolPage: "School page",
+      lvMemFin: (p, tm) => `#${p} · ${tm}`, lvMemLap: (n, l, p) => `${n}/${l} laps · provisionally #${p}`, lvMemNotStarted: "Not started", lvMemNoPass: "Not yet recorded", lvMemNoFin: "No finish recorded", lvScorer: "Scores",
+      lvHeatGroup: (h, s) => `Heat ${h} (${s})`,
       lvUpdated: (s) => `Updated ${s}`, lvOffline: "Connection lost, retrying.", lvTimeNote: "Hand timing, for reference only",
       cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
       cardNote: "The card uses only results already published on this site. On a phone, use Share to save it to your photos.",
@@ -883,13 +905,41 @@
     } catch (e) { /* 人氣暫時讀不到時保留預設文字 */ }
   }
 
+  /* 賽前預覽「學校名單」：每校一個下拉，列出出戰隊員（姓名、分組、往績） */
+  const PV_TRIED = new Set();
+  function previewSchools(cat, info) {
+    const race = DB.race, ev = String(race.edition);
+    const list = ROSTERS.get(ev);
+    const sch = race.schedule.find((x) => x.cat === cat), multi = (sch.heats || 1) > 1;
+    const n = XCLive.TEAM_N[cat[1]];
+    const schools = race.schools.filter((x) => x.n && x.n[cat]).sort((a, b) => b.n[cat] - a.n[cat] || a.abbr.localeCompare(b.abbr));
+    const members = list ? list.filter((r) => r.cat === cat) : info.starters.map((x) => ({ abbr: abbrOf(x.school_zh), heat: x.heat ? Number(x.heat) : null, pid: x.pid, name: null }));
+    const html = schools.map((x) => {
+      const mine = members.filter((m) => m.abbr === x.abbr).sort((a, b) => (a.heat || 0) - (b.heat || 0) || String(a.name || "").localeCompare(String(b.name || ""), "zh-Hant"));
+      const mix = multi && list ? (() => { const c = {}; mine.forEach((m) => { c[m.heat] = (c[m.heat] || 0) + 1; }); return Object.keys(c).sort().map((h) => `${cat[1]}${h}×${c[h]}`).join(" · "); })() : "";
+      const rows = mine.map((m) => {
+        const p = m.pid && PEOPLE.get(m.pid);
+        const nm = p && !p.hidden ? `<a href="#/p/${m.pid}">${personName(p)}</a>` : m.name ? esc(m.name) : `<span class="muted">${t("lvRunner")}</span>`;
+        let past = t("pvFirstTime");
+        if (p && !p.hidden) { const last = p.recs.at(-1); past = `${yearShort(last.year)} ${catLabel(last.cat)} ${t("placeShort", last.rank)}`; }
+        return `<li><span class="mn">${nm}</span><span class="ms">${multi && m.heat ? `<b class="pv-heat">${cat[1]}${m.heat}</b>` : ""}${esc(past)}</span></li>`;
+      }).join("");
+      const more = list ? 0 : x.n[cat] - mine.length; // 後備模式：未有往績者未能列出姓名
+      return `<details class="pv-sch"><summary>${crest(x.zh, "sm")}<span class="ps-n"><b>${esc(school(x.zh))}</b><small>${esc([t("pvSchCount", x.n[cat]), x.n[cat] >= n ? t("pvTeamYes") : t("pvTeamNo", n), mix].filter(Boolean).join(" · "))}</small></span><i class="lv-caret" aria-hidden="true"></i></summary><ul>${rows}${more > 0 ? `<li class="more"><span class="mn muted">${t("pvMore", more)}</span></li>` : ""}</ul></details>`;
+    }).join("");
+    return `${list ? "" : `<p class="banner">${t("pvRosterFallback")}</p>`}<div class="board pv-schools">${html}</div><p class="muted-note">${t("pvSchNote")}</p>`;
+  }
+
   function renderPreview(params) {
     const race = DB.race, pv = DB.preview;
     if (!race || !pv) return renderNotFound();
     const cat = CATS.includes(params.get("c")) ? params.get("c") : "MA";
     const g = cat[0];
-    const mode = params.get("v") === "pred" && pv.categories[cat].prediction ? "pred" : "past";
-    const go = (c, v = mode) => { location.replace("#/preview?c=" + c + (v === "pred" ? "&v=pred" : "")); };
+    const mode = params.get("v") === "pred" && pv.categories[cat].prediction ? "pred" : params.get("v") === "sch" ? "sch" : "past";
+    const go = (c, v = mode) => { location.replace("#/preview?c=" + c + (v !== "past" ? "&v=" + v : "")); };
+    const ev = String(race.edition);
+    // 學校名單需要出戰名單（公開函數，含秩序冊姓名）；未載入時先顯示有往績者，載入後重繪
+    if (mode === "sch" && !ROSTERS.has(ev) && !PV_TRIED.has(ev)) { PV_TRIED.add(ev); loadRoster(ev).then(() => { if (location.hash.startsWith("#/preview")) renderPreview(params); }); }
     const sch = race.schedule.find((x) => x.cat === cat);
     const dist = sch.distance, distRules = sch.distance_rules;
     const m = (v) => v.toLocaleString() + (lang === "zh" ? " 米" : " m");
@@ -928,7 +978,8 @@
     const catBtns = (letters) => letters.split("").map((l) => `<button class="${cat === g + l ? "on" : ""}" data-c="${g + l}">${l}</button>`).join("");
     view.innerHTML = `
       <h1 class="page-title pv-title">${esc(t("pvTitleZh"))}<small lang="pt">${esc(t("pvTitlePt"))}</small></h1>
-      <div class="link-row"><a href="#/live">${t("lvGo")} ›</a><a href="#/live?demo=${LATEST.edition}">${t("lvDemo")} ›</a></div>
+      <div class="link-row"><a href="#/live">${t("lvGo")} ›</a><a href="#/live?demo=${LATEST.edition}">${t("lvDemo")} ›</a>
+        <button class="lv-refresh" id="pvRefresh" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${t("lvRefresh")}</button></div>
       ${previewHero(race, pv)}
       <div class="filters">
         <div class="toggle"><button class="m ${g === "M" ? "on" : ""}" data-g="M">${t("male")}</button><button class="f ${g === "F" ? "on" : ""}" data-g="F">${t("female")}</button></div>
@@ -947,12 +998,13 @@
           ? `<span><b>${t("distSched")}</b>${m(dist)}</span><span><b>${t("distRules")}</b>${m(distRules)}</span><em>${t("distDiffer")}</em>`
           : `<span><b>${t("distSched")}</b>${m(dist)}</span><span><b>${t("distRules")}</b>${distRules ? m(distRules) : "-"}</span><em>${t("distSame")}</em>`}</div>
       </section>
-      <div class="board-head pv-head"><h2>${esc(mode === "pred" ? t("pdHead", (info.prediction || []).length, info.total) : t("pvKnown", info.starters.length, info.total))}</h2>
-        <div class="mini-seg" role="tablist"><button role="tab" data-v="past" class="${mode === "past" ? "on" : ""}" aria-selected="${mode === "past"}">${t("pdPast")}</button><button role="tab" data-v="pred" class="${mode === "pred" ? "on" : ""}" aria-selected="${mode === "pred"}">${t("pdPred")}</button></div></div>
-      ${mode === "pred" ? predictionBoard(info) : `${rows.length ? `<div class="board">${html}</div>` : `<p class="muted-note">${t("pvNone")}</p>`}
+      <div class="board-head pv-head"><h2>${esc(mode === "pred" ? t("pdHead", (info.prediction || []).length, info.total) : mode === "sch" ? t("pvSchHead", race.schools.filter((x) => x.n && x.n[cat]).length, info.total) : t("pvKnown", info.starters.length, info.total))}</h2>
+        <div class="mini-seg" role="tablist"><button role="tab" data-v="past" class="${mode === "past" ? "on" : ""}" aria-selected="${mode === "past"}">${t("pdPast")}</button><button role="tab" data-v="pred" class="${mode === "pred" ? "on" : ""}" aria-selected="${mode === "pred"}">${t("pdPred")}</button><button role="tab" data-v="sch" class="${mode === "sch" ? "on" : ""}" aria-selected="${mode === "sch"}">${t("pdSchools")}</button></div></div>
+      ${mode === "pred" ? predictionBoard(info) : mode === "sch" ? previewSchools(cat, info) : `${rows.length ? `<div class="board">${html}</div>` : `<p class="muted-note">${t("pvNone")}</p>`}
       ${info.unmatched ? `<p class="muted-note">${esc(t("pvNew", info.unmatched))}</p>` : ""}
       <p class="muted-note">${t("pvNote")}</p>`}`;
     view.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => go(cat, b.dataset.v));
+    $("#pvRefresh").onclick = async () => { const b = $("#pvRefresh"); b.classList.add("busy"); b.disabled = true; await loadRoster(ev, true); if (location.hash.startsWith("#/preview")) renderPreview(params); };
     const car = $("#pvCarousel"), dots = [...($("#pvDots") || { children: [] }).children];
     if (car) car.addEventListener("scroll", () => { const i = Math.round(car.scrollLeft / (car.firstElementChild.offsetWidth + 12)); dots.forEach((d, j) => d.classList.toggle("on", j === i)); }, { passive: true });
     fillHeroPopular();
@@ -964,7 +1016,8 @@
   /* ---------- 即時成績（終點人手輸入，Supabase xc_live_feed） ----------
      #/live           第 48 屆正式資料（event "48"）
      #/live?ev=test   演練資料
-     #/live?demo=47   以第 47 屆官方成績在本機模擬重播（不連資料庫） */
+     #/live?demo=47   以第 47 屆官方成績在本機模擬重播（不連資料庫）
+     參數：c＝組別；v＝ind（個人即時排名，預設）／team（團體即時排名）；h＝分組（1、2、3……或 all＝全組合併；未指定則按最新進度） */
   const LIVE_CATS = ["MA", "MB", "FB", "MC", "FC", "FA"]; // 第 48 屆中學組，按起跑次序
   let LIVE = null;
   function liveCats() {
@@ -992,12 +1045,30 @@
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }
 
+  /* Supabase 公開函數（只可讀） */
+  async function rpc(name, body) {
+    const c = DB.site && DB.site.views;
+    if (!c || !c.url) throw new Error("no database");
+    const H = { apikey: c.key, "Content-Type": "application/json" };
+    if (!c.key.startsWith("sb_")) H.Authorization = "Bearer " + c.key;
+    const r = await fetch(`${c.url}/rest/v1/rpc/${name}`, { method: "POST", headers: H, cache: "no-store", body: JSON.stringify(body) });
+    if (!r.ok) throw new Error(name + " " + r.status);
+    return r.json();
+  }
+  /* 出戰名單（秩序冊姓名、學校、分組；不含號碼布）：k 與即時紀錄的 k 相同，用來對應 */
+  const ROSTERS = new Map();
+  async function loadRoster(event, force) {
+    if (!force && ROSTERS.has(event)) return ROSTERS.get(event);
+    try { const list = await rpc("xc_live_roster_public", { p_event: event }); ROSTERS.set(event, list); return list; }
+    catch (e) { return ROSTERS.get(event) || null; }
+  }
+
   /* 示範重播：把第 47 屆官方成績壓縮成數分鐘的即時更新（按今屆圈數合成各圈經過時間，最後一圈＝官方成績） */
   function demoSetup(edNo) {
     const ed = DB.editions.find((e) => e.edition === edNo) || LATEST;
     const speed = 30, t0 = Date.now();
     LIVE.t0 = t0; LIVE.demoSpeed = speed;
-    LIVE.demoEntered = {}; LIVE.demoRows = [];
+    LIVE.demoEntered = {}; LIVE.demoRows = []; LIVE.roster = [];
     for (const cat of liveCats()) {
       const rows = ed.categories[cat].individual;
       const ent = {}, laps = XCLive.lapsOf(DB.race, cat), passes = [];
@@ -1006,9 +1077,10 @@
       // 分組出發的組別：按序輪流分入各組，各組相隔（最慢時間＋2 分鐘）先後出發
       const n = heatCount(cat), gap = (Math.max(...rows.map((r) => r.seconds)) + 120) * 1000;
       for (let h = 1; h <= n; h++) LIVE.heats.set(`${cat}|${h}`, { cat, heat: h, start_ms: t0 + (h - 1) * gap, status: h === 1 ? "running" : "ready" });
-      rows.forEach((r, j) => { const heat = (j % n) + 1, st0 = t0 + (heat - 1) * gap;
+      rows.forEach((r, j) => { const heat = (j % n) + 1, st0 = t0 + (heat - 1) * gap, k = `${cat}-${j}`, abbr = abbrOf(r.school_zh);
+        LIVE.roster.push({ k, cat, heat: n > 1 ? heat : null, abbr, pid: r.hidden ? null : r.pid, name: r.hidden ? null : r.name_zh || r.name_pt });
         XCLive.simSplits(r.seconds, laps, j + 1).forEach((ms, i) =>
-          passes.push({ id: `${cat}-${j}-${i}`, k: `${cat}-${j}`, cat, heat, abbr: abbrOf(r.school_zh), pid: r.hidden ? null : r.pid, at_ms: st0 + ms + j, deleted: false })); });
+          passes.push({ id: `${cat}-${j}-${i}`, k, cat, heat, abbr, pid: r.hidden ? null : r.pid, at_ms: st0 + ms + j, deleted: false })); });
       passes.sort((x, y) => x.at_ms - y.at_ms).forEach((e, i) => { e.seq = i + 1; });
       LIVE.demoRows.push(...passes);
     }
@@ -1030,15 +1102,9 @@
 
   async function livePoll() {
     if (!LIVE) return;
-    if (LIVE.demo) { if (demoTick()) liveRender(); return; }
-    const c = DB.site && DB.site.views;
-    if (!c || !c.url) return;
+    if (LIVE.demo) { if (demoTick()) liveRender(); LIVE.updated = new Date(); liveStamp(); return; }
     try {
-      const H = { apikey: c.key, "Content-Type": "application/json" };
-      if (!c.key.startsWith("sb_")) H.Authorization = "Bearer " + c.key;
-      const r = await fetch(`${c.url}/rest/v1/rpc/xc_live_feed`, { method: "POST", headers: H, cache: "no-store", body: JSON.stringify({ p_event: LIVE.event, p_since: LIVE.rev }) });
-      if (!r.ok) throw new Error("live " + r.status);
-      const j = await r.json();
+      const j = await rpc("xc_live_feed", { p_event: LIVE.event, p_since: LIVE.rev });
       if (!LIVE) return;
       LIVE.offset = j.now - Date.now();
       let changed = !LIVE.loaded;
@@ -1050,6 +1116,16 @@
       console.warn("live feed unavailable", e);
       if (LIVE) { LIVE.error = true; liveStamp(); }
     }
+  }
+  // 「更新」按鈕：立即重新下載即時紀錄及出戰名單
+  async function liveRefresh() {
+    if (!LIVE) return;
+    const b = $("#lvRefresh"); if (b) { b.classList.add("busy"); b.disabled = true; }
+    if (!LIVE.demo) { const list = await loadRoster(LIVE.event, true); if (list && LIVE) LIVE.roster = list; }
+    await livePoll();
+    if (!LIVE) return;
+    liveRender();
+    const b2 = $("#lvRefresh"); if (b2) { b2.classList.remove("busy"); b2.disabled = false; }
   }
   function liveStamp() {
     const el = $("#lvUpdated"); if (!el || !LIVE) return;
@@ -1073,44 +1149,144 @@
     const cut = $("#lvCut"); if (cut) { const left = XCLive.CUTOFF[LIVE.cat] * 1000 - ms; cut.textContent = left > 0 ? `${t("lvCutoff")} ${fmtClock(left)}` : t("lvCutoffOver"); cut.classList.toggle("over", left <= 0); }
   }
 
+  /* 排位變動（仿賽車排位顯示）：記錄每個畫面上一次的名次，名次改變時在名次旁顯示 ▲／▼ 及位數約 6 秒，並以動畫移到新位置 */
+  const MOVE_MS = 6000;
+  function trackMoves(viewId, ranks) {
+    const prev = LIVE.lastRanks.get(viewId), now = Date.now();
+    if (prev) for (const [k, r] of ranks) { const o = prev.get(k); if (o != null && r != null && o !== r) LIVE.moves.set(`${viewId}|${k}`, { d: o - r, at: now }); }
+    LIVE.lastRanks.set(viewId, ranks);
+  }
+  function moveBadge(viewId, k) {
+    const m = LIVE.moves.get(`${viewId}|${k}`);
+    if (!m) return "";
+    const age = Date.now() - m.at;
+    if (age > MOVE_MS) return "";
+    return `<span class="lv-mv ${m.d > 0 ? "up" : "down"}" style="animation-delay:-${age}ms" aria-label="${esc(t(m.d > 0 ? "lvMvUp" : "lvMvDown", Math.abs(m.d)))}">${m.d > 0 ? "▲" : "▼"}${Math.abs(m.d)}</span>`;
+  }
+  function captureRows(box) { const m = new Map(); if (box) box.querySelectorAll("[data-key]").forEach((el) => m.set(el.dataset.key, el.getBoundingClientRect().top)); return m; }
+  function playMoves(box, before, sameView) {
+    if (!box || !sameView || !before.size || !box.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    box.querySelectorAll("[data-key]").forEach((el) => {
+      const old = before.get(el.dataset.key), now = el.getBoundingClientRect().top;
+      if (old == null) { el.animate([{ opacity: 0, transform: "translateX(-16px)" }, { opacity: 1, transform: "none" }], { duration: 420, easing: "ease-out" }); return; }
+      const d = old - now;
+      if (Math.abs(d) > 1) el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 700, easing: "cubic-bezier(.2,.8,.2,1)" });
+    });
+  }
+
+  function autoHeat(st) { return (st.hs.find((h) => h.status === "running") || [...st.hs].reverse().find((h) => h.status === "done") || st.hs[0]).heat; }
+  function setLiveParam(k, v) { const p = new URLSearchParams(location.hash.split("?")[1] || ""); if (v == null) p.delete(k); else p.set(k, v); location.replace("#/live?" + p); }
+
   function liveRender() {
     if (!LIVE || !$("#lvBody")) return;
     const cats = liveCats(), cat = LIVE.cat;
-    const tabs = cats.map((c) => { const st = catState(c).status; return `<button class="chip lv-tab ${c === cat ? "on" : ""}" data-lc="${c}"><span class="lv-dot ${st}"></span>${catLabel(c)}</button>`; }).join("");
     const st = catState(cat), multi = st.n > 1;
     const heats = {}; for (const h of st.hs) heats[h.heat] = h;
     const entries = [...LIVE.entries.values()].filter((e) => e.cat === cat);
     const laps = XCLive.lapsOf(DB.race, cat);
     const ranked = XCLive.buildRunners(entries, heats, { laps, minGap: XCLive.MIN_GAP[cat] / (LIVE.demo ? LIVE.demoSpeed : 1), multiHeat: multi, done: st.status === "done" }).runners;
-    const S = XCLive.teamStandings(cat, ranked, liveEntered(cat), st.status === "done", multi && st.status !== "done");
+    const entered = liveEntered(cat), pending = multi && st.status !== "done";
+    const S = XCLive.teamStandings(cat, ranked, entered, st.status === "done", pending);
+    const TR = XCLive.titleRace(cat, ranked, entered, pending);
     const heatsDone = st.hs.filter((h) => h.status === "done").length;
     const time = (ms) => ms == null ? "" : fmtClock(ms);
-    const teamRows = S.teams.map((x) => {
-      const zh = schoolOfAbbr(x.abbr);
-      const chips = x.places.map((p, i) => `<span class="lv-pl ${i < S.n ? "sc" : "ex"}">${p}</span>`).join("") + Array.from({ length: x.missing }, () => `<span class="lv-pl gap">·</span>`).join("");
-      const status = x.out ? t("lvOut") : x.complete ? t("lvComplete") : x.missing ? t("lvMissing", x.missing) : "";
-      return `<a class="lv-team ${x.out ? "out" : ""}" href="${schoolHref(zh)}">
-        <span class="rank ${x.pos && x.pos <= 3 && x.complete ? "r" + x.pos : ""}">${x.pos ?? "-"}</span>${crest(zh, "sm")}
-        <span class="lv-tm"><b>${esc(school(zh))}</b><span class="lv-pls">${chips}</span></span>
-        <span class="lv-sc"><b>${x.out ? "-" : x.complete ? x.score : x.projected}</b><small class="${x.complete ? "ok" : ""}">${x.complete ? status : [t("lvProv"), status].filter(Boolean).join(" · ")}</small></span></a>`;
-    }).join("");
-    const open = LIVE.open || (LIVE.open = new Set());
-    const indRows = ranked.map((e) => {
-      const p = e.pid && PEOPLE.get(e.pid);
-      const zh = e.abbr === "?" ? null : schoolOfAbbr(e.abbr);
-      const named = p && !p.hidden ? personName(p) : e.name ? esc(e.name) : "";
-      const who = e.abbr === "?" && !named ? `<div class="nm muted">${t("lvUnknown")}</div>`
-        : named ? `<div class="nm">${named}</div><div class="sch">${zh ? esc(school(zh)) : t("lvUnknown")}</div>`
-        : `<div class="nm">${esc(school(zh))}</div><div class="sch">${t("lvRunner")}</div>`;
-      const right = e.fin ? `${time(e.t)}${multi ? `<span class="gap">${e.heatPlace ? t("lvHeatPlace", cat[1] + e.heat, e.heatPlace) : t("pvHeat", e.heat)}</span>` : ""}`
-        : `<span class="lv-lap">${t("lvLaps", e.laps, laps)}</span><span class="gap">${e.dnf ? t("lvDnf") : time(e.t)}</span>`;
-      const isOpen = open.has(e.key);
-      const splits = isOpen ? `<div class="lv-splits">${e.passes.map((q, i) => `<span><small>${e.fin && q === e.finEntry ? t("lvFinish") : t("lvLapN", i + 1)}</small><b>${time(e.splits[i])}</b><small>${t("lvTotal")} ${time(q.t)}</small></span>`).join("")}${p && !p.hidden ? `<a href="#/p/${e.pid}">${t("lvProfile")} ›</a>` : ""}</div>` : "";
-      return `<div class="lv-run ${isOpen ? "open" : ""} ${e.dnf ? "dnf" : ""}"><button class="row cr" data-rk="${esc(e.key)}" aria-expanded="${isOpen}"><span class="rank ${e.place && e.place <= 3 && e.fin ? "r" + e.place : ""}">${e.place ?? "-"}</span>${zh ? crest(zh, "sm") : '<span class="crest sm"></span>'}<span style="min-width:0">${who}</span><span class="tm">${right}</span></button>${splits}</div>`;
-    }).join("");
+    const roster = (LIVE.roster || []).filter((r) => r.cat === cat);
+    const rosterK = new Map(roster.map((r) => [r.k, r]));
+    const view = LIVE.view;
+    const hsel = multi ? (LIVE.heatPin[cat] ?? autoHeat(st)) : null;
+    const viewId = `${cat}|${view}|${view === "ind" ? hsel : ""}`;
+    const box0 = $("#lvBoard"), before = captureRows(box0), sameView = box0 && box0.dataset.view === viewId;
+    const nameOf = (e) => { const p = e.pid && PEOPLE.get(e.pid); if (p && !p.hidden) return personName(p); const r = rosterK.get(e.key || e.k); const nm = e.name || (r && r.name); return nm ? esc(nm) : ""; };
+
+    // ---- 個人即時排名 ----
+    const open = LIVE.open;
+    let indHtml = "", ranks = new Map();
+    if (view === "ind") {
+      const list = multi && hsel !== "all" ? ranked.filter((e) => e.heat === hsel) : ranked;
+      const rk = (e) => (multi && hsel !== "all" ? e.heatPlace : e.place);
+      list.forEach((e) => ranks.set(e.key, rk(e)));
+      trackMoves(viewId, ranks);
+      indHtml = list.map((e) => {
+        const p = e.pid && PEOPLE.get(e.pid);
+        const zh = e.abbr === "?" ? null : schoolOfAbbr(e.abbr);
+        const named = nameOf(e);
+        const who = e.abbr === "?" && !named ? `<div class="nm muted">${t("lvUnknown")}</div>`
+          : named ? `<div class="nm">${named}</div><div class="sch">${zh ? esc(school(zh)) : t("lvUnknown")}</div>`
+          : `<div class="nm">${esc(school(zh))}</div><div class="sch">${t("lvRunner")}</div>`;
+        const sub = multi ? (hsel === "all" ? (e.heatPlace ? t("lvHeatPlace", cat[1] + e.heat, e.heatPlace) : t("pvHeat", e.heat)) : (e.place ? t("lvOverall", e.place) : "")) : "";
+        const right = e.fin ? `${time(e.t)}${sub ? `<span class="gap">${sub}</span>` : ""}`
+          : `<span class="lv-lap">${t("lvLaps", e.laps, laps)}</span><span class="gap">${e.dnf ? t("lvDnf") : time(e.t)}</span>`;
+        const r = rk(e), isOpen = open.has(e.key);
+        const splits = isOpen ? `<div class="lv-splits">${e.passes.map((q, i) => `<span><small>${e.fin && q === e.finEntry ? t("lvFinish") : t("lvLapN", i + 1)}</small><b>${time(e.splits[i])}</b><small>${t("lvTotal")} ${time(q.t)}</small></span>`).join("")}${p && !p.hidden ? `<a href="#/p/${e.pid}">${t("lvProfile")} ›</a>` : ""}</div>` : "";
+        return `<div class="lv-run ${isOpen ? "open" : ""} ${e.dnf ? "dnf" : ""}" data-key="${esc(e.key)}"><button class="row cr" data-rk="${esc(e.key)}" aria-expanded="${isOpen}"><span class="rank-wrap"><span class="rank ${r && r <= 3 && e.fin ? "r" + r : ""}">${r ?? "-"}</span>${moveBadge(viewId, e.key)}</span>${zh ? crest(zh, "sm") : '<span class="crest sm"></span>'}<span style="min-width:0">${who}</span><span class="tm">${right}</span></button>${splits}</div>`;
+      }).join("");
+    }
+
+    // ---- 團體即時排名 ----
+    let teamHtml = "";
+    if (view === "team") {
+      S.teams.forEach((x) => ranks.set(x.abbr, x.pos));
+      trackMoves(viewId, ranks);
+      const lead = S.teams.find((x) => x.pos === 1);
+      const byKey = new Map(ranked.map((e) => [e.key, e]));
+      teamHtml = S.teams.map((x) => {
+        const zh = schoolOfAbbr(x.abbr), tr = TR[x.abbr] || {};
+        const chips = x.places.map((p, i) => `<span class="lv-pl ${i < S.n ? "sc" : "ex"}">${p}</span>`).join("") + Array.from({ length: x.missing }, () => `<span class="lv-pl gap">·</span>`).join("");
+        const status = x.out ? t("lvOut") : x.complete ? t("lvComplete") : x.missing ? t("lvMissing", x.missing) : "";
+        // 奪冠形勢
+        let why = "", whyCls = "";
+        if (st.status === "done") { if (x.pos === 1 && x.complete) { why = t("lvChampion"); whyCls = "ok"; } }
+        else if (tr.state === "locked") { why = t("lvLocked"); whyCls = "ok"; }
+        else if (tr.state === "out") { why = t("lvNoTitle"); whyCls = "muted"; }
+        else if (tr.need && !(pending && tr.need.max < (tr.need.r * (tr.need.r + 1)) / 2)) {
+          const vs = esc(school(schoolOfAbbr(tr.need.vs)));
+          why = tr.need.r === 1 ? t("lvNeed1", tr.need.max, vs, tr.need.vsScore) : t("lvNeedN", tr.need.r, tr.need.max, vs, tr.need.vsScore); whyCls = "need";
+        } else if (lead && x !== lead && !x.out) why = t("lvBehind", x.projected - lead.projected);
+        else if (x === lead && !x.out) why = t("lvLeadProv");
+        const isOpen = LIVE.openTeams.has(x.abbr);
+        // 出戰名單（下拉）
+        let body = "";
+        if (isOpen) {
+          const mine = roster.filter((r) => r.abbr === x.abbr);
+          const seen = new Set(mine.map((r) => r.k));
+          const extra = ranked.filter((e) => e.abbr === x.abbr && !seen.has(e.key)).map((e) => ({ k: e.key, heat: e.heat, abbr: e.abbr, pid: e.pid, name: e.name, extra: true }));
+          const members = mine.concat(extra).map((r) => ({ r, e: byKey.get(r.k) }));
+          const scorers = new Set(x.scorers);
+          const memRow = ({ r, e }) => {
+            const p = r.pid && PEOPLE.get(r.pid);
+            const nm = p && !p.hidden ? personName(p) : r.name ? esc(r.name) : `<span class="muted">${t(r.extra ? "lvUnknown" : "lvRunner")}</span>`;
+            const h = heats[r.heat || 1] || { status: "ready" };
+            let stt, cls = "";
+            if (e && e.fin && e.place != null) { stt = t("lvMemFin", e.place, time(e.t)) + (multi && e.heatPlace ? ` · ${t("lvHeatPlace", cat[1] + e.heat, e.heatPlace)}` : ""); cls = scorers.has(e.place) && x.scorers.indexOf(e.place) < S.n ? "sc" : "fin"; }
+            else if (e && e.dnf) { stt = t("lvDnf"); cls = "dnf"; }
+            else if (e) { stt = t("lvMemLap", e.laps, laps, e.place); cls = "run"; }
+            else { stt = h.status === "ready" ? t("lvMemNotStarted") : h.status === "running" ? t("lvMemNoPass") : t("lvMemNoFin"); cls = "wait"; }
+            return `<li class="${cls}"><span class="mn">${nm}</span><span class="ms">${cls === "sc" ? `<b class="lv-sc-tag">${t("lvScorer")}</b>` : ""}${esc(stt)}</span></li>`;
+          };
+          const sortM = (a, b) => (a.e && a.e.place != null ? a.e.place : 1e9) - (b.e && b.e.place != null ? b.e.place : 1e9);
+          let inner = "";
+          if (!LIVE.roster) inner += `<p class="muted-note">${t("lvRosterErr")}</p>`;
+          if (multi) {
+            for (const h of st.hs) {
+              const g = members.filter((m) => (m.r.heat || (m.e && m.e.heat)) === h.heat).sort(sortM);
+              if (!g.length) continue;
+              inner += `<div class="lv-rh">${esc(t("lvHeatGroup", h.heat, { ready: t("lvReady"), running: t("lvRunning"), done: t("lvDone") }[h.status]))}</div><ul>${g.map(memRow).join("")}</ul>`;
+            }
+          } else inner += `<ul>${members.sort(sortM).map(memRow).join("")}</ul>`;
+          body = `<div class="lv-roster"><div class="lv-rt">${t("lvRoster")}（${t("lvEntered", x.entered)}）</div>${inner}<a class="lv-sl" href="${schoolHref(zh)}">${t("lvSchoolPage")} ›</a></div>`;
+        }
+        const heatMix = multi ? (() => { const c = {}; roster.filter((r) => r.abbr === x.abbr).forEach((r) => { c[r.heat] = (c[r.heat] || 0) + 1; }); return Object.keys(c).sort().map((h) => `${cat[1]}${h}×${c[h]}`).join(" · "); })() : "";
+        return `<div class="lv-tw ${isOpen ? "open" : ""} ${x.out ? "out" : ""}" data-key="${esc(x.abbr)}">
+          <button class="lv-team" data-tk="${esc(x.abbr)}" aria-expanded="${isOpen}">
+            <span class="rank-wrap"><span class="rank ${x.pos && x.pos <= 3 && x.complete ? "r" + x.pos : ""}">${x.pos ?? "-"}</span>${moveBadge(viewId, x.abbr)}</span>${crest(zh, "sm")}
+            <span class="lv-tm"><b>${esc(school(zh))}</b><span class="lv-pls">${chips}</span>${heatMix ? `<span class="lv-mix">${esc(heatMix)}</span>` : ""}${why ? `<span class="lv-why ${whyCls}">${why}</span>` : ""}</span>
+            <span class="lv-sc"><b>${x.out ? "-" : x.complete ? x.score : x.projected}</b><small class="${x.complete ? "ok" : ""}">${x.complete ? status : [t("lvProv"), status].filter(Boolean).join(" · ")}</small><i class="lv-caret" aria-hidden="true"></i></span>
+          </button>${body}</div>`;
+      }).join("");
+    }
+
     const statusTxt = { ready: t("lvReady"), running: t("lvRunning"), done: t("lvDone") }[st.status];
-    $("#lvTabs").innerHTML = tabs;
-    // 標題旁狀態：有組別進行中才顯示紅色「直播中」
+    $("#lvTabs").innerHTML = cats.map((c) => `<button class="chip lv-tab ${c === cat ? "on" : ""}" data-lc="${c}"><span class="lv-dot ${catState(c).status}"></span>${catLabel(c)}</button>`).join("");
     const pill = $("#lvPill");
     if (pill && !LIVE.demo && LIVE.event === String((DB.race && DB.race.edition) || 48)) {
       const sts = cats.map((c) => catState(c).status);
@@ -1118,19 +1294,32 @@
       pill.textContent = any ? t("lvLive") : all ? t("lvDone") : t("lvReady");
       pill.classList.toggle("demo", !any);
     }
+    const heatTabs = multi && view === "ind" ? `<div class="chips lv-heats" role="tablist">${st.hs.map((h) => `<button class="chip ${hsel === h.heat ? "on" : ""}" data-lh="${h.heat}" role="tab" aria-selected="${hsel === h.heat}"><span class="lv-dot ${h.status}"></span>${t("lvHeatTab", h.heat)}</button>`).join("")}<button class="chip ${hsel === "all" ? "on" : ""}" data-lh="all" role="tab" aria-selected="${hsel === "all"}">${t("lvAllHeats")}</button></div>` : "";
+    const meta = `${multi ? t("lvHeatsDone", heatsDone, st.n) + " · " : ""}${t("lvFin", S.finishers, st.status === "done" ? 0 : S.onCourse)}`;
+    let boardHtml;
+    if (view === "ind") {
+      const empty = multi && hsel !== "all" && (heats[hsel] || {}).status === "ready" ? t("lvHeatNotStarted") : t("lvWait");
+      boardHtml = indHtml ? `<p class="lv-hint">${t("lvTapHint")}</p><div class="board lv-ind" id="lvBoard" data-view="${esc(viewId)}">${indHtml}</div>` : `<p class="muted-note">${empty}</p>`;
+    } else {
+      boardHtml = S.award ? `<p class="lv-hint">${t("lvTeamHint")}</p><div class="board lv-teams" id="lvBoard" data-view="${esc(viewId)}">${teamHtml}</div>` : `<p class="banner">${t("lvNoAward")}</p>`;
+    }
     $("#lvBody").innerHTML = `
       <section class="lv-head">
         <div><span class="lv-status ${st.status}">${statusTxt}</span>${multi ? `<span class="lv-heat">${t("lvHeat", st.cur.heat, st.n)}</span>` : ""}<h2>${esc(catLong(cat))}</h2></div>
         <div class="lv-clock"><b id="lvClock">0:00</b><small id="lvCut"></small></div>
       </section>
+      <div class="mini-seg lv-seg" role="tablist"><button role="tab" data-lv="ind" class="${view === "ind" ? "on" : ""}" aria-selected="${view === "ind"}">${t("lvInd")}</button><button role="tab" data-lv="team" class="${view === "team" ? "on" : ""}" aria-selected="${view === "team"}">${t("lvTeam")}</button></div>
+      ${heatTabs}
       ${multi ? `<p class="banner">${t("lvHeatsRule", st.n)}</p>` : ""}
-      <div class="board-head"><h2>${t("lvTeam")}</h2><span class="meta">${multi ? t("lvHeatsDone", heatsDone, st.n) + " · " : ""}${t("lvFin", S.finishers, st.status === "done" ? 0 : S.onCourse)}</span></div>
-      ${S.award ? `<div class="board">${teamRows}</div>` : `<p class="banner">${t("lvNoAward")}</p>`}
-      <div class="board-head"><h2>${t("lvInd")}</h2><span class="meta">${t("lvCourse", laps)} · ${t("lvTimeNote")}</span></div>
-      ${ranked.length ? `<p class="lv-hint">${t("lvTapHint")}</p><div class="board lv-ind">${indRows}</div>` : `<p class="muted-note">${t("lvWait")}</p>`}
-      <p class="muted-note">${t("lvRule", XCLive.TEAM_N.A, XCLive.TEAM_N.C)}</p>`;
+      <div class="board-head"><h2>${view === "ind" ? (multi ? (hsel === "all" ? t("lvAllHeats") : t("lvHeatTab", hsel)) : t("lvInd")) : t("lvTeam")}</h2><span class="meta">${meta}</span></div>
+      ${boardHtml}
+      <p class="muted-note">${view === "ind" ? `${t("lvCourse", laps)} · ${t("lvTimeNote")}` : t("lvRule", XCLive.TEAM_N.A, XCLive.TEAM_N.C)}</p>`;
+    playMoves($("#lvBoard"), before, sameView);
     $("#lvBody").querySelectorAll("[data-rk]").forEach((b) => b.onclick = () => { const k = b.dataset.rk; if (open.has(k)) open.delete(k); else open.add(k); liveRender(); });
-    $("#lvTabs").querySelectorAll("[data-lc]").forEach((b) => b.onclick = () => { LIVE.cat = b.dataset.lc; const p = new URLSearchParams(location.hash.split("?")[1] || ""); p.set("c", LIVE.cat); location.replace("#/live?" + p); });
+    $("#lvBody").querySelectorAll("[data-tk]").forEach((b) => b.onclick = () => { const k = b.dataset.tk; if (LIVE.openTeams.has(k)) LIVE.openTeams.delete(k); else LIVE.openTeams.add(k); liveRender(); });
+    $("#lvBody").querySelectorAll("[data-lv]").forEach((b) => b.onclick = () => { LIVE.view = b.dataset.lv; setLiveParam("v", LIVE.view === "team" ? "team" : null); });
+    $("#lvBody").querySelectorAll("[data-lh]").forEach((b) => b.onclick = () => { const v = b.dataset.lh; LIVE.heatPin[cat] = v === "all" ? "all" : Number(v); setLiveParam("h", v); });
+    $("#lvTabs").querySelectorAll("[data-lc]").forEach((b) => b.onclick = () => { LIVE.cat = b.dataset.lc; const p = new URLSearchParams(location.hash.split("?")[1] || ""); p.set("c", LIVE.cat); p.delete("h"); location.replace("#/live?" + p); });
     liveClock(); liveStamp();
   }
 
@@ -1138,18 +1327,26 @@
     const demo = Number(params.get("demo")) || 0;
     const event = demo ? "demo" : (params.get("ev") || String((DB.race && DB.race.edition) || 48)).replace(/[^a-z0-9]/gi, "").toLowerCase();
     const cats = liveCats();
-    // 同一場資料只換組別：保留已下載的資料
-    if (!LIVE || LIVE.event !== event || LIVE.demo !== demo) LIVE = { event, demo, rev: 0, offset: 0, entries: new Map(), heats: new Map(), loaded: false, cat: null };
+    // 同一場資料只換組別或畫面：保留已下載的資料及排位紀錄
+    if (!LIVE || LIVE.event !== event || LIVE.demo !== demo) LIVE = { event, demo, rev: 0, offset: 0, entries: new Map(), heats: new Map(), loaded: false, cat: null, roster: null, open: new Set(), openTeams: new Set(), heatPin: {}, lastRanks: new Map(), moves: new Map() };
     if (demo && !LIVE.demoRows) demoSetup(demo);
     const want = params.get("c");
     if (cats.includes(want)) LIVE.cat = want;
     if (!LIVE.cat) { const running = cats.find((c) => catState(c).status === "running"); LIVE.cat = running || cats[0]; }
+    LIVE.view = params.get("v") === "team" ? "team" : "ind";
+    const hp = params.get("h");
+    if (hp === "all") LIVE.heatPin[LIVE.cat] = "all";
+    else if (hp && Number(hp) >= 1 && Number(hp) <= heatCount(LIVE.cat)) LIVE.heatPin[LIVE.cat] = Number(hp);
+    else delete LIVE.heatPin[LIVE.cat]; // 未指定：按最新進度
     view.innerHTML = `
-      <h1 class="page-title lv-title">${esc(t("lvTitle", demo ? LIVE.demoEd : (DB.race && DB.race.edition) || 48))}<span class="lv-pill demo" id="lvPill">${demo ? t("lvDemo") : event !== String((DB.race && DB.race.edition) || 48) ? "TEST" : t("lvReady")}</span></h1>
+      <h1 class="page-title lv-title">${esc(t("lvTitle", demo ? LIVE.demoEd : (DB.race && DB.race.edition) || 48))}<span class="lv-pill demo" id="lvPill">${demo ? t("lvDemo") : event !== String((DB.race && DB.race.edition) || 48) ? "TEST" : t("lvReady")}</span>
+        <button class="lv-refresh" id="lvRefresh" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${t("lvRefresh")}</button></h1>
       <p class="lv-note">${demo ? t("lvDemoNote", LIVE.demoEd) : t("lvNote")} <span id="lvUpdated" class="lv-upd"></span></p>
       <div class="chips" id="lvTabs"></div>
       <div id="lvBody"><div class="skeleton"><i class="sk-row"></i><i class="sk-row"></i></div></div>`;
+    $("#lvRefresh").onclick = liveRefresh;
     if (LIVE.loaded || demo) liveRender();
+    if (!demo && !LIVE.roster) loadRoster(event).then((list) => { if (LIVE && LIVE.event === event && list) { LIVE.roster = list; liveRender(); } });
     livePoll();
     // 有組別進行中每 4 秒更新，否則每 15 秒；用時每秒更新
     let tick = 0;

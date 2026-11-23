@@ -68,3 +68,22 @@ def test_heats_team_pending_until_all_done(R):
     # 未完成全部分組：即使已有 4 人完賽亦只屬暫計
     assert R["heatTeams"]["pending"] == [["乙", 10, False], ["甲", 26, False]]
     assert R["heatTeams"]["final"] == [["乙", 1, 10, True], ["甲", 2, 26, True]]
+
+
+def test_title_race_need(R):
+    t = R["title1"]
+    assert t["甲"]["state"] == "open" and t["甲"]["complete"]
+    assert t["乙"]["state"] == "open" and t["乙"]["need"] == {"r": 1, "max": 11, "vs": "甲", "vsScore": 22}
+    assert t["丙"]["state"] == "out"   # 丙 4 ＋ 9＋10＋11＝34 > 22
+
+
+def test_title_race_locked_and_out(R):
+    t = R["title2"]
+    assert t["甲"]["state"] == "locked"
+    assert t["乙"]["state"] == "out" and t["丙"]["state"] == "out"
+
+
+def test_title_race_pending_heats_no_lock(R):
+    t = R["title3"]
+    assert t["甲"]["state"] == "open" and t["乙"]["state"] == "open"
+    assert t["乙"]["need"]["max"] < 0 or t["乙"]["need"]["r"] == 3
