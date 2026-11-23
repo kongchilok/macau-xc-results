@@ -820,7 +820,7 @@
   /* ---------- 榮譽卡、觀賽邀請卡（docs/card.js 繪製） ---------- */
   const CARD_MEDAL = 10;
   // 卡上網址及 QR 碼：跟隨目前網址（網站搬到其他 GitHub 帳戶或自訂網域後自動更新）；本機測試時用預設網址
-  const SITE_DEFAULT = "kongchilok.github.io/macau-xc-results";
+  const SITE_DEFAULT = "xc-escolar-macau.github.io";
   function siteUrl() {
     if (!/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(location.hostname)) return SITE_DEFAULT;
     return (location.host + location.pathname).replace(/index\.html$/, "").replace(/\/$/, "");

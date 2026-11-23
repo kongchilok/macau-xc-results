@@ -125,3 +125,11 @@ python -m http.server 8765 --directory docs
 - 匯出視窗頂部可選：衝線（預設）、山徑、號碼布（`docs/card-styles.js`，`XCCardStyles.dash／trail／bib`）及經典（`docs/card.js`）；選擇記在瀏覽器（`xc-card-style`）
 - 四款共用 `cardData` 資料；QR 碼四邊留 4 格白邊（標準靜區）
 - 衝線款用 Barlow Condensed 斜體（`index.html` 字體連結已加 `ital` 800）
+
+## 發布位置（2026-11-23 起）
+
+- 主網址：https://xc-escolar-macau.github.io/（repo `xc-escolar-macau/xc-escolar-macau.github.io`，GitHub Pages：branch `main`、資料夾 `/docs`）
+- 舊網址繼續同步：https://kongchilok.github.io/macau-xc-results/
+- `git push origin main` 會同時推送兩個 repo（origin 設有兩個 push 網址）；新 repo 由 kongchilok 以協作者身份推送
+- 即時成績及計時頁兩個網址都可用，資料同一個 Supabase；計時頁登入狀態按網址分開記住，比賽日固定用主網址，事前登入
+
