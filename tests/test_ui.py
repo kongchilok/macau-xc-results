@@ -525,9 +525,10 @@ def live(browser, base_url):
     ctx.route("https://fonts.gstatic.com/**", lambda r: r.fulfill(status=204, body=""))
     db = {"entries": {}, "heats": {}, "rev": itertools.count(1)}
     ma = EDS[47]["categories"]["MA"]["individual"]
-    roster = [{"bib": 1001, "cat": "MA", "heat": None, "abbr": "YW", "pid": ma[0]["pid"]},
-              {"bib": 1002, "cat": "MA", "heat": None, "abbr": "HK", "pid": None},
-              {"bib": 2001, "cat": "FB", "heat": None, "abbr": "HK", "pid": None}]
+    roster = [{"bib": 1001, "cat": "MA", "heat": None, "abbr": "YW", "pid": ma[0]["pid"], "name": None},
+              {"bib": 1002, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試甲"},
+              {"bib": 1012, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試乙"},
+              {"bib": 2001, "cat": "FB", "heat": None, "abbr": "HK", "pid": None, "name": None}]
     email = "helper@example.invalid"
     user = {"id": "u1", "aud": "authenticated", "role": "authenticated", "email": email, "app_metadata": {}, "user_metadata": {}, "created_at": "2026-01-01T00:00:00Z"}
     cors = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*"}
@@ -554,7 +555,8 @@ def live(browser, base_url):
             since = json.loads(req.post_data or "{}").get("p_since") or 0
             return ok(route, {"now": int(time.time() * 1000),
                               "heats": [h for h in db["heats"].values() if h["rev"] > since],
-                              "entries": [{k: v for k, v in e.items() if k != "bib"} for e in db["entries"].values() if e["rev"] > since]})
+                              "entries": [{**{k: v for k, v in e.items() if k != "bib"}, "k": f"h{e['bib']}" if e.get("bib") else None}
+                                          for e in db["entries"].values() if e["rev"] > since]})
         if "/rest/v1/xc_live_roster" in u:
             return ok(route, roster)
         for table, key in (("xc_live_entries", "id"), ("xc_live_heats", None)):
@@ -601,8 +603,7 @@ def _until(page, cond, ms=5000):
     assert cond()
 
 
-def test_live_admin_flow(live):
-    page = live
+def _login_ma(page):
     page.goto(f"{page.base}/live-admin.html")
     page.fill("#email", "helper@example.invalid")
     page.fill("#pw", "x")
@@ -610,52 +611,117 @@ def test_live_admin_flow(live):
     expect(page.locator("#app")).to_be_visible()
     page.select_option("#event", "test")
     page.click('#cats [data-cat="MA"]')
+
+
+def _passes(page, bib):
+    return sorted((r for r in page.db["entries"].values() if r.get("bib") == bib and not r.get("deleted")), key=lambda r: r["at_ms"])
+
+
+def test_live_admin_flow(live):
+    page = live
+    _login_ma(page)
+    expect(page.locator("#who")).to_contain_text("只需輸入尾 2 位")
     page.click("#startBtn")
     _until(page, lambda: "MA|1" in page.db["heats"])
     heat = page.db["heats"]["MA|1"]
     assert heat["status"] == "running" and heat["event"] == "test" and heat["start_ms"] > 0
 
-    # 1. 輸入號碼：顯示學校；確認後成為第 1 名
-    for ch in "1001":
+    # 1. 只輸入尾數：「01」配對 1001；「2」同時符合 1002、1012，要再輸入
+    for ch in "01":
         page.click(f'#pad [data-k="{ch}"]')
     expect(page.locator("#who")).to_contain_text("粵華")
+    expect(page.locator("#who")).to_contain_text("第 1 圈")
     page.click('#pad [data-k="ok"]')
-    expect(page.locator("#list li")).to_have_count(1)
-    # 2. 先按「衝線」記時，再輸入號碼：填入空位，不會多一行
-    page.click("#markBtn")
-    expect(page.locator("#list li.slot")).to_have_count(1)
-    _type_bib(page, 1002)
-    expect(page.locator("#list li")).to_have_count(2)
-    expect(page.locator("#list li.slot")).to_have_count(0)
-    # 3. 名單外號碼：確認後以「待確認」記錄
-    _type_bib(page, 9999)
-    expect(page.locator("#list li")).to_have_count(3)
-    _until(page, lambda: len(page.db["entries"]) == 3 and all(r.get("bib") for r in page.db["entries"].values()))
-    rows = sorted(page.db["entries"].values(), key=lambda r: r["seq"])
-    assert [r["bib"] for r in rows] == [1001, 1002, 9999]
-    assert [r["abbr"] for r in rows] == ["YW", "HK", "?"]
-    assert rows[0]["at_ms"] <= rows[1]["at_ms"] <= rows[2]["at_ms"]
-    # 4. 修改：刪除第三行
-    page.locator("#list li", has_text="9999").click()
-    page.click('#sheet button[value="delete"]')
-    _until(page, lambda: sum(1 for r in page.db["entries"].values() if r.get("deleted")) == 1)
-    expect(page.locator("#list li.del")).to_have_count(1)
-    # 5. 對調名次（清單由新到舊：第一行是第 2 名）
-    page.locator("#list li:not(.del)").first.click()
-    page.click('#sheet button[value="up"]')
-    _until(page, lambda: [r["bib"] for r in sorted((r for r in page.db["entries"].values() if not r["deleted"]), key=lambda r: r["seq"])] == [1002, 1001])
-    rows = sorted((r for r in page.db["entries"].values() if not r["deleted"]), key=lambda r: r["seq"])
-    assert [r["bib"] for r in rows] == [1002, 1001]
+    expect(page.locator("#list.runners li[data-key]")).to_have_count(1)
+    page.click('#pad [data-k="2"]')
+    expect(page.locator("#who")).to_contain_text("符合 2 個號碼")
+    page.click('#pad [data-k="del"]')
 
-    # 公眾頁：讀取同一份資料，不含號碼布；有往績者顯示姓名，其他只顯示學校
+    # 2. 先按「先記時間」再輸入號碼：填入空位
+    page.click("#markBtn")
+    expect(page.locator("#slotNote")).to_be_visible()
+    _type_bib(page, "02")
+    expect(page.locator("#slotNote")).to_be_hidden()
+    expect(page.locator("#list.runners li[data-key]")).to_have_count(2)
+    _until(page, lambda: len(_passes(page, 1002)) == 1 and len(_passes(page, 1001)) == 1)
+    assert _passes(page, 1002)[0]["name"] == "測試甲"
+
+    # 3. 防誤按：剛記錄又按同一人 → 提示疑似重複；按「取消」不記錄
+    page.evaluate("window._c = window.confirm; window.confirm = () => false")
+    page.locator('#list.runners .tap[data-bib="1001"]').click()
+    expect(page.locator("#who")).to_contain_text("疑似重複")
+    page.evaluate("window.confirm = window._c")
+    page.wait_for_timeout(300)
+    assert len(_passes(page, 1001)) == 1
+
+    # 4. 按清單記圈（確認框按「確定」＝強制記錄）：記滿 5 圈即完賽
+    for _ in range(4):
+        page.locator('#list.runners .tap[data-bib="1001"]').click()
+    _until(page, lambda: len(_passes(page, 1001)) == 5)
+    assert all(r["force"] for r in _passes(page, 1001)[1:])
+    expect(page.locator("#list.runners li[data-key]")).to_have_count(1)
+    expect(page.locator("#listTabs")).to_contain_text("已完賽 1")
+    # 完賽後再輸入：不加圈
+    _type_bib(page, "01")
+    expect(page.locator("#who")).to_contain_text("已完賽")
+    page.wait_for_timeout(300)
+    assert len(_passes(page, 1001)) == 5
+
+    # 5. 撤銷上一下：撤銷第 5 圈，1001 回到跑道上
+    expect(page.locator("#undoBtn")).to_contain_text("1001 完賽")
+    page.click("#undoBtn")
+    _until(page, lambda: len(_passes(page, 1001)) == 4)
+    expect(page.locator("#list.runners li[data-key]")).to_have_count(2)
+    page.locator('#list.runners .tap[data-bib="1001"]').click()
+    _until(page, lambda: len(_passes(page, 1001)) == 5)
+
+    # 6. 另一部裝置幾乎同時記錄 1002：視為重複，不計圈
+    first = _passes(page, 1002)[0]
+    page.db["entries"]["other-device"] = {**first, "id": "other-device", "at_ms": first["at_ms"] + 2000, "seq": 99, "force": False, "rev": next(page.db["rev"])}
+    page.click('#listTabs [data-tab="all"]')
+    expect(page.locator("#list.records")).to_contain_text("重複，不計", timeout=6000)
+    page.click('#listTabs [data-tab="course"]')
+    expect(page.locator('#list.runners li[data-key="b1002"] .lp b')).to_have_text("1")
+
+    # 7. 名單外號碼：確認後以「待確認」記錄，再在全部紀錄刪除
+    _type_bib(page, 9999)
+    _until(page, lambda: len(_passes(page, 9999)) == 1)
+    page.click('#listTabs [data-tab="all"]')
+    page.locator("#list.records li", has_text="9999").first.click()
+    page.click('#sheet button[value="delete"]')
+    _until(page, lambda: len(_passes(page, 9999)) == 0)
+
+    # 公眾頁：同一份資料、不含號碼布；個人榜顯示姓名（有往績者及秩序冊姓名）、圈數；團體榜暫計
     page.goto(f"{page.base}/#/live?ev=test&c=MA")
-    page.wait_for_selector("#lvBody .row")
-    expect(page.locator("#lvBody .row")).to_have_count(2)
-    # 清單由新到舊：第 2 名在上
-    expect(page.locator("#lvBody .row").nth(0)).to_contain_text(EDS[47]["categories"]["MA"]["individual"][0]["name_zh"])
-    expect(page.locator("#lvBody .row").nth(1)).to_contain_text("濠江中學")
-    assert "1002" not in page.locator("#lvBody").inner_text()
+    page.wait_for_selector("#lvBody .lv-run")
+    rows = page.locator("#lvBody .lv-run")
+    expect(rows).to_have_count(2)
+    expect(rows.nth(0)).to_contain_text(EDS[47]["categories"]["MA"]["individual"][0]["name_zh"])
+    expect(rows.nth(1)).to_contain_text("測試甲")
+    expect(rows.nth(1)).to_contain_text("1／5 圈")
+    body = page.locator("#lvBody").inner_text()
+    assert "1002" not in body and "1001" not in body
     expect(page.locator(".lv-team").first).to_contain_text("暫計")
+    # 按一下展開各圈用時：1001 共 5 次經過，最後一次為完賽
+    rows.nth(0).locator("button").click()
+    expect(page.locator(".lv-splits span")).to_have_count(5)
+    expect(page.locator(".lv-splits")).to_contain_text("完賽")
+    no_hscroll(page)
+
+
+def test_live_practice_mode(live):
+    page = live
+    calls = []
+    page.on("request", lambda r: "supabase.co" in r.url and calls.append(r.url))
+    page.goto(f"{page.base}/live-admin.html?practice=1")
+    expect(page.locator("#app")).to_be_visible()
+    expect(page.locator("#practiceBar")).to_be_visible()
+    expect(page.locator("#who")).to_contain_text("本組號碼 1001")
+    page.click("#startBtn")
+    _type_bib(page, "01")
+    expect(page.locator("#list.runners li[data-key]")).to_have_count(1)
+    expect(page.locator("#pScore")).to_contain_text("應記")
+    assert not page.db["entries"] and not calls  # 練習模式不連資料庫
     no_hscroll(page)
 
 
@@ -667,6 +733,10 @@ def test_live_demo_replay(page):
     champ = EDS[47]["categories"]["MA"]["team_champion"]["school_zh"]
     expect(page.locator(".lv-team").first).to_contain_text(champ)
     expect(page.locator(".lv-team .rank.r1")).to_have_count(1)
+    # 個人榜：多圈合成後最終名次與官方一致（首名在頂、顯示官方時間）
+    win = EDS[47]["categories"]["MA"]["individual"][0]
+    expect(page.locator("#lvBody .lv-run").first).to_contain_text(win["name_zh"])
+    expect(page.locator("#lvBody .lv-run").first).to_contain_text(win["time"])
     no_hscroll(page)
 
 

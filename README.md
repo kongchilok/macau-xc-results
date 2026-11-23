@@ -78,12 +78,14 @@ python -m http.server 8765 --directory docs
 
 ## 即時成績（第 48 屆起）
 
-- 公眾頁：`#/live`（正式）、`#/live?ev=test`（演練）、`#/live?demo=47`（以第 47 屆成績本機示範重播）
-- 工作人員頁：`live-admin.html`（不在網站任何位置連結；須登入）
-- 資料庫：`supabase/004_live.sql`（`xc_live_heats` 起跑時間／狀態、`xc_live_entries` 終點紀錄、`xc_live_roster` 號碼布對照、`xc_live_admins` 授權電郵）
+- **分段計時**：終點每記一次同一號碼＝完成一圈，記滿該組圈數（`race48.json` 的 `laps`：男A 5、男B 4、女A 4、女B 3、男C 2、女C 2）即完賽；相隔少於該組最快一圈一半視為重複（多部裝置同時記錄亦只計一次）
+- 公眾頁：`#/live`（正式）、`#/live?ev=test`（演練）、`#/live?demo=47`（以第 47 屆成績合成多圈資料本機示範重播）；個人即時排名（顯示姓名、圈數，按一下看各圈用時）＋團體即時排名（途中按跑位推算，標「暫計」）
+- 工作人員頁：`live-admin.html`（不在網站任何位置連結；須登入）：只需輸入號碼尾數；第一圈輸入號碼後，在「跑道上」清單按一下即記一圈（按預計到達排序，可鎖定）；「撤銷上一下」；「先記時間」稍後補號碼；看不到號碼可按學校記完賽
+- 練習模式：`live-admin.html?practice=1`（不需登入、不連資料庫，以第 47 屆成績模擬經過終點的號碼，可選 1／2／4 倍速，即時顯示漏記／多記）
+- 資料庫：`supabase/004_live.sql`＋`supabase/005_live_laps.sql`（姓名、完賽標記、公眾 feed 以號碼布雜湊歸類各圈）（`xc_live_heats` 起跑時間／狀態、`xc_live_entries` 終點紀錄、`xc_live_roster` 號碼布對照、`xc_live_admins` 授權電郵）
   - 只有 `xc_live_admins` 內的電郵可讀寫；公眾只能經 `xc_live_feed()` 取得**不含號碼布**的增量資料
-  - 號碼布對照不含姓名；無往績者在公眾頁只顯示學校
-- 計分：`docs/live-core.js`（章程 5.6–5.12；以第 44–47 屆官方團體冠軍驗證 36/36 一致）
+  - 號碼布對照含秩序冊姓名（只限工作人員讀取）；公眾頁顯示姓名，但不公開號碼布；`scripts/redactions.json` 內應要求隱藏者不輸出姓名
+- 計分：`docs/live-core.js`（章程 5.6–5.12；以第 44–47 屆官方團體冠軍驗證 36/36 一致，`tests/test_live_core.py` 以 node 自動核對）
 - 號碼布名單：在 `private/startlist48.csv` 加 `bib` 欄 → `python -P -X utf8 scripts/live_roster.py private/startlist48.csv private/preview48_review.csv private/live_roster48.sql` → 在 Supabase 執行輸出的 SQL
 - 新增工作人員：在 Supabase Authentication 建立帳戶（勾選 Auto Confirm），再執行 `insert into public.xc_live_admins(email) values ('電郵小寫');`
 

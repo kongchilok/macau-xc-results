@@ -17,7 +17,8 @@
    "distance": 6850,
    "teams": 4,
    "runners": 57,
-   "distance_rules": 6850
+   "distance_rules": 6850,
+   "laps": 5
   },
   {
    "cat": "MB",
@@ -30,7 +31,8 @@
    "distance": 5480,
    "teams": 5,
    "runners": 64,
-   "distance_rules": 5500
+   "distance_rules": 5500,
+   "laps": 4
   },
   {
    "cat": "FB",
@@ -43,7 +45,8 @@
    "distance": 4110,
    "teams": 4,
    "runners": 46,
-   "distance_rules": 4500
+   "distance_rules": 4500,
+   "laps": 3
   },
   {
    "cat": "MD",
@@ -56,7 +59,8 @@
    "distance": 1660,
    "teams": 18,
    "runners": 106,
-   "distance_rules": 1650
+   "distance_rules": 1650,
+   "laps": 2
   },
   {
    "cat": "FD",
@@ -69,7 +73,8 @@
    "distance": 1660,
    "teams": 16,
    "runners": 92,
-   "distance_rules": 1650
+   "distance_rules": 1650,
+   "laps": 2
   },
   {
    "cat": "ME",
@@ -82,7 +87,8 @@
    "distance": 830,
    "teams": 14,
    "runners": 84,
-   "distance_rules": 922
+   "distance_rules": 922,
+   "laps": 1
   },
   {
    "cat": "FE",
@@ -95,7 +101,8 @@
    "distance": 830,
    "teams": 10,
    "runners": 72,
-   "distance_rules": 922
+   "distance_rules": 922,
+   "laps": 1
   },
   {
    "cat": "MC",
@@ -108,7 +115,8 @@
    "distance": 2740,
    "teams": 13,
    "runners": 81,
-   "distance_rules": 2860
+   "distance_rules": 2860,
+   "laps": 2
   },
   {
    "cat": "FC",
@@ -121,7 +129,8 @@
    "distance": 2740,
    "teams": 9,
    "runners": 62,
-   "distance_rules": 2860
+   "distance_rules": 2860,
+   "laps": 2
   },
   {
    "cat": "FA",
@@ -134,7 +143,8 @@
    "distance": 5480,
    "teams": 2,
    "runners": 26,
-   "distance_rules": 5500
+   "distance_rules": 5500,
+   "laps": 4
   }
  ],
  "schools": [

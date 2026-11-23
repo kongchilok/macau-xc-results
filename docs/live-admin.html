@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="live-admin.css?v=20261123a">
+<link rel="stylesheet" href="live-admin.css?v=20261123d">
 </head>
 <body>
 <header class="top">
@@ -27,6 +27,8 @@
   <label>密碼<input id="pw" type="password" autocomplete="current-password"></label>
   <button id="loginBtn" class="primary">登入</button>
   <p id="loginMsg" class="msg" role="alert"></p>
+  <hr>
+  <a class="practice-link" href="live-admin.html?practice=1">練習模式（不需登入，以第 47 屆成績模擬多圈比賽）›</a>
 </section>
 
 <!-- 主畫面 -->
@@ -38,6 +40,11 @@
     </select>
     <div id="cats" class="cats" role="tablist" aria-label="組別"></div>
     <div id="heats" class="heats" aria-label="分組"></div>
+  </section>
+
+  <section id="practiceBar" class="practice" hidden>
+    <div class="p-head"><b>練習模式</b><label class="p-speed">倍速<select id="pSpeed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label><span id="pScore"></span></div>
+    <div id="passing" class="passing" aria-live="polite"></div>
   </section>
 
   <section class="clock">
@@ -54,6 +61,11 @@
       <span id="bib" class="bib" aria-live="polite"></span>
       <span id="who" class="who">輸入號碼布</span>
     </div>
+    <div class="list">
+      <div class="list-head"><div id="listTabs" class="list-tabs" role="tablist"></div><button id="lockBtn" class="ghost lock">鎖定排序</button></div>
+      <p id="slotNote" class="slot-note" hidden></p>
+      <ol id="list"></ol>
+    </div>
     <div class="pad" id="pad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
@@ -61,22 +73,19 @@
       <button data-k="del" class="fn">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">確認</button>
     </div>
     <div class="extra">
-      <button id="markBtn" class="mark">⏱ 衝線（先記時間）</button>
+      <button id="markBtn" class="mark">⏱ 先記時間</button>
       <button id="schoolBtn" class="ghost">看不到號碼：按學校</button>
+      <button id="undoBtn" class="undo" disabled>↶ 撤銷上一下</button>
     </div>
   </section>
 
-  <section class="list">
-    <div class="list-head"><b id="listTitle">終點紀錄</b><span id="count"></span></div>
-    <ol id="list"></ol>
-  </section>
 </main>
 
 <!-- 學校選擇／修改 -->
 <dialog id="sheet"><form method="dialog" id="sheetBody"></form></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="live-core.js?v=20261123a"></script>
-<script src="live-admin.js?v=20261123a"></script>
+<script src="live-core.js?v=20261123c"></script>
+<script src="live-admin.js?v=20261123d"></script>
 </body>
 </html>
