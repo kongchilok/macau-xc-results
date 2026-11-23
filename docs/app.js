@@ -367,6 +367,7 @@
     }
     for (const p of PEOPLE.values()) {
       p.recs.sort((a, b) => a.edition - b.edition);
+      p.schools = new Set(p.recs.map((r) => r.school_zh));   // 舊校 → 新校（DB.editions 是新到舊）
       p.key = [p.name_zh, (p.name_pt || "").toLowerCase().replace(/[^a-z]/g, ""), ...[...p.schools]].join(" ");
     }
     // 同一間學校的新舊校名（同代碼）合併計算，顯示最新校名

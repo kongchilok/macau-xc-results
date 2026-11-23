@@ -180,6 +180,21 @@ def test_rank_school_tab(page):
     assert sum(int(x) for x in shown) == total
 
 
+def test_transfer_school_order(page):
+    """轉校生：學校按時間由舊到新排列（舊校 → 新校）"""
+    order = []
+    for ed in sorted(EDS):
+        for c in EDS[ed]["categories"].values():
+            for r in c["individual"]:
+                if r["pid"] == "p45MB012" and (not order or order[-1] != r["school_zh"]):
+                    order.append(r["school_zh"])
+    assert len(order) >= 2
+    go(page, "#/p/p45MB012")
+    links = page.locator(".hero .schools a")
+    expect(links.first).to_have_text(order[0])
+    expect(links.last).to_have_text(order[-1])
+
+
 def test_highlight_from_profile(page):
     go(page, "#/rank?e=47&c=MA&hl=" + EDS[47]["categories"]["MA"]["individual"][4]["pid"])
     expect(page.locator(".row.mine")).to_have_count(1)
