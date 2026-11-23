@@ -55,6 +55,14 @@ def page(browser, base_url):
             return route.fulfill(status=200, content_type="application/json", body=str(views[pid]))
         if "/rpc/xc_live_roster_public" in req.url:
             return route.fulfill(status=200, content_type="application/json", body="[]")
+        if "/rpc/xc_live_cert_cats" in req.url:
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps([{"cat": "FC", "n": 1, "at": "2026-11-29T12:00:00Z"}]))
+        if "/rpc/xc_live_cert_lookup" in req.url:
+            q = json.loads(req.post_data or "{}")
+            hit = q.get("p_bib") == 24 and "".join((q.get("p_name") or "").split()) == "李蕙伃"
+            body = json.dumps({"cat": "FC", "heat": 1, "abbr": "CDSJ5", "pid": "p46FD022", "name": "李蕙伃", "place": 3, "time_ms": 552400,
+                               "finishers": 31, "released_at": "2026-11-29T12:00:00Z"} if hit else None)
+            return route.fulfill(status=200, content_type="application/json", body=body)
         if "/rest/v1/xc_views" in req.url:
             if "pid=eq." in req.url:
                 pid = req.url.split("pid=eq.")[1].split("&")[0]
@@ -684,7 +692,7 @@ def live(browser, base_url):
     ctx.add_init_script("window.XC_NO_PROMO = true")   # 首頁海報只在專門測試開啟
     ctx.route("https://fonts.googleapis.com/**", lambda r: r.fulfill(status=200, content_type="text/css", body=""))
     ctx.route("https://fonts.gstatic.com/**", lambda r: r.fulfill(status=204, body=""))
-    db = {"entries": {}, "heats": {}, "rev": itertools.count(1)}
+    db = {"entries": {}, "heats": {}, "cert": {}, "rev": itertools.count(1)}
     ma = EDS[47]["categories"]["MA"]["individual"]
     roster = [{"bib": 1001, "cat": "MA", "heat": None, "abbr": "YW", "pid": ma[0]["pid"], "name": None},
               {"bib": 1002, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試甲"},
@@ -728,6 +736,20 @@ def live(browser, base_url):
             return ok(route, [{"k": f"h{r['bib']}", **{k: v for k, v in r.items() if k != "bib"}} for r in roster])
         if "/rest/v1/xc_live_roster" in u:
             return ok(route, roster)
+        if "/rpc/xc_live_cert_cats" in u:
+            cats = {}
+            for r in db["cert"].values():
+                cats[r["cat"]] = cats.get(r["cat"], 0) + 1
+            return ok(route, [{"cat": c, "n": n, "at": "2026-11-29T12:00:00Z"} for c, n in sorted(cats.items())])
+        if "/rest/v1/xc_live_cert" in u:
+            if req.method == "DELETE":
+                cat = u.split("cat=eq.")[1].split("&")[0]
+                db["cert"] = {k: v for k, v in db["cert"].items() if v["cat"] != cat}
+                return route.fulfill(status=204, headers=cors)
+            if req.method == "POST":
+                for r in json.loads(req.post_data):
+                    db["cert"][(r["cat"], r["bib"])] = r
+                return route.fulfill(status=201, body="", headers=cors)
         for table, key in (("xc_live_entries", "id"), ("xc_live_heats", None)):
             if f"/rest/v1/{table}" in u:
                 store = db["entries" if key else "heats"]
@@ -784,6 +806,41 @@ def _login_ma(page):
 
 def _passes(page, bib):
     return sorted((r for r in page.db["entries"].values() if r.get("bib") == bib and not r.get("deleted")), key=lambda r: r["at_ms"])
+
+
+def test_live_admin_cert_release(live):
+    """全組完成後「核對後開放紀念卡」：把名次及時間快照寫入 xc_live_cert；可取消開放"""
+    page = live
+    t0 = int(time.time() * 1000) - 3_600_000
+    page.db["heats"]["MA|1"] = {"event": "test", "cat": "MA", "heat": 1, "start_ms": t0, "status": "done", "rev": next(page.db["rev"])}
+    for i, (bib, sec) in enumerate([(1002, 1200), (1012, 1250)], 1):
+        page.db["entries"][f"c{i}"] = {"id": f"c{i}", "event": "test", "cat": "MA", "heat": 1, "bib": bib, "at_ms": t0 + sec * 1000, "seq": i,
+                                       "abbr": "HK", "pid": None, "name": None, "fin": True, "deleted": False, "rev": next(page.db["rev"])}
+    _login_ma(page)
+    btn = page.locator("#certBtn")
+    expect(btn).to_be_visible()
+    expect(btn).to_have_text("核對後開放紀念卡")
+    btn.click()
+    expect(page.locator("#sheet")).to_contain_text("完賽 2 人")
+    expect(page.locator("#sheet .cert-top li").first).to_contain_text("測試甲")
+    page.click('#sheet button[value="ok"]')
+    _until(page, lambda: len(page.db["cert"]) == 2)
+    rows = sorted(page.db["cert"].values(), key=lambda r: r["place"])
+    assert [(r["bib"], r["place"], r["time_ms"]) for r in rows] == [(1002, 1, 1_200_000), (1012, 2, 1_250_000)]
+    assert all(r["event"] == "test" and r["cat"] == "MA" for r in rows)
+    expect(btn).to_have_text("紀念卡已開放（2 人）")
+    btn.click()
+    page.click('#sheet button[value="off"]')
+    _until(page, lambda: len(page.db["cert"]) == 0)
+    expect(btn).to_have_text("核對後開放紀念卡")
+
+
+def test_live_admin_cert_hidden_until_done(live):
+    page = live
+    _login_ma(page)
+    expect(page.locator("#certBtn")).to_be_hidden()
+    page.click("#startBtn")
+    expect(page.locator("#certBtn")).to_be_hidden()
 
 
 def test_live_admin_flow(live):
@@ -1131,8 +1188,39 @@ def test_live_admin_voice_fallback_and_errors(live):
 def test_preview_has_no_demo_link(page):
     """賽前預覽不再顯示「示範重播」入口（?demo= 網址保留作內部測試）"""
     go(page, "#/preview?c=MA")
-    expect(page.locator(".link-row a")).to_have_count(1)
+    expect(page.locator(".link-row a")).to_have_count(2)
     expect(page.locator('a[href*="demo="]')).to_have_count(0)
+
+
+def test_finisher_card_lookup_and_export(page):
+    """完賽紀念卡：號碼布＋姓名對得上才顯示；匯出第 48 屆紀念卡（四款）"""
+    go(page, "#/preview?c=MA")
+    expect(page.locator('.link-row a[href="#/cert"]')).to_have_count(1)
+    go(page, "#/cert")
+    expect(page.locator("h1")).to_contain_text("完賽紀念卡")
+    expect(page.locator("#ctCats")).to_contain_text("女C")
+    page.fill("#ctBib", "24"); page.fill("#ctName", "李蕙仔"); page.click(".ct-go")
+    expect(page.locator("#ctOut")).to_contain_text("找不到紀錄")
+    page.fill("#ctName", "李 蕙伃"); page.click(".ct-go")
+    res = page.locator(".ct-res")
+    expect(res).to_contain_text("女子C組")
+    expect(res).to_contain_text("第 3 名")
+    expect(res).to_contain_text("完賽 31 人")
+    expect(res).to_contain_text("9:12")
+    expect(res.locator('a[href="#/p/p46FD022"]')).to_have_count(1)
+    no_hscroll(page)
+    page.click("#ctExport")
+    page.wait_for_function("document.querySelector('.card-modal img') && !document.querySelector('.cm-img.busy')")
+    expect(page.locator(".cm-styles button")).to_have_count(4)
+    assert "完賽紀念卡" in page.get_attribute("#cmSave", "download")
+    page.click('.cm-styles [data-k="classic"]')
+    page.wait_for_function("!document.querySelector('.cm-img.busy') && document.querySelector('.card-modal img')")
+
+
+def test_finisher_card_needs_name(page):
+    go(page, "#/cert")
+    page.fill("#ctBib", "24"); page.click(".ct-go")
+    expect(page.locator("#ctOut")).to_contain_text("請輸入號碼布及姓名")
 
 
 def test_live_demo_replay(page):

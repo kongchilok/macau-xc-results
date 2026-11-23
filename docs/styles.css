@@ -932,3 +932,23 @@ a.medal:hover { background: var(--surface-2); }
 .wx-grid b.fc-txt { font-family: var(--body); font-size: 13px; line-height: 1.3; }
 .wxrow.fc-row { background: var(--accent-soft); }
 @media (prefers-reduced-motion: reduce) { .me-race, .me-card, .row.me-glow { animation: none; box-shadow: 0 0 0 2px var(--accent); } }
+
+/* ---------- 完賽紀念卡（非官方） ---------- */
+.ct-cats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: var(--s3) 0; font-size: 14px; color: var(--text-2); }
+.ct-form { display: grid; gap: var(--s3); margin-top: var(--s2); }
+.ct-form label { display: grid; gap: 6px; font-size: 14px; color: var(--text-2); font-weight: 600; }
+.ct-form input { min-height: var(--tap); padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--surface); color: var(--text); font-size: 17px; }
+.ct-form input:focus { outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ct-go { justify-content: center; border: 0; font-size: 16px; }
+.ct-res { margin-top: var(--s4); padding: var(--s4); border-radius: var(--r-box); background: var(--surface); }
+.ct-head { display: flex; align-items: center; gap: var(--s3); }
+.ct-head b { display: block; font-size: 22px; }
+.ct-head small { color: var(--text-2); font-size: 14px; }
+.ct-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); margin-top: var(--s3); }
+.ct-grid div { padding: 10px 12px; border-radius: var(--r-tile); background: var(--surface-2); }
+.ct-grid span { display: block; font-size: 12px; color: var(--muted); }
+.ct-grid b { display: block; font-size: 18px; margin-top: 2px; }
+.ct-grid b.num { font-family: var(--num); font-size: 24px; }
+.ct-grid small { display: block; font-size: 12px; color: var(--text-2); }
+.ct-hist { display: inline-flex; align-items: center; min-height: var(--tap); margin-top: var(--s1); color: var(--accent); font-weight: 600; }
+.lv-links { margin: var(--s2) 0 0; }

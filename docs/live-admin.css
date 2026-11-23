@@ -244,3 +244,8 @@ body.app-on .pad .reset { font-size: 16px; }
 body.pad-off .pad { display: none; }
 .list-tabs { flex: 1; min-width: 0; }
 .lock.on { background: var(--text); color: var(--bg); }
+
+/* 完賽紀念卡 */
+.clock-btns .cert.on { color: var(--accent); border-color: var(--accent); }
+.cert-top { margin: 8px 0; padding-left: 0; list-style: none; font-size: 15px; line-height: 1.7; }
+.cert-top b { display: inline-block; min-width: 28px; }

@@ -60,6 +60,19 @@
     ctx.restore();
   }
 
+  function FITF(ctx, t, maxW, size, min, weight) { let s = size; do { ctx.font = `${weight} ${s}px ${CJK}`; s -= 2; } while (ctx.measureText(t).width > maxW && s >= min); }
+  // 完賽紀念卡（d.cert）：在紀錄下方的空位加一塊賽事資料（賽事、日期、組別名次、完賽人數、時間）
+  function certPanel(ctx, d, x, y, w, h, c) {
+    const k = d.cert; if (!k) return;
+    ctx.save();
+    rr(ctx, x, y, w, h, 18); ctx.fillStyle = c.bg; ctx.fill(); if (c.line) { ctx.lineWidth = 2; ctx.strokeStyle = c.line; ctx.stroke(); }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    const z = c.small ? [22, 40, 24, 34, 84, 20] : [28, 64, 32, 50, h * .58, 30];   // 字級（小、大、中）及三行位置
+    ctx.fillStyle = c.muted; FITF(ctx, k.event, w - 56, z[0], 16, 700); ctx.fillText(k.event, x + 28, y + z[3]);
+    ctx.fillStyle = c.fg; FITF(ctx, `${k.cat}　第 ${k.place} 名`, w - 56, z[1], 28, 900); ctx.fillText(`${k.cat}　第 ${k.place} 名`, x + 28, y + z[4]);
+    ctx.fillStyle = c.accent; FITF(ctx, `完賽 ${k.finishers} 人・完成時間 ${k.time}`, w - 56, z[2], 18, 800); ctx.fillText(`完賽 ${k.finishers} 人・完成時間 ${k.time}`, x + 28, y + h - z[5]);
+    ctx.restore();
+  }
   async function render(d) {
     const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
     const ctx = cv.getContext("2d");
@@ -109,7 +122,7 @@
     const by = 418, bh = 182;
     rr(ctx, M, by, W - 2 * M, bh, 18); ctx.fillStyle = C.surface; ctx.fill();
     const cw = (W - 2 * M) / 4;
-    const cells = [["參賽", String(d.stats.races), C.text, NUM], ["冠軍", String(d.stats.wins), d.stats.wins ? C.gold : C.text, NUM], ["獎牌", String(d.stats.medals), C.text, NUM], ["最佳", `第${d.stats.best}名`, C.text, CJK]];
+    const cells = [d.cert ? ["完賽人數", String(d.cert.finishers), C.text, NUM] : ["參賽", String(d.stats.races), C.text, NUM], ["冠軍", String(d.stats.wins), d.stats.wins ? C.gold : C.text, NUM], ["獎牌", String(d.stats.medals), C.text, NUM], [d.cert ? "名次" : "最佳", `第${d.stats.best}名`, C.text, CJK]];
     cells.forEach(([lab, val, col, fam], i) => {
       const cx = M + cw * i + cw / 2;
       if (i) { ctx.fillStyle = C.line; ctx.fillRect(M + cw * i, by + 30, 2, bh - 60); }
@@ -145,11 +158,12 @@
       ctx.textBaseline = "alphabetic";
     });
 
+    if (d.cert && rows.length <= 2) certPanel(ctx, d, M, ry + rows.length * rowH + 20, W - 2 * M, 240, { bg: C.surface, line: C.line, fg: C.text, accent: C.accent, muted: C.muted });
     // 最佳成績
     const py = H - 176;
     if (d.pb) {
       ctx.textAlign = "left"; ctx.fillStyle = C.accent; ctx.font = `700 44px ${CJK}`;
-      const a = `${d.pb.label}最佳 `; ctx.fillText(a, M + 20, py);
+      const a = d.pb.text ? `${d.pb.text} ` : `${d.pb.label}最佳 `; ctx.fillText(a, M + 20, py);
       let x = M + 20 + ctx.measureText(a).width;
       ctx.font = `800 48px ${NUM}`; ctx.fillText(d.pb.time, x, py); x += ctx.measureText(d.pb.time).width + 10;
       ctx.fillStyle = C.muted; ctx.font = `600 42px ${NUM}`; ctx.fillText(`(${d.pb.year})`, x, py);
@@ -161,7 +175,7 @@
     const qn = qr ? qr.getModuleCount() : 33, qcell = 4.9, qs = Math.round(qcell * (qn + 8)), qx = W - M - qs, qy = H - 30 - qs;   // 4 行紀錄時最後一行底約 y=1100，QR 頂須在其下
     ctx.fillStyle = C.accent; ctx.fillRect(M, H - 128, (qr ? qx - 24 : W - M) - M, 3);
     ctx.textAlign = "left"; ctx.fillStyle = C.muted; ctx.font = `500 30px ${NUM}`; ctx.fillText(d.url, M, H - 80);
-    ctx.font = `500 27px ${CJK}`; ctx.fillText("資料來源：教育及青年發展局公布成績", M, H - 40);
+    ctx.font = `500 27px ${CJK}`; ctx.fillText(d.source || "資料來源：教育及青年發展局公布成績", M, H - 40);
     if (qr) {
       ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `700 28px ${CJK}`; ctx.fillText("掃描查看個人頁 ›", qx - 24, H - 142);
       ctx.textAlign = "left";

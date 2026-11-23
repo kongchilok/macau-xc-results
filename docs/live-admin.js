@@ -59,6 +59,7 @@
     await syncClock();
     await loadRoster();
     await pull(true);
+    await loadCert();
     renderAll();
     setInterval(pull, 2000);
     setInterval(push, 1000);
@@ -190,6 +191,11 @@
     $("#doneBtn").hidden = h.status === "ready";
     $("#doneBtn").textContent = h.status === "done" ? "重新開放" : "本組完成";
     $("#adjBtn").hidden = h.status === "ready";
+    // 完賽紀念卡：全組（所有分組）完成後才可開放；練習模式不適用
+    const cb = $("#certBtn"), c = CERT.get(st.cat);
+    cb.hidden = PRACTICE || !catAllDone(st.cat);
+    cb.textContent = c ? `紀念卡已開放（${c.n} 人）` : "核對後開放紀念卡";
+    cb.classList.toggle("on", !!c);
   }
   function startHeat() {
     const t = now();
@@ -214,6 +220,51 @@
       <hr><button value="reset" class="danger" id="adjReset">取消開賽（重設為未開始）</button>`, (v) => {
       if (v === "ok") { const d = parseFloat($("#adjSec").value); if (!isNaN(d)) enqueue("heat", { event: st.event, cat: st.cat, heat: st.heat, start_ms: h.start_ms + d * 1000, status: h.status }); }
       if (v === "reset" && confirm("取消開賽？已記錄的時間會變成未有起跑時間。")) enqueue("heat", { event: st.event, cat: st.cat, heat: st.heat, start_ms: null, status: "ready" });
+    });
+  }
+
+  /* ---------- 完賽紀念卡（非官方）：全組完成並與官方成績核對後，把名次及時間快照寫入 xc_live_cert ---------- */
+  let CERT = new Map();
+  async function loadCert() {
+    if (PRACTICE || !sb) return;
+    const { data, error } = await sb.rpc("xc_live_cert_cats", { p_event: st.event });
+    CERT = new Map(error ? [] : (data || []).map((x) => [x.cat, x]));
+  }
+  const catHeats = (cat) => { const hs = {}; for (let i = 1; i <= heatN(cat); i++) hs[i] = heatRow(cat, i); return hs; };
+  const catAllDone = (cat) => Object.values(catHeats(cat)).every((h) => h.status === "done");
+  function catResults(cat) {
+    const hs = catHeats(cat), multi = heatN(cat) > 1;
+    const es = [...entries.values()].filter((e) => e.cat === cat);
+    const { runners } = XCLive.buildRunners(es, hs, { laps: lapsN(cat), minGap: (XCLive.MIN_GAP[cat] || 60), multiHeat: multi, done: true });
+    const fin = runners.filter((r) => r.fin && r.place != null);
+    return { rows: fin.filter((r) => r.bib != null).map((r) => ({ event: st.event, cat, bib: r.bib, place: r.place, time_ms: r.t == null ? null : Math.round(r.t) })),
+             anon: fin.filter((r) => r.bib == null).length, fin };
+  }
+  function certSheet() {
+    const cat = st.cat, c = CERT.get(cat), R = catResults(cat);
+    const nm = (b) => { const r = ROSTER.get(String(b)); return r ? (r.name || "") : ""; };
+    const top = R.rows.slice(0, 10).map((r) => `<li><b>${r.place}</b>　${r.bib}　${nm(r.bib)}　<span class="num">${fmtT(r.time_ms)}</span></li>`).join("");
+    sheet(`<h2>完賽紀念卡・${catLabel(cat)}</h2>
+      <p class="muted">完賽 ${R.rows.length} 人${R.anon ? `；另有 <b>${R.anon}</b> 位完賽者未有號碼布（不會有紀念卡，名次仍計算在內）` : ""}。</p>
+      <p>請先與<b>官方成績</b>逐一核對名次及時間，如有出入，先在清單修正紀錄。開放後，運動員可用「號碼布＋姓名」匯出第 48 屆完賽紀念卡（非官方）。</p>
+      <ol class="cert-top">${top}</ol>${R.rows.length > 10 ? `<p class="muted">（只顯示頭十名）</p>` : ""}
+      <div class="row-btns"><button value="cancel" class="ghost">取消</button><button value="ok" class="primary">${c ? "按目前紀錄更新" : "已核對，開放"}</button></div>
+      ${c ? `<hr><button value="off" class="danger">取消開放</button>` : ""}`, async (v) => {
+      if (v === "ok") {
+        if (!R.rows.length) { flash("未有完賽紀錄", true); return; }
+        if (!confirm(`確定${c ? "更新" : "開放"}${catLabel(cat)}完賽紀念卡（${R.rows.length} 人）？`)) return;
+        const del = await sb.from("xc_live_cert").delete().eq("event", st.event).eq("cat", cat);
+        const ins = del.error ? del : await sb.from("xc_live_cert").insert(R.rows);
+        if (ins.error) { alert("未能開放紀念卡：" + ins.error.message); return; }
+        flash(`${catLabel(cat)}紀念卡已開放`);
+      }
+      if (v === "off") {
+        if (!confirm(`取消開放${catLabel(cat)}完賽紀念卡？運動員將無法匯出。`)) return;
+        const del = await sb.from("xc_live_cert").delete().eq("event", st.event).eq("cat", cat);
+        if (del.error) { alert("未能取消：" + del.error.message); return; }
+        flash(`${catLabel(cat)}紀念卡已取消開放`);
+      }
+      await loadCert(); renderClockBtns();
     });
   }
 
@@ -735,10 +786,11 @@
   $("#startBtn").onclick = startHeat;
   $("#doneBtn").onclick = toggleDone;
   $("#adjBtn").onclick = adjustStart;
+  $("#certBtn").onclick = certSheet;
   $("#loginBtn").onclick = login;
   $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
   $("#logout").onclick = async () => { if (queue.length && !confirm(`尚有 ${queue.length} 項未上傳，登出後會保留在此裝置，下次登入繼續上傳。確定登出？`)) return; await sb.auth.signOut(); location.reload(); };
-  $("#event").onchange = async () => { st.event = $("#event").value; save(); undoLog = []; store.set("xc-live-undo", undoLog); await loadRoster(); await pull(true); renderAll(); };
+  $("#event").onchange = async () => { st.event = $("#event").value; save(); undoLog = []; store.set("xc-live-undo", undoLog); await loadRoster(); await pull(true); await loadCert(); renderAll(); };
   window.addEventListener("beforeunload", (e) => { if (queue.length) { e.preventDefault(); e.returnValue = ""; } });
 
   loadStatic().then(async () => {

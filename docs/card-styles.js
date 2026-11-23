@@ -104,10 +104,24 @@
     ctx.fillStyle = light ? "#fff" : "#0a0a0c"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, x + w / 2, cy + 1);
     ctx.restore(); return w;
   }
-  function heroStat(d) { return d.stats.wins ? { pre: "", big: String(d.stats.wins), post: "×", lab: "冠軍" } : { pre: "#", big: String(d.stats.best), post: "", lab: "最佳名次" }; }
+  function FITF(ctx, t, maxW, size, min, weight) { let s = size; do { ctx.font = `${weight} ${s}px ${CJK}`; s -= 2; } while (ctx.measureText(t).width > maxW && s >= min); }
+  // 完賽紀念卡（d.cert）：在紀錄下方的空位加一塊賽事資料（賽事、日期、組別名次、完賽人數、時間）
+  function certPanel(ctx, d, x, y, w, h, c) {
+    const k = d.cert; if (!k) return;
+    ctx.save();
+    rr(ctx, x, y, w, h, 18); ctx.fillStyle = c.bg; ctx.fill(); if (c.line) { ctx.lineWidth = 2; ctx.strokeStyle = c.line; ctx.stroke(); }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    const z = c.small ? [22, 40, 24, 34, 84, 20] : [28, 64, 32, 50, h * .58, 30];   // 字級（小、大、中）及三行位置
+    ctx.fillStyle = c.muted; FITF(ctx, k.event, w - 56, z[0], 16, 700); ctx.fillText(k.event, x + 28, y + z[3]);
+    ctx.fillStyle = c.fg; FITF(ctx, `${k.cat}　第 ${k.place} 名`, w - 56, z[1], 28, 900); ctx.fillText(`${k.cat}　第 ${k.place} 名`, x + 28, y + z[4]);
+    ctx.fillStyle = c.accent; FITF(ctx, `完賽 ${k.finishers} 人・完成時間 ${k.time}`, w - 56, z[2], 18, 800); ctx.fillText(`完賽 ${k.finishers} 人・完成時間 ${k.time}`, x + 28, y + h - z[5]);
+    ctx.restore();
+  }
+  function heroStat(d) { if (d.cert) return { pre: "#", big: String(d.cert.place), post: "", lab: `第 ${d.cert.edition} 屆名次` }; return d.stats.wins ? { pre: "", big: String(d.stats.wins), post: "×", lab: "冠軍" } : { pre: "#", big: String(d.stats.best), post: "", lab: "最佳名次" }; }
   function statList(d) {
-    const s = [["參賽", String(d.stats.races)], ["獎牌", String(d.stats.medals)], ["最佳", `#${d.stats.best}`]];
-    s.push(d.pb ? [`${d.pb.label}最佳`, d.pb.time] : ["冠軍", String(d.stats.wins)]);
+    const s = d.cert ? [["完賽人數", String(d.cert.finishers)], ["獎牌", String(d.stats.medals)], ["名次", `#${d.cert.place}`]]
+      : [["參賽", String(d.stats.races)], ["獎牌", String(d.stats.medals)], ["最佳", `#${d.stats.best}`]];
+    s.push(d.pb ? [d.pb.text || `${d.pb.label}最佳`, d.pb.time] : ["冠軍", String(d.stats.wins)]);
     return s;
   }
   async function prep(d) {
@@ -206,9 +220,10 @@
       ctx.textAlign = "right"; ctx.fillStyle = "#fff"; ctx.font = `italic 800 58px ${NUM}`; ctx.fillText(r.time, W - 86, cy + 4);
       ctx.textBaseline = "alphabetic";
     });
+    certPanel(ctx, d, 60, 800 + rows.length * (rh + 7) + 26, W - 120, 230, { bg: "rgba(255,255,255,.05)", line: "rgba(255,255,255,.12)", fg: "#fff", accent: tc, muted: "#9aa0a8" });
     // 頁尾＋QR
     ctx.textAlign = "left"; ctx.fillStyle = "#8a9099"; ctx.font = `700 22px ${CJK}`;
-    ctx.fillText("非官方整理・資料來源：教育及青年發展局公布成績", 60, H - 92);
+    ctx.fillText("非官方整理・" + (d.source || "資料來源：教育及青年發展局公布成績"), 60, H - 92);
     ctx.font = `600 24px ${NUM}`; ctx.fillText(d.url, 60, H - 60);
     if (qr) {
       const qs = 150, qx = W - 60 - qs, qy = H - 40 - qs;
@@ -247,6 +262,7 @@
       ctx.fillStyle = "#fff"; ctx.font = `800 34px ${NUM}`; ctx.fillText(r.time, x + 54, y - 4);
       ctx.fillStyle = SAND; fit(ctx, `${r.year.slice(2)}・${r.cat}`, 160, 20, 14, (s) => `700 ${s}px ${CJK}`); ctx.fillText(`${r.year.slice(2)}・${r.cat}`, x + 54, y + 24);
     });
+    certPanel(ctx, d, 400, 890, W - 460, 230, { bg: "rgba(14,31,20,.9)", line: "rgba(233,220,184,.33)", fg: "#fff", accent: ORANGE, muted: SAND });
     // 頂部
     mountain(ctx, 60, 48, 44, ORANGE, 3);
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
@@ -295,7 +311,7 @@
     const tw0 = ctx.measureText("TRAIL RECORD").width; ctx.letterSpacing = "0px";
     ctx.fillStyle = SAND; ctx.font = `900 28px ${CJK}`; ctx.fillText(d.title, 60 + tw0 + 14, 733);
     // 頁尾
-    ctx.fillStyle = "rgba(233,220,184,.67)"; ctx.font = `700 22px ${CJK}`; ctx.fillText("非官方整理・資料來源：教育及青年發展局公布成績", 60, H - 80);
+    ctx.fillStyle = "rgba(233,220,184,.67)"; ctx.font = `700 22px ${CJK}`; ctx.fillText("非官方整理・" + (d.source || "資料來源：教育及青年發展局公布成績"), 60, H - 80);
     ctx.font = `600 24px ${NUM}`; ctx.fillText(d.url, 60, H - 48);
     if (qr) drawQR(ctx, qr, W - 60 - 150, H - 40 - 150, 150, MOSS, "#f3ead2", 10);
     return cv;
@@ -330,8 +346,8 @@
     // 扣針孔
     for (const x of [39, PW - 39]) for (const y of [209, 849]) { ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2); ctx.fillStyle = "#1a120b"; ctx.fill(); }
     // 大字最佳名次（上黑下橙）
-    ctx.textAlign = "center"; ctx.fillStyle = "#777"; ctx.font = `900 30px ${CJK}`; ctx.letterSpacing = "12px"; ctx.fillText("最佳名次", PW / 2 + 6, 228); ctx.letterSpacing = "0px";
-    const best = String(d.stats.best), bs = best.length < 2 ? 380 : 330, base = 520;
+    ctx.textAlign = "center"; ctx.fillStyle = "#777"; ctx.font = `900 30px ${CJK}`; ctx.letterSpacing = "12px"; ctx.fillText(d.cert ? `第 ${d.cert.edition} 屆名次` : "最佳名次", PW / 2 + 6, 228); ctx.letterSpacing = "0px";
+    const best = String(d.cert ? d.cert.place : d.stats.best), bs = best.length < 2 ? 380 : 330, base = 520;
     ctx.font = `italic 800 ${bs}px ${NUM}`; const bw = ctx.measureText(best).width;
     ctx.font = `italic 800 150px ${NUM}`; const hw = ctx.measureText("#").width;
     const x0 = PW / 2 - (bw + hw + 8) / 2;
@@ -345,8 +361,8 @@
     if (d.namePt) { ctx.fillStyle = "#666"; fit(ctx, d.namePt, 500, 40, 22, (s) => `italic 800 ${s}px ${NUM}`); ctx.fillText(d.namePt, 230, 704); }
     if (qr) { drawQR(ctx, qr, PW - 54 - 150, 548, 150, ink, "#fff", 8); ctx.textAlign = "center"; ctx.fillStyle = "#555"; ctx.font = `900 20px ${CJK}`; ctx.fillText("掃描看個人頁", PW - 54 - 75, 724); }
     // 數據條（斜）
-    const sts = [["參賽", String(d.stats.races), false], ["冠軍", String(d.stats.wins), !!d.stats.wins], ["獎牌", String(d.stats.medals), false]];
-    const last = d.pb ? [`${d.pb.label}最佳`, d.pb.time] : ["最佳", `#${d.stats.best}`];
+    const sts = [d.cert ? ["完賽人數", String(d.cert.finishers), false] : ["參賽", String(d.stats.races), false], ["冠軍", String(d.stats.wins), !!d.stats.wins], ["獎牌", String(d.stats.medals), false]];
+    const last = d.pb ? [d.pb.text || `${d.pb.label}最佳`, d.pb.time] : ["最佳", `#${d.stats.best}`];
     const unit = (PW - 108) / 4.6; let bx = 54;
     [...sts, [last[0], last[1], false]].forEach(([lab, val, hl], i) => {
       const w = i === 3 ? unit * 1.6 : unit;
@@ -373,8 +389,9 @@
       ctx.textAlign = "right"; ctx.fillStyle = ink; ctx.font = `italic 800 46px ${NUM}`; ctx.fillText(r.time, PW - 54, cy + 3);
       ctx.textBaseline = "alphabetic";
     });
+    if (d.cert && rows.length <= 2) certPanel(ctx, d, 54, 946 + rows.length * rh + 12, PW - 108, 150, { bg: "#f6f4ef", line: "#d9d4c8", fg: ink, accent: ORANGE, muted: "#666", small: true });
     ctx.textAlign = "left"; ctx.fillStyle = "#777"; ctx.font = `700 20px ${CJK}`;
-    ctx.fillText(`${d.status ? d.status + "・" : ""}非官方整理・資料來源：教育及青年發展局公布成績`, 54, PH - 44);
+    ctx.fillText(`${d.status ? d.status + "・" : ""}非官方整理・${d.source || "資料來源：教育及青年發展局公布成績"}`, 54, PH - 44);
     ctx.font = `600 22px ${NUM}`; ctx.fillText(d.url, 54, PH - 18);
     ctx.restore();
     return cv;
