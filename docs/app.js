@@ -114,7 +114,7 @@
       lvMemFin: (p, tm) => `第 ${p} 名 · ${tm}`, lvMemLap: (n, l, p) => `已完成 ${n}／${l} 圈 · 暫列第 ${p} 名`, lvMemNotStarted: "未起跑", lvMemNoPass: "未有經過終點紀錄", lvMemNoFin: "未有完賽紀錄", lvScorer: "計分",
       lvHeatGroup: (h, s) => `第 ${h} 組（${s}）`,
       lvUpdated: (s) => `更新於 ${s}`, lvOffline: "暫時未能連線，稍後自動重試。", lvTimeNote: "人手計時，只供參考",
-      invBtn: "匯出邀請卡", cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
+      invBtn: "匯出邀請卡", csLabel: "榮譽卡款式", cs_dash: "衝線", cs_trail: "山徑", cs_bib: "號碼布", cs_classic: "經典", cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
       cardNote: "圖片只使用本網站已公開的成績資料。手機可按「分享」儲存至相簿或傳送給朋友。",
     },
     en: {
@@ -228,7 +228,7 @@
       lvMemFin: (p, tm) => `#${p} · ${tm}`, lvMemLap: (n, l, p) => `${n}/${l} laps · provisionally #${p}`, lvMemNotStarted: "Not started", lvMemNoPass: "Not yet recorded", lvMemNoFin: "No finish recorded", lvScorer: "Scores",
       lvHeatGroup: (h, s) => `Heat ${h} (${s})`,
       lvUpdated: (s) => `Updated ${s}`, lvOffline: "Connection lost, retrying.", lvTimeNote: "Hand timing, for reference only",
-      invBtn: "Export invitation", cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
+      invBtn: "Export invitation", csLabel: "Card style", cs_dash: "Sprint", cs_trail: "Trail", cs_bib: "Race bib", cs_classic: "Classic", cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
       cardNote: "The card uses only results already published on this site. On a phone, use Share to save it to your photos.",
     },
   };
@@ -851,11 +851,23 @@
       url, qrUrl: `https://${url}/#/p/${p.pid}`, seed: p.pid,
     };
   }
-  function openCard(p) { openExport(t("cardBtn"), `${p.name_zh || p.name_pt}_榮譽卡.png`, () => XCCard.render(cardData(p))); }
-  async function openExport(label, name, make) {
+  // 榮譽卡款式：衝線、山徑、號碼布（docs/card-styles.js）及經典（docs/card.js）；記住使用者上次的選擇
+  const CARD_STYLES = ["dash", "trail", "bib", "classic"];
+  function openCard(p) {
+    let st = "dash";
+    try { const v = localStorage.getItem("xc-card-style"); if (CARD_STYLES.includes(v)) st = v; } catch (e) { /* 無痕模式 */ }
+    const draw = (k) => { const d = cardData(p), S = window.XCCardStyles; return k !== "classic" && S && S[k] ? S[k](d) : XCCard.render(d); };
+    openExport(t("cardBtn"), `${p.name_zh || p.name_pt}_榮譽卡.png`, draw, {
+      list: CARD_STYLES.map((k) => [k, t("cs_" + k)]), current: st,
+      pick: (k) => { try { localStorage.setItem("xc-card-style", k); } catch (e) { /* 無痕模式 */ } },
+    });
+  }
+  async function openExport(label, name, make, styles) {
     const box = document.createElement("div");
     box.className = "card-modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", label);
-    box.innerHTML = `<div class="cm-inner"><div class="cm-img"><div class="skeleton"><i class="sk-card"></i></div></div>
+    const pick = styles ? `<div class="cm-styles" role="radiogroup" aria-label="${esc(t("csLabel"))}">${styles.list.map(([k, l]) =>
+      `<button type="button" role="radio" data-k="${k}" aria-checked="${k === styles.current}">${esc(l)}</button>`).join("")}</div>` : "";
+    box.innerHTML = `<div class="cm-inner">${pick}<div class="cm-img"><div class="skeleton"><i class="sk-card"></i></div></div>
       <div class="cm-btns"><a class="btn-primary" id="cmSave" aria-disabled="true">${t("cardSave")}</a><button type="button" class="cm-share" id="cmShare" hidden>${t("cardShare")}</button><button type="button" class="cm-close" id="cmClose">${t("cardClose")}</button></div>
       <p class="muted-note">${t("cardNote")}</p></div>`;
     document.body.appendChild(box);
@@ -864,21 +876,36 @@
     document.addEventListener("keydown", onKey);
     box.addEventListener("click", (e) => { if (e.target === box) close(); });
     $("#cmClose").onclick = close; $("#cmClose").focus();
-    try {
-      const cv = await make();
-      const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
-      const url = box._url = URL.createObjectURL(blob);
-      box.querySelector(".cm-img").innerHTML = `<img src="${url}" alt="${esc(label)}">`;
-      const a = $("#cmSave"); a.href = url; a.download = name; a.removeAttribute("aria-disabled");
-      const file = new File([blob], name, { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        const sh = $("#cmShare"); sh.hidden = false;
-        sh.onclick = () => navigator.share({ files: [file], title: name }).catch(() => { /* 使用者取消 */ });
+    let job = 0;
+    const gen = async (key) => {
+      const my = ++job, a = $("#cmSave"), sh = $("#cmShare");
+      a.setAttribute("aria-disabled", "true"); sh.hidden = true;
+      if (box._url) { box.querySelector(".cm-img").classList.add("busy"); }
+      try {
+        const cv = await make(key);
+        const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+        if (my !== job || !box.isConnected) return;   // 已轉款式或已關閉
+        if (box._url) URL.revokeObjectURL(box._url);
+        const url = box._url = URL.createObjectURL(blob);
+        const im = box.querySelector(".cm-img"); im.classList.remove("busy");
+        im.innerHTML = `<img src="${url}" alt="${esc(label)}">`;
+        a.href = url; a.download = name; a.removeAttribute("aria-disabled");
+        const file = new File([blob], name, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          sh.hidden = false;
+          sh.onclick = () => navigator.share({ files: [file], title: name }).catch(() => { /* 使用者取消 */ });
+        }
+      } catch (e) {
+        console.error(e);
+        if (my === job) box.querySelector(".cm-img").innerHTML = `<p class="banner">${t("cardFail")}</p>`;
       }
-    } catch (e) {
-      console.error(e);
-      box.querySelector(".cm-img").innerHTML = `<p class="banner">${t("cardFail")}</p>`;
-    }
+    };
+    if (styles) box.querySelectorAll(".cm-styles button").forEach((b) => b.addEventListener("click", () => {
+      if (b.getAttribute("aria-checked") === "true") return;
+      box.querySelectorAll(".cm-styles button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+      styles.pick(b.dataset.k); gen(b.dataset.k);
+    }));
+    gen(styles ? styles.current : undefined);
   }
 
 

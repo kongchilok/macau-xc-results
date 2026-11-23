@@ -119,3 +119,9 @@ python -m http.server 8765 --directory docs
 - 比賽日提示卡（`#/preview?c=<組別>&me=<編號>`）有「匯出邀請卡」：`card.js` 的 `XCCard.invite` 繪製 1080×1350 PNG，內容為姓名、學校、組別／分組、圈數及距離、日期、地點、檢錄及起跑時間，QR 碼連到該組賽前預覽；背景為校徽斜向平鋪圖案，主色及強調色由校徽像素即時取色（黃色主色改作強調色）
 - 榮譽卡及邀請卡上的網址、QR 碼跟隨目前網址（`siteUrl()`），網站搬到其他 GitHub 帳戶或自訂網域後無須改程式；本機測試時用預設網址
 - 校徽白底內距改按校徽尺寸計算（原本用百分比，放在闊容器內會把校徽壓成空白）
+
+## 榮譽卡款式（四款）
+
+- 匯出視窗頂部可選：衝線（預設）、山徑、號碼布（`docs/card-styles.js`，`XCCardStyles.dash／trail／bib`）及經典（`docs/card.js`）；選擇記在瀏覽器（`xc-card-style`）
+- 四款共用 `cardData` 資料；QR 碼四邊留 4 格白邊（標準靜區）
+- 衝線款用 Barlow Condensed 斜體（`index.html` 字體連結已加 `ital` 800）

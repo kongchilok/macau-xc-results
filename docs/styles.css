@@ -840,6 +840,10 @@ a.medal:hover { background: var(--surface-2); }
 .cm-share, .cm-close { border: 0; border-radius: var(--r-pill); background: var(--surface-2); color: var(--text); font-weight: 700; }
 .cm-btns:has(.cm-share[hidden]) { grid-template-columns: 1fr 1fr; }
 .card-modal .muted-note { margin: 0; color: var(--text-2); }
+.cm-styles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: var(--r-pill); background: var(--surface-2); }
+.cm-styles button { min-height: 40px; border: 0; border-radius: var(--r-pill); background: none; color: var(--text-2); font-weight: 700; font-size: 14px; }
+.cm-styles button[aria-checked="true"] { background: var(--text); color: var(--bg); }
+.cm-img.busy img { opacity: .45; transition: opacity .2s; }
 
 /* 賽前預覽：學校名單 */
 .link-row .lv-refresh { margin-left: auto; }

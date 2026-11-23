@@ -156,8 +156,9 @@
     }
 
     // 頁尾
-    const qs = 184, qx = W - M - qs, qy = H - 40 - qs;
     const qr = qrLib && d.qrUrl ? (() => { try { const q = qrLib(0, "M"); q.addData(d.qrUrl); q.make(); return q; } catch (e) { return null; } })() : null;
+    // QR 碼四邊留 4 格白邊（標準靜區），每格約 5px
+    const qn = qr ? qr.getModuleCount() : 33, qcell = 4.9, qs = Math.round(qcell * (qn + 8)), qx = W - M - qs, qy = H - 30 - qs;   // 4 行紀錄時最後一行底約 y=1100，QR 頂須在其下
     ctx.fillStyle = C.accent; ctx.fillRect(M, H - 128, (qr ? qx - 24 : W - M) - M, 3);
     ctx.textAlign = "left"; ctx.fillStyle = C.muted; ctx.font = `500 30px ${NUM}`; ctx.fillText(d.url, M, H - 80);
     ctx.font = `500 27px ${CJK}`; ctx.fillText("資料來源：教育及青年發展局公布成績", M, H - 40);
@@ -165,7 +166,7 @@
       ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `700 28px ${CJK}`; ctx.fillText("掃描查看個人頁 ›", qx - 24, H - 142);
       ctx.textAlign = "left";
       rr(ctx, qx, qy, qs, qs, 14); ctx.fillStyle = "#fff"; ctx.fill();
-      const n = qr.getModuleCount(), pad = 10, cell = (qs - pad * 2) / n;
+      const n = qn, cell = qs / (n + 8), pad = cell * 4;
       ctx.fillStyle = "#000";
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect(qx + pad + c * cell, qy + pad + r * cell, Math.ceil(cell), Math.ceil(cell));
     }
@@ -294,15 +295,16 @@
     if (d.note) { ctx.fillStyle = "rgba(255,255,255,.8)"; fit(ctx, d.note, W - 2 * M - 60, 26, 18, 700, CJK); ctx.fillText(d.note, W / 2, by + 316); }
 
     // 頁尾：QR 碼
-    const qs = 168, qx = W - M - qs, qy = H - 38 - qs;
     const qr = qrLib && d.qrUrl ? (() => { try { const q = qrLib(0, "M"); q.addData(d.qrUrl); q.make(); return q; } catch (e) { return null; } })() : null;
+    // QR 碼四邊留 4 格白邊（標準靜區）
+    const qn = qr ? qr.getModuleCount() : 37, qs = Math.round(4.3 * (qn + 8)), qx = W - M - qs, qy = H - 24 - qs;   // 須低於資料框底（有分組說明時約 y=1114）
     ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = `800 34px ${CJK}`; ctx.fillText("比賽日一同到松山打氣！", M, H - 150);
     ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.font = `600 26px ${CJK}`; ctx.fillText(qr ? "掃描 QR 碼：賽前預覽及比賽日即時成績" : "賽前預覽及比賽日即時成績", M, H - 104);
     ctx.font = `500 26px ${NUM}`; ctx.fillText(d.url, M, H - 68);
     ctx.font = `500 22px ${CJK}`; ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillText(`第 ${d.edition} 屆學界越野跑比賽・非官方整理`, M, H - 36);
     if (qr) {
       rr(ctx, qx, qy, qs, qs, 16); ctx.fillStyle = "#fff"; ctx.fill();
-      const n = qr.getModuleCount(), pad = 10, cell2 = (qs - pad * 2) / n;
+      const n = qn, cell2 = qs / (n + 8), pad = cell2 * 4;
       ctx.fillStyle = "#000";
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect(qx + pad + c * cell2, qy + pad + r * cell2, Math.ceil(cell2), Math.ceil(cell2));
     }

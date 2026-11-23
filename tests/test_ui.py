@@ -1226,8 +1226,9 @@ def test_preview_schools_ordered_by_team_prediction(live, cat):
 
 
 # ---------- 榮譽卡 ----------
-def _card_png(page, pid):
+def _card_png(page, pid, style="classic"):
     go(page, f"#/p/{pid}")
+    page.evaluate(f"localStorage.setItem('xc-card-style', '{style}')")   # 經典款：以下 QR 位置按 card.js
     page.click("#cardBtn")
     page.wait_for_selector(".cm-img img", timeout=15000)
     info = page.evaluate("""async () => {
@@ -1256,6 +1257,37 @@ def _pid_by(pred):
             for r in v["individual"]:
                 people.setdefault(r["pid"], []).append(r)
     return next(pid for pid, recs in people.items() if pred(recs))
+
+
+def test_honours_card_styles_picker(page):
+    """榮譽卡四款（衝線、山徑、號碼布、經典）：可切換、尺寸 1080×1350、QR 碼有白色靜區、記住上次選擇"""
+    pid = _pid_by(lambda recs: sum(r["rank"] == 1 for r in recs) >= 2 and not recs[0].get("hidden"))
+    go(page, f"#/p/{pid}")
+    page.evaluate("localStorage.removeItem('xc-card-style')")
+    page.click("#cardBtn")
+    expect(page.locator('.cm-styles [data-k="dash"]')).to_have_attribute("aria-checked", "true")   # 預設衝線
+    # 各款 QR 碼靜區內一點（應為純白）；號碼布的紙張略旋轉，取 QR 左上角內側
+    probe = {"dash": (875, 1165), "trail": None, "bib": (827, 608), "classic": None}
+    seen = set()
+    for k in ("dash", "trail", "bib", "classic"):
+        if page.get_attribute(f'.cm-styles [data-k="{k}"]', "aria-checked") != "true":
+            page.click(f'.cm-styles [data-k="{k}"]')
+        page.wait_for_function("document.querySelector('.cm-img img') && !document.querySelector('.cm-img.busy') && !document.querySelector('#cmSave[aria-disabled]')", timeout=15000)
+        info = page.evaluate("""async (pt) => {
+            const img = document.querySelector('.cm-img img'); await img.decode();
+            const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+            const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+            return { w: img.naturalWidth, h: img.naturalHeight, src: img.src, px: pt ? [...cx.getImageData(pt[0], pt[1], 1, 1).data] : null };
+        }""", probe[k])
+        assert (info["w"], info["h"]) == (1080, 1350), k
+        if info["px"]:
+            assert info["px"][:3] == [255, 255, 255], f"{k}：QR 碼沒有白色靜區"
+        seen.add(info["src"])
+    assert len(seen) == 4
+    assert page.evaluate("localStorage.getItem('xc-card-style')") == "classic"
+    page.keyboard.press("Escape")
+    page.click("#cardBtn")   # 重開：沿用上次款式
+    expect(page.locator('.cm-styles [data-k="classic"]')).to_have_attribute("aria-checked", "true")
 
 
 @pytest.mark.parametrize("kind", ["champion", "medal", "top10", "base"])
