@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="live-admin.css?v=20261124d">
+<link rel="stylesheet" href="live-admin.css?v=20261125b">
 </head>
 <body>
 <header class="top">
@@ -64,7 +64,7 @@
     <div id="vlog" class="vlog" hidden aria-live="polite"></div>
     <div id="bubbles" class="bubbles" hidden></div>
     <div class="list">
-      <div class="list-head"><div id="listTabs" class="list-tabs" role="tablist"></div><button id="lockBtn" class="ghost lock">鎖定排序</button></div>
+      <div class="list-head"><div id="listTabs" class="list-tabs" role="tablist"></div><button id="lockBtn" class="ghost lock">鎖定排序</button><button id="padBtn" class="ghost lock" type="button" aria-label="收起或顯示數字鍵">⌨ 收起</button></div>
       <p id="slotNote" class="slot-note" hidden></p>
       <ol id="list"></ol>
     </div>
@@ -72,7 +72,7 @@
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
-      <button data-k="del" class="fn">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">確認</button>
+      <button data-k="del" class="fn reset" aria-label="重新輸入">重新輸入</button><button data-k="0">0</button><button data-k="ok" class="ok">確認</button>
     </div>
     <div class="extra">
       <button id="markBtn" class="mark">⏱ 先記時間</button>
@@ -88,6 +88,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="live-core.js?v=20261124d"></script>
-<script src="live-admin.js?v=20261124d"></script>
+<script src="live-admin.js?v=20261125b"></script>
 </body>
 </html>

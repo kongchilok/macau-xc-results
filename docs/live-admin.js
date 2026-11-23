@@ -21,7 +21,7 @@
   const entries = new Map(), heats = new Map();
   let queue = PRACTICE ? [] : store.get("xc-live-queue", []);
   let undoLog = PRACTICE ? [] : store.get("xc-live-undo", []); // 本裝置的操作紀錄：[{id, before}]，供「撤銷上一下」
-  const st = Object.assign({ event: "48", cat: "MA", heat: 1, tab: "course", lock: false }, PRACTICE ? {} : store.get("xc-live-state", {}));
+  const st = Object.assign({ event: "48", cat: "MA", heat: 1, tab: "course", lock: false, padOff: false }, PRACTICE ? {} : store.get("xc-live-state", {}));
   if (PRACTICE) st.event = "practice";
   let lockOrder = [];
   const save = () => { if (!PRACTICE) store.set("xc-live-state", st); };
@@ -269,7 +269,7 @@
     who.className = run && run.fin ? "who bad" : "who ok";
   }
   function key(k) {
-    if (k === "del") bibBuf = bibBuf.slice(0, -1);
+    if (k === "del") bibBuf = "";   // 重新輸入：清除整個號碼
     else if (k === "ok") return confirmBib();
     else if (bibBuf.length < 5) bibBuf += k;
     showBib();
@@ -373,6 +373,10 @@
     $("#lockBtn").hidden = st.tab !== "course";
     $("#bubbles").classList.toggle("off", st.tab === "grid"); // 號碼格已包含全部號碼，不再顯示泡泡
     document.body.classList.toggle("grid-mode", st.tab === "grid"); // 號碼格取代數字鍵，騰出位置
+    document.body.classList.toggle("pad-off", !!st.padOff);          // 收起數字鍵，看清整個排名
+    $("#padBtn").hidden = st.tab === "grid";
+    $("#padBtn").textContent = st.padOff ? "⌨ 顯示" : "⌨ 收起";
+    $("#padBtn").classList.toggle("on", !!st.padOff);
     $("#lockBtn").textContent = st.lock ? "🔒 已鎖定排序" : "鎖定排序";
     $("#lockBtn").classList.toggle("on", st.lock);
     renderBubbles(R);
@@ -598,7 +602,7 @@
       due += exp; miss += Math.max(0, exp - rec); extra += Math.max(0, rec - expNow);
     }
     passing.sort((a, b) => a.a - b.a);
-    const html = passing.length ? passing.map((p) => `<b>${p.bib}</b>`).join("") : `<span class="muted">暫時沒有人經過</span>`;
+    const html = passing.length ? passing.map((p) => `<b>${p.bib}</b>`).join("") : `<span class="muted">暫時沒有人經過 · ${$("#pSrc").textContent}</span>`;
     if (strip_.dataset.h !== html) { strip_.innerHTML = html; strip_.dataset.h = html; }
     score.textContent = `應記 ${due} · 漏記 ${miss} · 多記 ${extra}`;
     score.className = miss || extra ? "warn" : "ok";
@@ -609,11 +613,12 @@
      只在目前組別／分組名單內配對；講「撤銷」或「取消」＝撤銷上一下
      時間以識別完成時計（較實際經過約遲 0.5 至 2 秒） */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const voice = { on: false, rec: null, lang: "yue-Hant-HK", log: [] };
+  const voice = { on: false, rec: null, lang: "yue-Hant-HK", log: [], fellBack: false };
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   function voiceInit() {
     const b = $("#micBtn");
     b.hidden = false;
-    if (!SR) { b.disabled = true; b.title = "此瀏覽器不支援語音輸入"; return; }
+    if (!SR) { b.classList.add("na"); b.title = "此瀏覽器不支援語音輸入"; b.onclick = () => voiceLog(IOS ? "此瀏覽器不支援語音識別：iPhone 請改用 Safari" : "此瀏覽器不支援語音識別：請改用 Chrome", "bad"); return; }
     b.onclick = () => (voice.on ? voiceStop() : voiceStart());
   }
   function voiceStart() {
@@ -628,12 +633,30 @@
       }
     };
     rec.onerror = (e) => {
-      if (e.error === "language-not-supported" && voice.lang !== "zh-HK") { voice.lang = "zh-HK"; voiceLog("此裝置不支援 yue-Hant-HK，改用 zh-HK", "bad"); try { rec.abort(); } catch (x) { /* 已停止 */ } setTimeout(() => { if (voice.on) { voice.on = false; voiceStart(); } }, 300); }
-      else if (e.error === "not-allowed" || e.error === "service-not-allowed") { voiceLog("未獲准使用麥克風：請在瀏覽器設定容許", "bad"); voiceStop(); }
-      else if (e.error !== "no-speech" && e.error !== "aborted") voiceLog(`語音識別錯誤：${e.error}`, "bad");
+      const code = e.error;
+      if (code === "no-speech" || code === "aborted") return;
+      // 已成功收聽，其後自動重新開始被拒（iPhone 只容許由按鍵啟動）
+      if (voice.restarting && (code === "not-allowed" || code === "service-not-allowed")) { voiceLog("收聽已暫停（裝置不容許自動重新開始）：請再按一次麥克風", "warn"); voiceStop(); return; }
+      // 粵語代碼不獲接受（iPhone 可能報 service-not-allowed 或 not-allowed）：改用 zh-HK，請使用者再按一次（iPhone 須由按鍵啟動）
+      if ((code === "language-not-supported" || code === "service-not-allowed" || code === "not-allowed") && voice.lang !== "zh-HK" && !voice.fellBack) {
+        voice.fellBack = true; voice.lang = "zh-HK";
+        voiceLog(`未能以 yue-Hant-HK 啟動（${code}），已改用 zh-HK：請再按一次麥克風`, "warn"); voiceStop(); return;
+      }
+      const tip = IOS ? "iPhone：設定 → 一般 → 鍵盤 → 開啟「啟用聽寫」並加入粵語／中文（香港）；Safari 網址列「大小」→ 網站設定 → 麥克風 → 允許" : "請在瀏覽器網站設定容許麥克風";
+      if (code === "not-allowed") voiceLog(`未獲准使用麥克風（${code}）。${tip}`, "bad");
+      else if (code === "service-not-allowed") voiceLog(`語音識別服務不可用（${code}）。${tip}`, "bad");
+      else if (code === "audio-capture") voiceLog(`找不到麥克風（${code}）`, "bad");
+      else if (code === "network") voiceLog(`語音識別需要網絡連線（${code}）`, "bad");
+      else { voiceLog(`語音識別錯誤：${code}`, "bad"); return; }
+      voiceStop();
     };
-    rec.onend = () => { if (voice.on && voice.rec === rec) { try { rec.start(); } catch (x) { /* 稍後再試 */ } } };
-    voice.rec = rec; voice.on = true;
+    rec.onstart = () => { voice.restarting = false; };
+    rec.onend = () => {
+      if (!(voice.on && voice.rec === rec)) return;
+      voice.restarting = true;
+      try { rec.start(); } catch (x) { voiceLog("收聽已暫停：請再按一次麥克風", "warn"); voiceStop(); }
+    };
+    voice.rec = rec; voice.on = true; voice.restarting = false;
     try { rec.start(); } catch (e) { voiceLog("未能啟動語音識別", "bad"); voice.on = false; }
     renderVoice();
   }
@@ -698,6 +721,7 @@
   $("#grp").onchange = (e) => chooseGroup(e.target.value);
   voiceInit();
   $("#lockBtn").onclick = () => { st.lock = !st.lock; save(); renderList(); };
+  $("#padBtn").onclick = () => { st.padOff = !st.padOff; save(); renderList(); };
   $("#startBtn").onclick = startHeat;
   $("#doneBtn").onclick = toggleDone;
   $("#adjBtn").onclick = adjustStart;

@@ -866,6 +866,82 @@ def test_live_practice_mode(live):
     no_hscroll(page)
 
 
+KEYPAD_CLEAR = """(() => {
+  const pad = document.querySelector('#pad').getBoundingClientRect();
+  const head = document.querySelector('.list').getBoundingClientRect();
+  const k1 = document.querySelector('#pad [data-k="1"]').getBoundingClientRect();
+  const hit = document.elementFromPoint(k1.left + k1.width / 2, k1.top + 6);
+  return { listBottom: head.bottom, padTop: pad.top, hit1: !!(hit && hit.closest('[data-k="1"]')),
+    ok: document.querySelector('#pad [data-k=ok]').getBoundingClientRect().bottom, undo: document.querySelector('#undoBtn').getBoundingClientRect().bottom, h: innerHeight };
+})()"""
+
+
+def test_live_practice_keypad_not_covered_on_short_iphone(live):
+    """iPhone Safari 可見高度約 664：練習模式＋語音紀錄＋泡泡同時顯示，數字鍵不被清單分頁遮蓋，底行仍在畫面內"""
+    page = live
+    page.add_init_script(FAKE_SR)
+    page.set_viewport_size({"width": 390, "height": 664})
+    page.goto(f"{page.base}/live-admin.html?practice=1")
+    expect(page.locator("#practiceBar")).to_be_visible()
+    page.click("#startBtn")
+    page.click("#micBtn")
+    page.evaluate("window.__sr.onerror({ error: 'network' })")   # 長錯誤訊息令語音紀錄出現
+    expect(page.locator("#vlog")).to_be_visible()
+    expect(page.locator("#bubbles")).to_be_visible()
+    m = page.evaluate(KEYPAD_CLEAR)
+    assert m["listBottom"] <= m["padTop"] + 1, m
+    assert m["hit1"], m
+    assert m["ok"] <= m["h"] and m["undo"] <= m["h"], m
+    assert page.evaluate("document.scrollingElement.scrollHeight <= innerHeight + 1")
+    no_hscroll(page)
+
+
+def test_live_admin_reset_key_hide_pad_no_zoom(live):
+    """「重新輸入」清除整個號碼；收起鍵盤令清單變高；按鍵不會連按兩下放大"""
+    page = live
+    _login_ma(page)
+    page.select_option("#grp", "MC|1")
+    for ch in "405":
+        page.click(f'#pad [data-k="{ch}"]')
+    expect(page.locator("#who")).to_contain_text("陳浩天")
+    page.click('#pad [data-k="del"]')
+    expect(page.locator("#bib")).to_have_text("")
+    expect(page.locator("#who")).to_contain_text("男C 第 1 組 共 2 人")
+    assert page.evaluate("getComputedStyle(document.querySelector('#pad [data-k=\"1\"]')).touchAction") == "manipulation"
+    h0 = page.evaluate("document.querySelector('#list').getBoundingClientRect().height")
+    page.click("#padBtn")
+    expect(page.locator("#pad")).to_be_hidden()
+    expect(page.locator("#padBtn")).to_contain_text("顯示")
+    assert page.evaluate("document.querySelector('#list').getBoundingClientRect().height") > h0 + 150
+    expect(page.locator("#undoBtn")).to_be_visible()
+    page.click("#padBtn")
+    expect(page.locator("#pad")).to_be_visible()
+    no_hscroll(page)
+
+
+def test_live_admin_voice_fallback_and_errors(live):
+    """粵語代碼不獲接受：改用 zh-HK 並請使用者再按一次；之後的權限錯誤顯示錯誤碼及設定提示"""
+    page = live
+    page.add_init_script(FAKE_SR)
+    _login_ma(page)
+    page.click("#startBtn")
+    page.click("#micBtn")
+    assert page.evaluate("window.__sr.lang") == "yue-Hant-HK"
+    page.evaluate("window.__sr.onerror({ error: 'service-not-allowed' })")
+    expect(page.locator("#micBtn")).not_to_have_class(re.compile("on"))
+    expect(page.locator("#vlog")).to_contain_text("已改用 zh-HK")
+    page.click("#micBtn")
+    assert page.evaluate("window.__sr.lang") == "zh-HK"
+    page.evaluate("window.__sr.onerror({ error: 'not-allowed' })")
+    expect(page.locator("#vlog")).to_contain_text("未獲准使用麥克風（not-allowed）")
+    expect(page.locator("#micBtn")).not_to_have_class(re.compile("on"))
+    # 收聽一段時間後自動重新開始被拒（iPhone 須由按鍵啟動）：提示再按一次，而非權限問題
+    page.click("#micBtn")
+    page.evaluate("window.__sr.onstart(); window.__sr.onend(); window.__sr.onerror({ error: 'not-allowed' })")
+    expect(page.locator("#vlog")).to_contain_text("請再按一次麥克風")
+    expect(page.locator("#micBtn")).not_to_have_class(re.compile("on"))
+
+
 def test_live_demo_replay(page):
     # 示範以 30 倍速播放；先把時鐘撥快一小時，令全部運動員已到達
     page.add_init_script("(() => { const o = Date.now.bind(Date); let first = null; Date.now = () => { const n = o(); if (first === null) first = n; return n + (n - first > 50 ? 3600 * 1000 : 0); }; })()")
