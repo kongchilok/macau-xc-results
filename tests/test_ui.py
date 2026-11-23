@@ -528,7 +528,11 @@ def live(browser, base_url):
     roster = [{"bib": 1001, "cat": "MA", "heat": None, "abbr": "YW", "pid": ma[0]["pid"], "name": None},
               {"bib": 1002, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試甲"},
               {"bib": 1012, "cat": "MA", "heat": None, "abbr": "HK", "pid": None, "name": "測試乙"},
-              {"bib": 2001, "cat": "FB", "heat": None, "abbr": "HK", "pid": None, "name": None}]
+              {"bib": 2001, "cat": "FB", "heat": None, "abbr": "HK", "pid": None, "name": None},
+              # 男C 分組（第 48 屆實際號碼：C1 陳浩天 405；C2 羅焯饒 7）
+              {"bib": 405, "cat": "MC", "heat": 1, "abbr": "IV", "pid": None, "name": "陳浩天"},
+              {"bib": 40, "cat": "MC", "heat": 1, "abbr": "IV", "pid": None, "name": "測試丙"},
+              {"bib": 7, "cat": "MC", "heat": 2, "abbr": "CAM", "pid": None, "name": "羅焯饒"}]
     email = "helper@example.invalid"
     user = {"id": "u1", "aud": "authenticated", "role": "authenticated", "email": email, "app_metadata": {}, "user_metadata": {}, "created_at": "2026-01-01T00:00:00Z"}
     cors = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*"}
@@ -709,6 +713,30 @@ def test_live_admin_flow(live):
     no_hscroll(page)
 
 
+def test_live_admin_heats_and_full_bibs(live):
+    """號碼按學校編配（同組沒有共同前綴）：須輸入完整號碼；分組比賽按組顯示，他組號碼會提示"""
+    page = live
+    _login_ma(page)
+    page.click('#cats [data-cat="MC"]')
+    expect(page.locator("#heats button")).to_have_count(3)
+    expect(page.locator("#who")).to_contain_text("男C 第 1 組 共 2 人")
+    page.click('#pad [data-k="4"]')
+    expect(page.locator("#who")).to_contain_text("輸入中")
+    page.click('#pad [data-k="0"]')
+    expect(page.locator("#who")).to_contain_text("測試丙")          # 40 完全相符，不會誤配 405
+    page.click('#pad [data-k="5"]')
+    expect(page.locator("#who")).to_contain_text("陳浩天")
+    page.click('#pad [data-k="del"]'); page.click('#pad [data-k="del"]'); page.click('#pad [data-k="del"]')
+    page.click('#pad [data-k="7"]')
+    expect(page.locator("#who")).to_contain_text("屬男C 第 2 組")
+    page.click('#pad [data-k="del"]')
+    page.click("#startBtn")
+    _type_bib(page, 405)
+    _until(page, lambda: len(_passes(page, 405)) == 1)
+    r = _passes(page, 405)[0]
+    assert r["cat"] == "MC" and r["heat"] == 1 and r["name"] == "陳浩天"
+
+
 def test_live_practice_mode(live):
     page = live
     calls = []
@@ -716,7 +744,7 @@ def test_live_practice_mode(live):
     page.goto(f"{page.base}/live-admin.html?practice=1")
     expect(page.locator("#app")).to_be_visible()
     expect(page.locator("#practiceBar")).to_be_visible()
-    expect(page.locator("#who")).to_contain_text("本組號碼 1001")
+    expect(page.locator("#who")).to_contain_text("號碼 1001–1045")
     page.click("#startBtn")
     _type_bib(page, "01")
     expect(page.locator("#list.runners li[data-key]")).to_have_count(1)
@@ -737,6 +765,15 @@ def test_live_demo_replay(page):
     win = EDS[47]["categories"]["MA"]["individual"][0]
     expect(page.locator("#lvBody .lv-run").first).to_contain_text(win["name_zh"])
     expect(page.locator("#lvBody .lv-run").first).to_contain_text(win["time"])
+    # 分組組別（男C 分 3 組）：全部完成後合併時間，首名＝官方冠軍，顯示分組名次；團體冠軍與官方一致
+    go(page, "#/live?demo=47&c=MC")
+    page.wait_for_function("document.querySelectorAll('#lvBody .lv-run').length >= 40", timeout=15000)
+    expect(page.locator("#lvBody .board-head").first).to_contain_text("已完成 3／3 組")
+    mc = EDS[47]["categories"]["MC"]
+    expect(page.locator("#lvBody .lv-run").first).to_contain_text(mc["individual"][0]["name_zh"])
+    expect(page.locator("#lvBody .lv-run").first).to_contain_text("C1 第 1 名")
+    expect(page.locator(".lv-team").first).to_contain_text(mc["team_champion"]["school_zh"])
+    expect(page.locator(".lv-team").first).not_to_contain_text("暫計")
     no_hscroll(page)
 
 

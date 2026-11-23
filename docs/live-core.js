@@ -13,7 +13,9 @@
    - 完賽後再記錄的一律忽略
    - 只記時間、未填號碼的空位不計入名次；看不到號碼、按學校記錄的視為一名不具名的完賽者
    - 途中名次：已完賽者在前（按衝線次序或時間），其後按完成圈數多者先、同圈數按最近一次經過較早者先
-   - 全組完成後，未完成者不設名次（達標時間到即終止比賽） */
+   - 全組完成後，未完成者不設名次（達標時間到即終止比賽）；分組出發時，該分組完成即適用
+   - 分組出發（例如男C 分 C1、C2、C3）：各組時間合併定名次（章程 5.6），另計分組內名次 heatPlace；
+     未完成全部分組前，團體分只屬暫計 */
 (function (root) {
   "use strict";
   const TEAM_N = { A: 5, B: 5, C: 4, D: 4, E: 4 };
@@ -66,7 +68,14 @@
       || (a.fin ? ord(a.finEntry) - ord(b.finEntry) : b.laps - a.laps || ord(a.last) - ord(b.last))
       || a.heat - b.heat || a.last.seq - b.last.seq);
     let place = 0;
-    for (const r of runners) { r.dnf = done && !r.fin; r.place = r.dnf ? null : ++place; r.t = r.fin ? r.finEntry.t : r.last.t; }
+    const heatPos = {};
+    for (const r of runners) {
+      const hd = heats[r.heat] && heats[r.heat].status === "done";
+      r.dnf = (done || (multi && hd)) && !r.fin;
+      r.place = r.dnf ? null : ++place;
+      r.heatPlace = r.dnf ? null : (heatPos[r.heat] = (heatPos[r.heat] || 0) + 1);
+      r.t = r.fin ? r.finEntry.t : r.last.t;
+    }
     return { runners, ignored, slots };
   }
 
@@ -84,8 +93,9 @@
   }
 
   /* entered：{abbr: 報名人數}；ranked：buildRunners 的 runners；done：全組（所有分組）已完成
+     pending：分組出發而未完成全部分組（之後的分組可能有更快的隊員，分數未定）
      途中按目前跑位推算：每校取名次最前的 n 人（不論是否已完賽）相加，未齊人者假設餘下隊員緊接目前最後一名之後 */
-  function teamStandings(cat, ranked, entered, done) {
+  function teamStandings(cat, ranked, entered, done, pending) {
     const n = TEAM_N[cat[1]];
     const teams = Object.entries(entered).filter(([, k]) => k >= n).map(([abbr, k]) => ({ abbr, entered: k, places: [], fins: 0 }));
     const byAbbr = new Map(teams.map((x) => [x.abbr, x]));
@@ -95,7 +105,7 @@
     for (const x of teams) {
       x.places.sort((a, b) => a - b);
       x.scorers = x.places.slice(0, n);
-      x.complete = x.fins >= n;           // 已有 n 人完賽：分數已定
+      x.complete = x.fins >= n && !pending; // 已有 n 人完賽（分組出發則須全部分組完成）：分數已定
       x.missing = Math.max(0, n - x.places.length);
       x.score = x.scorers.reduce((s, p) => s + p, 0);
       let proj = x.score;

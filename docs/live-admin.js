@@ -203,26 +203,40 @@
     });
   }
 
-  /* ---------- 號碼：只輸入尾數 ---------- */
+  /* ---------- 號碼：本組號碼有共同前綴時只需輸入尾數 ----------
+     第 48 屆號碼布按學校編配（1 至 690，女子先、男子後），同組號碼沒有共同前綴，因此要輸入完整號碼（最多 3 位）；
+     如日後號碼按組別編配（例如男A 全部 10xx），系統會自動容許只輸入尾數 */
   const inCat = () => [...ROSTER.values()].filter((r) => r.cat === st.cat && (heatN(st.cat) === 1 || !r.heat || r.heat === st.heat));
-  // 回傳 {hit: 名單一行} 或 {many: [...]} 或 {other: 他組一行} 或 {none: true}
+  function catPrefix() {
+    const bibs = inCat().map((r) => String(r.bib));
+    if (bibs.length < 2 || !bibs.every((b) => b.length === bibs[0].length)) return "";
+    let p = 0;
+    while (p < bibs[0].length - 1 && bibs.every((b) => b[p] === bibs[0][p])) p++;
+    return bibs[0].slice(0, p);
+  }
+  const where = (r) => `${catLabel(r.cat)}${heatN(r.cat) > 1 && r.heat ? ` 第 ${r.heat} 組` : ""}`;
+  // 回傳 {hit: 名單一行} 或 {many: [...]} 或 {partial: n} 或 {other: 他組一行} 或 {none: true}
   function resolve(buf) {
     if (!buf) return {};
-    const list = inCat().filter((r) => String(r.bib).endsWith(buf));
+    const list = inCat();
     const exact = list.find((r) => String(r.bib) === buf);
     if (exact) return { hit: exact };
-    if (list.length === 1) return { hit: list[0] };
-    if (list.length > 1) return { many: list.sort((a, b) => a.bib - b.bib) };
+    if (catPrefix()) {
+      const tail = list.filter((r) => String(r.bib).endsWith(buf));
+      if (tail.length === 1) return { hit: tail[0] };
+      if (tail.length > 1) return { many: tail.sort((x, y) => x.bib - y.bib) };
+    }
     const full = ROSTER.get(buf);
+    const partial = list.filter((r) => String(r.bib).startsWith(buf)).length;
+    if (partial) return { partial, other: full };
     return full ? { other: full } : { none: true };
   }
   function bibHint() {
-    const bibs = inCat().map((r) => String(r.bib)).sort();
-    if (!bibs.length) return ROSTER.size ? "本組未有號碼布名單" : "未載入號碼布名單：請輸入完整號碼";
-    const len = bibs[0].length;
-    let p = 0;
-    if (bibs.every((b) => b.length === len)) while (p < len - 1 && bibs.every((b) => b[p] === bibs[0][p])) p++;
-    return p ? `本組號碼 ${bibs[0]}–${bibs[bibs.length - 1]}：只需輸入尾 ${len - p} 位` : `本組號碼 ${bibs[0]}–${bibs[bibs.length - 1]}：可只輸入尾數`;
+    const list = inCat();
+    if (!list.length) return ROSTER.size ? "本組未有號碼布名單" : "未載入號碼布名單：請輸入完整號碼";
+    const pre = catPrefix(), bibs = list.map((r) => String(r.bib)).sort();
+    const grp = `${catLabel(st.cat)}${heatN(st.cat) > 1 ? ` 第 ${st.heat} 組` : ""}`;
+    return pre ? `${grp} 號碼 ${bibs[0]}–${bibs[bibs.length - 1]}：只需輸入尾 ${bibs[0].length - pre.length} 位` : `${grp} 共 ${list.length} 人：輸入號碼布號碼`;
   }
   const personOf = (r) => (r && ((r.pid && NAME.get(r.pid)) || r.name)) || "";
   function clearBib() { bibBuf = ""; showBib(); }
@@ -232,7 +246,8 @@
     if (!bibBuf) { who.textContent = bibHint(); who.className = "who"; return; }
     const m = resolve(bibBuf);
     if (m.many) { who.textContent = `符合 ${m.many.length} 個號碼，請再輸入`; who.className = "who bad"; return; }
-    if (m.other) { who.innerHTML = `${m.other.bib} · ${esc(SCHOOL.get(m.other.abbr) || m.other.abbr)} <b class="warn">屬${catLabel(m.other.cat)}</b>`; who.className = "who bad"; return; }
+    if (m.partial) { who.textContent = `輸入中……（本組有 ${m.partial} 個號碼以 ${bibBuf} 開頭）`; who.className = "who"; return; }
+    if (m.other) { who.innerHTML = `${m.other.bib} · ${esc(SCHOOL.get(m.other.abbr) || m.other.abbr)} <b class="warn">屬${where(m.other)}</b>`; who.className = "who bad"; return; }
     if (m.none) { who.textContent = ROSTER.size ? "名單內沒有此號碼" : "未載入號碼布名單"; who.className = "who bad"; return; }
     const r = m.hit, run = runnerOf(r.bib), nm = personOf(r);
     const lap = run ? (run.fin ? "已完賽" : `第 ${run.laps + 1} 圈`) : "第 1 圈";
@@ -250,7 +265,8 @@
     const tapped = now();
     const m = resolve(bibBuf);
     if (m.many) return pickBib(m.many, tapped);
-    if (m.other && !confirm(`號碼 ${m.other.bib} 屬${catLabel(m.other.cat)}，確定記錄在${catLabel(st.cat)}？`)) return;
+    if (m.other && !confirm(`號碼 ${m.other.bib} 屬${where(m.other)}，確定記錄在${where({ cat: st.cat, heat: st.heat })}？`)) return;
+    if (m.partial && !m.other && !confirm(`號碼 ${bibBuf} 不在名單內，仍要記錄？（學校顯示為待確認）`)) return;
     if (m.none && !confirm(`號碼 ${bibBuf} 不在名單內，仍要記錄？（學校顯示為待確認）`)) return;
     const r = m.hit || m.other || { bib: Number(bibBuf), abbr: "?", pid: null, name: null };
     recordPass(r, tapped);

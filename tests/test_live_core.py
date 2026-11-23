@@ -56,3 +56,15 @@ def test_team_projection_mid_race(R):
 
 def test_eta(R):
     assert R["eta"] == 750
+
+
+def test_heats_merged_by_time(R):
+    # C2 四人（490–495 秒）快過 C1 全部，合併排第 1–4；分組名次各自計算；C1 只跑一圈的 5 號在 C1 完成後列未完成
+    assert R["heats"] == [[6, 1, 1, False], [7, 2, 2, False], [8, 3, 3, False], [9, 4, 4, False],
+                          [1, 5, 1, False], [2, 6, 2, False], [3, 7, 3, False], [4, 8, 4, False], [5, None, None, True]]
+
+
+def test_heats_team_pending_until_all_done(R):
+    # 未完成全部分組：即使已有 4 人完賽亦只屬暫計
+    assert R["heatTeams"]["pending"] == [["乙", 10, False], ["甲", 26, False]]
+    assert R["heatTeams"]["final"] == [["乙", 1, 10, True], ["甲", 2, 26, True]]

@@ -95,4 +95,20 @@ const B = (entries, opt) => L.buildRunners(entries, H, { laps: 5, minGap: 119, .
   const x = B([E(1001, 250), E(1001, 500)]);
   out.eta = L.eta(x.runners[0], H) / S;
 }
+// 2i. 分組出發（男C：C1、C2，各 2 圈）：合併時間定名次、分組名次；未完成全部分組前團體分只屬暫計
+{
+  const HS = { 1: { start_ms: 0, status: "done" }, 2: { start_ms: 2000 * S, status: "running" } };
+  const es = [];
+  const add = (bib, heat, abbr, t1, t2) => { es.push({ id: `${bib}a`, bib, heat, abbr, at_ms: t1 * S, seq: es.length + 1, deleted: false });
+    if (t2) es.push({ id: `${bib}b`, bib, heat, abbr, at_ms: t2 * S, seq: es.length + 1, deleted: false }); };
+  // C1（0 秒起跑）：甲 4 人完賽 500–530 秒；乙 1 人只跑一圈（C1 已完成 → 未完成）
+  add(1, 1, "甲", 250, 500); add(2, 1, "甲", 255, 510); add(3, 1, "甲", 260, 520); add(4, 1, "甲", 265, 530); add(5, 1, "乙", 300);
+  // C2（2000 秒起跑）：乙 4 人，時間 490–495 秒（比 C1 全部快）
+  add(6, 2, "乙", 2245, 2490); add(7, 2, "乙", 2246, 2491); add(8, 2, "乙", 2247, 2492); add(9, 2, "乙", 2248, 2495);
+  const x = L.buildRunners(es, HS, { laps: 2, minGap: 116, multiHeat: true });
+  out.heats = x.runners.map((r) => [r.bib, r.place, r.heatPlace, r.dnf]);
+  const T1 = L.teamStandings("MC", x.runners, { 甲: 4, 乙: 5 }, false, true);
+  const T2 = L.teamStandings("MC", x.runners, { 甲: 4, 乙: 5 }, true, false);
+  out.heatTeams = { pending: T1.teams.map((t) => [t.abbr, t.score, t.complete]), final: T2.teams.map((t) => [t.abbr, t.pos, t.score, t.complete]) };
+}
 process.stdout.write(JSON.stringify(out));

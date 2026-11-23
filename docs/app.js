@@ -86,7 +86,8 @@
       lvLaps: (n, l) => `${n}／${l} 圈`, lvLapN: (i) => `第 ${i} 圈`, lvFinish: "完賽", lvDnf: "未完成", lvTotal: "累計", lvProfile: "運動員頁", lvTapHint: "按一下可看各圈用時。", lvCourse: (l) => `全程 ${l} 圈`, lvNoAward: "本組參賽隊伍不足兩隊，不設團體獎。",
       lvScore: "分數", lvProv: "暫計", lvComplete: "已齊", lvMissing: (k) => `尚欠 ${k} 人`, lvOut: "人數不足，不計分", lvUnknown: "號碼待確認", lvRunner: "運動員",
       lvRule: (a, c) => `計分方法：A、B 組取每校首 ${a} 名、C 組取每校首 ${c} 名的名次相加，分數最低者勝；同分時以首名隊員名次較前者為勝。比賽途中按目前跑位推算（完成圈數較多者在前，同圈數按經過終點次序），以「暫計」顯示；未有足夠隊員經過終點的隊伍，假設餘下隊員緊接目前最後一名之後。`,
-      lvHeatsRule: "本組分組出發，按章程以時間定名次；後續分組完成前，名次及團體分只屬暫計。",
+      lvHeatsRule: (n) => `本組分 ${n} 組出發，按章程合併各組時間定名次（人手計時，或與官方晶片計時略有出入）。每完成一組即更新；全部分組完成前，名次及團體分只屬暫計。`,
+      lvHeatsDone: (d, n) => `已完成 ${d}／${n} 組`, lvHeatPlace: (g, p) => `${g} 第 ${p} 名`,
       lvUpdated: (s) => `更新於 ${s}`, lvOffline: "暫時未能連線，稍後自動重試。", lvTimeNote: "人手計時，只供參考",
       cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
       cardNote: "圖片只使用本網站已公開的成績資料。手機可按「分享」儲存至相簿或傳送給朋友。",
@@ -174,7 +175,8 @@
       lvLaps: (n, l) => `${n}/${l} laps`, lvLapN: (i) => `Lap ${i}`, lvFinish: "Finish", lvDnf: "Did not finish", lvTotal: "Total", lvProfile: "Athlete page", lvTapHint: "Tap a runner to see lap times.", lvCourse: (l) => `${l} laps`, lvNoAward: "Fewer than two teams entered, so no team award in this category.",
       lvScore: "Points", lvProv: "Provisional", lvComplete: "Complete", lvMissing: (k) => `${k} to come`, lvOut: "Too few finishers", lvUnknown: "Bib to be confirmed", lvRunner: "runner",
       lvRule: (a, c) => `Scoring: the places of each school's first ${a} finishers (A and B) or first ${c} finishers (C) are added; lowest total wins, ties go to the team whose first runner placed higher. During the race, standings are projected from current positions (more laps first, then order past the finish line) and marked provisional; teams with too few runners recorded assume the rest come in right after the current last place.`,
-      lvHeatsRule: "This category runs in heats and is ranked by time, so places and team points stay provisional until all heats finish.",
+      lvHeatsRule: (n) => `This category runs in ${n} heats, merged and ranked by time (hand timing may differ slightly from official chip times). Places and team points update after each heat and stay provisional until all heats finish.`,
+      lvHeatsDone: (d, n) => `${d}/${n} heats done`, lvHeatPlace: (g, p) => `${g} #${p}`,
       lvUpdated: (s) => `Updated ${s}`, lvOffline: "Connection lost, retrying.", lvTimeNote: "Hand timing, for reference only",
       cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
       cardNote: "The card uses only results already published on this site. On a phone, use Share to save it to your photos.",
@@ -1001,11 +1003,14 @@
       const ent = {}, laps = XCLive.lapsOf(DB.race, cat), passes = [];
       rows.forEach((r) => { const a = abbrOf(r.school_zh); ent[a] = (ent[a] || 0) + 1; });
       LIVE.demoEntered[cat] = ent;
-      rows.forEach((r, j) => XCLive.simSplits(r.seconds, laps, j + 1).forEach((ms, i) =>
-        passes.push({ id: `${cat}-${j}-${i}`, k: `${cat}-${j}`, cat, heat: 1, abbr: abbrOf(r.school_zh), pid: r.hidden ? null : r.pid, at_ms: t0 + ms + j, deleted: false })));
+      // 分組出發的組別：按序輪流分入各組，各組相隔（最慢時間＋2 分鐘）先後出發
+      const n = heatCount(cat), gap = (Math.max(...rows.map((r) => r.seconds)) + 120) * 1000;
+      for (let h = 1; h <= n; h++) LIVE.heats.set(`${cat}|${h}`, { cat, heat: h, start_ms: t0 + (h - 1) * gap, status: h === 1 ? "running" : "ready" });
+      rows.forEach((r, j) => { const heat = (j % n) + 1, st0 = t0 + (heat - 1) * gap;
+        XCLive.simSplits(r.seconds, laps, j + 1).forEach((ms, i) =>
+          passes.push({ id: `${cat}-${j}-${i}`, k: `${cat}-${j}`, cat, heat, abbr: abbrOf(r.school_zh), pid: r.hidden ? null : r.pid, at_ms: st0 + ms + j, deleted: false })); });
       passes.sort((x, y) => x.at_ms - y.at_ms).forEach((e, i) => { e.seq = i + 1; });
       LIVE.demoRows.push(...passes);
-      LIVE.heats.set(`${cat}|1`, { cat, heat: 1, start_ms: t0, status: "running" });
     }
     LIVE.demoSpeed = speed; LIVE.demoEd = ed.edition;
   }
@@ -1013,9 +1018,11 @@
     const now = liveNow();
     let changed = false;
     for (const r of LIVE.demoRows) if (r.at_ms <= now && !LIVE.entries.has(r.id)) { LIVE.entries.set(r.id, r); changed = true; }
-    for (const cat of liveCats()) {
-      const h = LIVE.heats.get(`${cat}|1`);
-      const last = Math.max(...LIVE.demoRows.filter((r) => r.cat === cat).map((r) => r.at_ms));
+    for (const cat of liveCats()) for (let n = heatCount(cat), i = 1; i <= n; i++) {
+      const h = LIVE.heats.get(`${cat}|${i}`);
+      const mine = LIVE.demoRows.filter((r) => r.cat === cat && r.heat === i);
+      const last = mine.length ? Math.max(...mine.map((r) => r.at_ms)) : h.start_ms;
+      if (h.status === "ready" && now >= h.start_ms) { h.status = "running"; changed = true; }
       if (h.status === "running" && now > last) { h.status = "done"; changed = true; }
     }
     return changed;
@@ -1075,7 +1082,8 @@
     const entries = [...LIVE.entries.values()].filter((e) => e.cat === cat);
     const laps = XCLive.lapsOf(DB.race, cat);
     const ranked = XCLive.buildRunners(entries, heats, { laps, minGap: XCLive.MIN_GAP[cat] / (LIVE.demo ? LIVE.demoSpeed : 1), multiHeat: multi, done: st.status === "done" }).runners;
-    const S = XCLive.teamStandings(cat, ranked, liveEntered(cat), st.status === "done");
+    const S = XCLive.teamStandings(cat, ranked, liveEntered(cat), st.status === "done", multi && st.status !== "done");
+    const heatsDone = st.hs.filter((h) => h.status === "done").length;
     const time = (ms) => ms == null ? "" : fmtClock(ms);
     const teamRows = S.teams.map((x) => {
       const zh = schoolOfAbbr(x.abbr);
@@ -1094,7 +1102,7 @@
       const who = e.abbr === "?" && !named ? `<div class="nm muted">${t("lvUnknown")}</div>`
         : named ? `<div class="nm">${named}</div><div class="sch">${zh ? esc(school(zh)) : t("lvUnknown")}</div>`
         : `<div class="nm">${esc(school(zh))}</div><div class="sch">${t("lvRunner")}</div>`;
-      const right = e.fin ? `${time(e.t)}${multi ? `<span class="gap">${t("pvHeat", e.heat)}</span>` : ""}`
+      const right = e.fin ? `${time(e.t)}${multi ? `<span class="gap">${e.heatPlace ? t("lvHeatPlace", cat[1] + e.heat, e.heatPlace) : t("pvHeat", e.heat)}</span>` : ""}`
         : `<span class="lv-lap">${t("lvLaps", e.laps, laps)}</span><span class="gap">${e.dnf ? t("lvDnf") : time(e.t)}</span>`;
       const isOpen = open.has(e.key);
       const splits = isOpen ? `<div class="lv-splits">${e.passes.map((q, i) => `<span><small>${e.fin && q === e.finEntry ? t("lvFinish") : t("lvLapN", i + 1)}</small><b>${time(e.splits[i])}</b><small>${t("lvTotal")} ${time(q.t)}</small></span>`).join("")}${p && !p.hidden ? `<a href="#/p/${e.pid}">${t("lvProfile")} ›</a>` : ""}</div>` : "";
@@ -1115,8 +1123,8 @@
         <div><span class="lv-status ${st.status}">${statusTxt}</span>${multi ? `<span class="lv-heat">${t("lvHeat", st.cur.heat, st.n)}</span>` : ""}<h2>${esc(catLong(cat))}</h2></div>
         <div class="lv-clock"><b id="lvClock">0:00</b><small id="lvCut"></small></div>
       </section>
-      ${multi ? `<p class="banner">${t("lvHeatsRule")}</p>` : ""}
-      <div class="board-head"><h2>${t("lvTeam")}</h2><span class="meta">${t("lvFin", S.finishers, st.status === "done" ? 0 : S.onCourse)}</span></div>
+      ${multi ? `<p class="banner">${t("lvHeatsRule", st.n)}</p>` : ""}
+      <div class="board-head"><h2>${t("lvTeam")}</h2><span class="meta">${multi ? t("lvHeatsDone", heatsDone, st.n) + " · " : ""}${t("lvFin", S.finishers, st.status === "done" ? 0 : S.onCourse)}</span></div>
       ${S.award ? `<div class="board">${teamRows}</div>` : `<p class="banner">${t("lvNoAward")}</p>`}
       <div class="board-head"><h2>${t("lvInd")}</h2><span class="meta">${t("lvCourse", laps)} · ${t("lvTimeNote")}</span></div>
       ${ranked.length ? `<p class="lv-hint">${t("lvTapHint")}</p><div class="board lv-ind">${indRows}</div>` : `<p class="muted-note">${t("lvWait")}</p>`}

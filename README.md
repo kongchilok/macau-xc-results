@@ -86,7 +86,8 @@ python -m http.server 8765 --directory docs
   - 只有 `xc_live_admins` 內的電郵可讀寫；公眾只能經 `xc_live_feed()` 取得**不含號碼布**的增量資料
   - 號碼布對照含秩序冊姓名（只限工作人員讀取）；公眾頁顯示姓名，但不公開號碼布；`scripts/redactions.json` 內應要求隱藏者不輸出姓名
 - 計分：`docs/live-core.js`（章程 5.6–5.12；以第 44–47 屆官方團體冠軍驗證 36/36 一致，`tests/test_live_core.py` 以 node 自動核對）
-- 號碼布名單：在 `private/startlist48.csv` 加 `bib` 欄 → `python -P -X utf8 scripts/live_roster.py private/startlist48.csv private/preview48_review.csv private/live_roster48.sql` → 在 Supabase 執行輸出的 SQL
+- 號碼布名單（第 48 屆已匯入 690 人）：號碼由秩序冊第 7–34 頁抄錄至 `private/bibs48.txt`（按學校編配 1–690，女子先、男子後；已核對號碼唯一、各校連續、與逐格 OCR 比對），合併為 `private/startlist48_bib.csv` → `python -P -X utf8 scripts/live_roster.py private/startlist48_bib.csv private/preview48_review.csv private/live_roster48.sql 48` → 在 Supabase 執行輸出的 SQL
+- 分組出發：男C 分 C1–C3、女C 分 C1–C2（中學組）；各組時間合併定名次，個人另顯示分組名次；每完成一組更新，全部分組完成前團體分標「暫計」
 - 新增工作人員：在 Supabase Authentication 建立帳戶（勾選 Auto Confirm），再執行 `insert into public.xc_live_admins(email) values ('電郵小寫');`
 
 ## 運動員榮譽卡
