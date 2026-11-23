@@ -6,7 +6,7 @@
   "use strict";
   const W = 1080, H = 1350, M = 58;
   const C = { bg: "#0c0e12", surface: "#161a20", surface2: "#1f242c", line: "#262b34", text: "#f1f3f6", muted: "#8f97a6",
-    accent: "#19e68c", ink: "#03140c", gold: "#f6c544", silver: "#c8d0db", bronze: "#d58b4f", male: "#4fb3ff", female: "#ff6fae" };
+    accent: "#4cc38a", ink: "#03140c", gold: "#f6c544", silver: "#c8d0db", bronze: "#d58b4f", male: "#4fb3ff", female: "#ff6fae" };
   const CJK = '"PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Heiti TC", sans-serif';
   const NUM = '"Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif';
   const QR_SRC = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
@@ -172,5 +172,142 @@
     return cv;
   }
 
-  root.XCCard = { render, W, H };
+  /* ---------- 觀賽邀請卡：背景用校徽圖案，配色取自校徽 ---------- */
+  function rgb2hsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    if (mx === mn) return [0, 0, l];
+    const d = mx - mn, s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    const h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, s, l];
+  }
+  const hsl = (h, s, l, a = 1) => `hsla(${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}% / ${a})`;
+  // 校徽主色及副色：按色相分組（每 20 度），以飽和度加權，略去白、黑及灰色
+  function crestPalette(img, hueFallback) {
+    const fb = { p: [hueFallback || 150, .6, .45], s: null };
+    if (!img) return fb;
+    try {
+      const n = 56, c = document.createElement("canvas"); c.width = c.height = n;
+      const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, n, n);
+      const px = x.getImageData(0, 0, n, n).data, bins = new Map();
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] < 200) continue;
+        const [h, sa, l] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
+        if (sa < .28 || l < .12 || l > .88) continue;
+        const k = Math.floor(h / 20) % 18, b = bins.get(k) || { w: 0, h: 0, s: 0, l: 0, hx: 0, hy: 0 };
+        b.w += sa; b.s += sa * sa; b.l += l * sa; b.hx += Math.cos(h * Math.PI / 180) * sa; b.hy += Math.sin(h * Math.PI / 180) * sa; bins.set(k, b);
+      }
+      const list = [...bins.values()].filter((b) => b.w > 6).sort((a, b) => b.w - a.w)
+        .map((b) => [(Math.atan2(b.hy, b.hx) * 180 / Math.PI + 360) % 360, b.s / b.w, b.l / b.w]);
+      if (!list.length) return fb;
+      const p0 = list[0], dh = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+      const s0 = list.find((c) => dh(c[0], p0[0]) >= 40) || null;
+      // 黃色作底色會變成啡綠色：有副色時黃色改作強調色
+      if (s0 && p0[0] >= 38 && p0[0] <= 75) return { p: s0, s: p0 };
+      return { p: p0, s: s0 };
+    } catch (e) { return fb; }
+  }
+
+  async function invite(d) {
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const ctx = cv.getContext("2d");
+    try { await Promise.all([document.fonts.load(`800 60px ${NUM}`), document.fonts.load(`700 60px ${NUM}`)]); } catch (e) { /* 後備字體 */ }
+    const [img, qrLib] = await Promise.all([loadImg(d.crestImg), d.qrUrl ? loadQR() : null]);
+    const pal = crestPalette(img, d.crestHue);
+    const [ph, ps] = pal.p, sat = Math.min(Math.max(ps, .35), .8);
+    // 強調色：副色（無副色時用主色）調亮，確保在深色底上清楚
+    const acc = pal.s ? [pal.s[0], Math.min(Math.max(pal.s[1], .55), .95), Math.max(pal.s[2], .62)] : [ph, Math.min(sat + .15, .95), .66];
+    const ACC = hsl(...acc), ACC_INK = hsl(acc[0], .6, .1);
+
+    // 背景：校徽主色深色漸變
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, hsl(ph, sat, .1)); g.addColorStop(.55, hsl(ph, sat, .2)); g.addColorStop(1, hsl(ph, sat * .9, .3));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const rg = ctx.createRadialGradient(W * .85, H * .08, 20, W * .85, H * .08, 700);
+    rg.addColorStop(0, hsl(acc[0], acc[1], acc[2], .32)); rg.addColorStop(1, hsl(acc[0], acc[1], acc[2], 0));
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    // 校徽圖案：斜向交錯平鋪＋右下角大水印
+    if (img) {
+      const r = Math.min(1, img.width / img.height), tw = 104 * r, th = 104 / Math.max(r, img.width / img.height) * (img.height / img.width) * r || 104;
+      const sc = 104 / Math.max(img.width, img.height), iw = img.width * sc, ih = img.height * sc;
+      ctx.save(); ctx.globalAlpha = .07; ctx.translate(W / 2, H / 2); ctx.rotate(-14 * Math.PI / 180);
+      for (let row = -9, k = 0; row <= 9; row++, k++) for (let col = -7; col <= 7; col++) {
+        const x = col * 190 + (row % 2 ? 95 : 0), y = row * 170;
+        ctx.drawImage(img, x - iw / 2, y - ih / 2, iw, ih);
+      }
+      ctx.restore();
+      const big = 760 / Math.max(img.width, img.height);
+      ctx.save(); ctx.globalAlpha = .1; ctx.drawImage(img, W - img.width * big * .72, H - img.height * big * .78, img.width * big, img.height * big); ctx.restore();
+    } else contours(ctx, d.seed || d.name);
+    // 底部壓暗，令文字清楚
+    const sh = ctx.createLinearGradient(0, H * .5, 0, H); sh.addColorStop(0, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.45)");
+    ctx.fillStyle = sh; ctx.fillRect(0, H * .5, W, H * .5);
+
+    // 頂部
+    rr(ctx, M, 40, 58, 58, 12); ctx.fillStyle = C.accent; ctx.fill();
+    ctx.fillStyle = C.ink; ctx.font = `800 34px ${NUM}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("XC", M + 29, 70);
+    ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = `800 38px ${CJK}`; ctx.fillText("澳門學界越野跑", M + 74, 70);
+    ctx.font = `800 28px ${CJK}`; const tag = "觀賽邀請"; const tw2 = ctx.measureText(tag).width + 40;
+    rr(ctx, W - M - tw2, 44, tw2, 52, 26); ctx.fillStyle = ACC; ctx.fill();
+    ctx.fillStyle = ACC_INK; ctx.textAlign = "center"; ctx.fillText(tag, W - M - tw2 / 2, 71);
+
+    // 校徽白底
+    const cs = 204, cx = (W - cs) / 2, cy = 128;
+    ctx.save(); ctx.shadowColor = hsl(acc[0], acc[1], acc[2], .55); ctx.shadowBlur = 60;
+    rr(ctx, cx, cy, cs, cs, 48); ctx.fillStyle = "#fff"; ctx.fill(); ctx.restore();
+    ctx.lineWidth = 6; ctx.strokeStyle = ACC; rr(ctx, cx - 10, cy - 10, cs + 20, cs + 20, 56); ctx.stroke();
+    if (img) { const r = Math.min((cs - 44) / img.width, (cs - 44) / img.height); ctx.drawImage(img, cx + (cs - img.width * r) / 2, cy + (cs - img.height * r) / 2, img.width * r, img.height * r); }
+    else shield(ctx, cx + 50, cy + 30, cs - 60, d.crestAbbr || "?", d.crestHue || 150);
+
+    // 標題及姓名
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = ACC; ctx.font = `900 56px ${CJK}`; ctx.fillText("邀請你來為我打氣！", W / 2, 420);
+    ctx.fillStyle = "#fff"; fit(ctx, d.name, W - 2 * M - 40, 120, 60, 900, CJK); ctx.fillText(d.name, W / 2, 552);
+    let y = 552;
+    if (d.namePt) { ctx.fillStyle = "rgba(255,255,255,.72)"; fit(ctx, d.namePt, W - 2 * M, 44, 26, 700, NUM); ctx.fillText(d.namePt, W / 2, 606); y = 606; }
+    ctx.fillStyle = "#fff"; fit(ctx, d.school, W - 2 * M, 40, 26, 700, CJK); ctx.fillText(d.school, W / 2, y + 56);
+    // 組別膠囊
+    const pills = [d.cat, d.heat ? `第 ${d.heat} 組` : null, d.laps && d.distance ? `${d.laps}・${(d.distance / 1000).toFixed(2).replace(/0$/, "")} 公里` : null].filter(Boolean);
+    ctx.font = `800 32px ${CJK}`; const pw = pills.map((t) => ctx.measureText(t).width + 44), tot = pw.reduce((a, b) => a + b, 0) + (pills.length - 1) * 14;
+    let px = (W - tot) / 2; const py = y + 86;
+    pills.forEach((t, i) => {
+      rr(ctx, px, py, pw[i], 58, 29); ctx.fillStyle = i === 0 ? ACC : "rgba(255,255,255,.12)"; ctx.fill();
+      if (i) { ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.stroke(); }
+      ctx.fillStyle = i === 0 ? ACC_INK : "#fff"; ctx.textBaseline = "middle"; ctx.fillText(t, px + pw[i] / 2, py + 31); ctx.textBaseline = "alphabetic"; px += pw[i] + 14;
+    });
+
+    // 資料面板：日期、地點、檢錄、起跑
+    const by = py + 90, bh = d.note ? 330 : 296;
+    rr(ctx, M, by, W - 2 * M, bh, 30); ctx.fillStyle = "rgba(0,0,0,.42)"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.stroke();
+    const half = (W - 2 * M) / 2;
+    ctx.fillStyle = "rgba(255,255,255,.14)"; ctx.fillRect(M + half, by + 28, 2, 112); ctx.fillRect(M + 36, by + 156, W - 2 * M - 72, 2);
+    const cell = (lab, val, x, yy, big) => {
+      ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.66)"; ctx.font = `700 28px ${CJK}`; ctx.fillText(lab, x, yy);
+      ctx.fillStyle = big ? ACC : "#fff";
+      if (big) { ctx.font = `800 92px ${NUM}`; ctx.fillText(val, x, yy + 92); } else { fit(ctx, val, half - 40, 42, 26, 900, CJK); ctx.fillText(val, x, yy + 58); }
+    };
+    cell("日期", d.date, M + half / 2, by + 56, false);
+    cell("地點", d.venue, M + half * 1.5, by + 56, false);
+    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.66)"; ctx.font = `700 28px ${CJK}`;
+    ctx.fillText("檢錄", M + half / 2, by + 200); ctx.fillText(d.startLabel, M + half * 1.5, by + 200);
+    ctx.fillStyle = ACC; ctx.font = `800 86px ${NUM}`; ctx.fillText(d.call, M + half / 2, by + 280); ctx.fillText(d.start, M + half * 1.5, by + 280);
+    if (d.note) { ctx.fillStyle = "rgba(255,255,255,.8)"; fit(ctx, d.note, W - 2 * M - 60, 26, 18, 700, CJK); ctx.fillText(d.note, W / 2, by + 316); }
+
+    // 頁尾：QR 碼
+    const qs = 168, qx = W - M - qs, qy = H - 38 - qs;
+    const qr = qrLib && d.qrUrl ? (() => { try { const q = qrLib(0, "M"); q.addData(d.qrUrl); q.make(); return q; } catch (e) { return null; } })() : null;
+    ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = `800 34px ${CJK}`; ctx.fillText("比賽日一同到松山打氣！", M, H - 150);
+    ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.font = `600 26px ${CJK}`; ctx.fillText(qr ? "掃描 QR 碼：賽前預覽及比賽日即時成績" : "賽前預覽及比賽日即時成績", M, H - 104);
+    ctx.font = `500 26px ${NUM}`; ctx.fillText(d.url, M, H - 68);
+    ctx.font = `500 22px ${CJK}`; ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillText(`第 ${d.edition} 屆學界越野跑比賽・非官方整理`, M, H - 36);
+    if (qr) {
+      rr(ctx, qx, qy, qs, qs, 16); ctx.fillStyle = "#fff"; ctx.fill();
+      const n = qr.getModuleCount(), pad = 10, cell2 = (qs - pad * 2) / n;
+      ctx.fillStyle = "#000";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect(qx + pad + c * cell2, qy + pad + r * cell2, Math.ceil(cell2), Math.ceil(cell2));
+    }
+    return cv;
+  }
+
+  root.XCCard = { render, invite, W, H };
 })(window);

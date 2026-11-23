@@ -512,6 +512,27 @@ def test_athlete_race_button_and_glow_card(page):
     expect(page.locator("#meCard")).to_have_count(0)
 
 
+def test_invite_card_export_and_crest_visible(page):
+    """比賽日提示卡：校徽正常顯示（不會被 % 內距壓成空白）；匯出觀賽邀請卡 1080×1350"""
+    open_, race = _race_open()
+    if not open_:
+        pytest.skip("比賽日已過")
+    pv = json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"]
+    s = next(x for x in pv["MA"]["starters"] if x.get("pid"))
+    go(page, f"#/preview?c=MA&me={s['pid']}")
+    expect(page.locator("#meCard")).to_be_visible()
+    img = page.locator("#meCard .crest img")
+    if img.count():
+        assert img.bounding_box()["width"] > 40
+    page.click("#meInv")
+    modal = page.locator(".card-modal")
+    expect(modal.locator("img")).to_be_visible(timeout=15000)
+    assert modal.locator("img").evaluate("i => [i.naturalWidth, i.naturalHeight]") == [1080, 1350]
+    assert modal.locator("#cmSave").get_attribute("download").endswith("_觀賽邀請卡.png")
+    page.keyboard.press("Escape")
+    expect(modal).to_have_count(0)
+
+
 def test_athlete_without_entry_has_no_race_button(page):
     pv = json.loads((ROOT / "docs/data/preview48.json").read_text(encoding="utf-8"))["categories"]
     entered = {s["pid"] for c in pv.values() for s in c["starters"]}
@@ -1105,6 +1126,13 @@ def test_live_admin_voice_fallback_and_errors(live):
     page.evaluate("window.__sr.onstart(); window.__sr.onend(); window.__sr.onerror({ error: 'not-allowed' })")
     expect(page.locator("#vlog")).to_contain_text("請再按一次麥克風")
     expect(page.locator("#micBtn")).not_to_have_class(re.compile("on"))
+
+
+def test_preview_has_no_demo_link(page):
+    """賽前預覽不再顯示「示範重播」入口（?demo= 網址保留作內部測試）"""
+    go(page, "#/preview?c=MA")
+    expect(page.locator(".link-row a")).to_have_count(1)
+    expect(page.locator('a[href*="demo="]')).to_have_count(0)
 
 
 def test_live_demo_replay(page):

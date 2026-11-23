@@ -114,7 +114,7 @@
       lvMemFin: (p, tm) => `第 ${p} 名 · ${tm}`, lvMemLap: (n, l, p) => `已完成 ${n}／${l} 圈 · 暫列第 ${p} 名`, lvMemNotStarted: "未起跑", lvMemNoPass: "未有經過終點紀錄", lvMemNoFin: "未有完賽紀錄", lvScorer: "計分",
       lvHeatGroup: (h, s) => `第 ${h} 組（${s}）`,
       lvUpdated: (s) => `更新於 ${s}`, lvOffline: "暫時未能連線，稍後自動重試。", lvTimeNote: "人手計時，只供參考",
-      cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
+      invBtn: "匯出邀請卡", cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
       cardNote: "圖片只使用本網站已公開的成績資料。手機可按「分享」儲存至相簿或傳送給朋友。",
     },
     en: {
@@ -228,7 +228,7 @@
       lvMemFin: (p, tm) => `#${p} · ${tm}`, lvMemLap: (n, l, p) => `${n}/${l} laps · provisionally #${p}`, lvMemNotStarted: "Not started", lvMemNoPass: "Not yet recorded", lvMemNoFin: "No finish recorded", lvScorer: "Scores",
       lvHeatGroup: (h, s) => `Heat ${h} (${s})`,
       lvUpdated: (s) => `Updated ${s}`, lvOffline: "Connection lost, retrying.", lvTimeNote: "Hand timing, for reference only",
-      cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
+      invBtn: "Export invitation", cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
       cardNote: "The card uses only results already published on this site. On a phone, use Share to save it to your photos.",
     },
   };
@@ -817,8 +817,14 @@
     $("#cardBtn").onclick = () => openCard(p);
   }
 
-  /* ---------- 榮譽卡（docs/card.js 繪製） ---------- */
+  /* ---------- 榮譽卡、觀賽邀請卡（docs/card.js 繪製） ---------- */
   const CARD_MEDAL = 10;
+  // 卡上網址及 QR 碼：跟隨目前網址（網站搬到其他 GitHub 帳戶或自訂網域後自動更新）；本機測試時用預設網址
+  const SITE_DEFAULT = "kongchilok.github.io/macau-xc-results";
+  function siteUrl() {
+    if (!/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(location.hostname)) return SITE_DEFAULT;
+    return (location.host + location.pathname).replace(/index\.html$/, "").replace(/\/$/, "");
+  }
   function cardData(p) {
     const last = p.recs.at(-1), zh = (p.status && p.status.code === "active" && p.status.school) || last.school_zh;
     const info = DB.schools[zh] || {}, abbr = info.abbr || zh.slice(0, 2);
@@ -833,8 +839,7 @@
     const pb = pbRecs.length ? pbRecs.reduce((a, b) => (b.seconds < a.seconds ? b : a)) : null;
     const st = p.status;
     const status = !st ? null : st.code === "active" ? `在讀・第 ${DB.race.edition} 屆參賽` : st.code === "unsure" ? null : t("st_" + st.code);
-    // QR 碼指向本網站的個人頁（開啟即累積人氣）；網站搬遷後自動跟隨目前網址
-    const url = /\.github\.io$/.test(location.hostname) ? (location.host + location.pathname).replace(/index\.html$/, "").replace(/\/$/, "") : "kongchilok.github.io/macau-xc-results";
+    const url = siteUrl();
     return {
       name: p.name_zh || p.name_pt, namePt: p.name_zh ? p.name_pt : "", school: zh, crestImg: DB.crests[abbr] || null, crestAbbr: abbr, crestHue: hueOf(abbr),
       status, statusMuted: !!st && st.code !== "active",
@@ -846,9 +851,10 @@
       url, qrUrl: `https://${url}/#/p/${p.pid}`, seed: p.pid,
     };
   }
-  async function openCard(p) {
+  function openCard(p) { openExport(t("cardBtn"), `${p.name_zh || p.name_pt}_榮譽卡.png`, () => XCCard.render(cardData(p))); }
+  async function openExport(label, name, make) {
     const box = document.createElement("div");
-    box.className = "card-modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", t("cardBtn"));
+    box.className = "card-modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", label);
     box.innerHTML = `<div class="cm-inner"><div class="cm-img"><div class="skeleton"><i class="sk-card"></i></div></div>
       <div class="cm-btns"><a class="btn-primary" id="cmSave" aria-disabled="true">${t("cardSave")}</a><button type="button" class="cm-share" id="cmShare" hidden>${t("cardShare")}</button><button type="button" class="cm-close" id="cmClose">${t("cardClose")}</button></div>
       <p class="muted-note">${t("cardNote")}</p></div>`;
@@ -859,11 +865,10 @@
     box.addEventListener("click", (e) => { if (e.target === box) close(); });
     $("#cmClose").onclick = close; $("#cmClose").focus();
     try {
-      const cv = await XCCard.render(cardData(p));
+      const cv = await make();
       const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
-      const name = `${p.name_zh || p.name_pt}_榮譽卡.png`;
       const url = box._url = URL.createObjectURL(blob);
-      box.querySelector(".cm-img").innerHTML = `<img src="${url}" alt="${esc(t("cardBtn"))}">`;
+      box.querySelector(".cm-img").innerHTML = `<img src="${url}" alt="${esc(label)}">`;
       const a = $("#cmSave"); a.href = url; a.download = name; a.removeAttribute("aria-disabled");
       const file = new File([blob], name, { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1038,17 +1043,32 @@
     if (keys.length) { const first = C[keys[0]][Math.floor(Math.random() * C[keys[0]].length)]; pool.splice(pool.indexOf(first), 1); pool.unshift(first); }
     return pool;
   }
+  function inviteData(pid, m) {
+    const p = PEOPLE.get(pid), zh = m.school_zh, info = DB.schools[zh] || {}, abbr = info.abbr || zh.slice(0, 2);
+    const race = DB.race, d = new Date(race.date + "T00:00:00");
+    const url = siteUrl();
+    return {
+      name: p.name_zh || p.name_pt, namePt: p.name_zh ? p.name_pt : "", school: zh, crestImg: DB.crests[abbr] || null, crestAbbr: abbr, crestHue: hueOf(abbr),
+      edition: race.edition, cat: `${m.cat[0] === "M" ? "男子" : "女子"}${m.cat[1]}組`, heat: m.heat,
+      date: `${d.getMonth() + 1}月${d.getDate()}日（星期${"日一二三四五六"[d.getDay()]}）`, venue: race.venue_zh,
+      call: m.sch.call, start: m.sch.start, laps: m.sch.laps_zh, distance: m.sch.distance,
+      startLabel: m.heat && m.heat > 1 ? "第 1 組起跑" : "起跑",
+      note: m.heat && m.heat > 1 ? `第 ${m.heat} 組：第 1 組出發後，各組隨即順序起跑` : "",
+      url, qrUrl: `https://${url}/#/preview?c=${m.cat}&me=${pid}`, seed: pid,
+    };
+  }
   function meCard(pid, cat, info) {
     const m = meEntry(pid), p = PEOPLE.get(pid);
     if (!m || m.cat !== cat || !p || p.hidden) return "";
     const pool = cheerPool(pid, cat, info);
     return `<section class="me-card" id="meCard" data-pool="${esc(JSON.stringify(pool))}" data-i="0">
       <div class="mc-tag">${esc(t("meHi"))}</div>
-      <div class="mc-head">${crest(m.school_zh, "md")}<span><b>${personName(p, false)}</b><small>${esc(school(m.school_zh))} · ${esc(catLong(cat))}${m.heat ? ` · ${esc(t("meHeat", m.heat))}` : ""}</small></span></div>
+      <div class="mc-head">${crest(m.school_zh, "lg")}<span><b>${personName(p, false)}</b><small>${esc(school(m.school_zh))} · ${esc(catLong(cat))}${m.heat ? ` · ${esc(t("meHeat", m.heat))}` : ""}</small></span></div>
       <div class="mc-times"><div><span>${t("meCall")}</span><b>${m.sch.call}</b></div><div><span>${m.heat && m.heat > 1 ? t("meStart1") : t("meStart")}</span><b>${m.sch.start}</b></div></div>
       ${m.heat && m.heat > 1 ? `<p class="mc-note">${esc(t("meLater", m.heat))}</p>` : ""}
       <p class="mc-cheer" id="meCheer" aria-live="polite">${esc(pool[0])}</p>
-      <button type="button" class="mc-more" id="meMore">${t("meMore")}</button>
+      <div class="mc-btns"><button type="button" class="mc-more" id="meMore">${t("meMore")}</button>
+      <button type="button" class="mc-inv" id="meInv">${ICON.card}${t("invBtn")}</button></div>
     </section>`;
   }
 
@@ -1102,7 +1122,7 @@
     view.innerHTML = `
       <h1 class="page-title pv-title">${esc(t("pvTitleZh"))}<small lang="pt">${esc(t("pvTitlePt"))}</small></h1>
       ${me ? meCard(me, cat, info) : ""}
-      <div class="link-row"><a href="#/live">${t("lvGo")} ›</a><a href="#/live?demo=${LATEST.edition}">${t("lvDemo")} ›</a>
+      <div class="link-row"><a href="#/live">${t("lvGo")} ›</a>
         <button class="lv-refresh" id="pvRefresh" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${t("lvRefresh")}</button></div>
       ${previewHero(race, pv)}
       <div class="filters">
@@ -1132,6 +1152,7 @@
     if (me) {
       view.querySelectorAll(`.pv-row[href="#/p/${me}"], .pd-row[href="#/p/${me}"]`).forEach((a) => a.classList.add("mine", "me-glow"));
       const mc = $("#meCard");
+      if (mc) $("#meInv").onclick = () => { const m = meEntry(me), p = PEOPLE.get(me); openExport(t("invBtn"), `${p.name_zh || p.name_pt}_觀賽邀請卡.png`, () => XCCard.invite(inviteData(me, m))); };
       if (mc) $("#meMore").onclick = () => { const pool = JSON.parse(mc.dataset.pool), i = (Number(mc.dataset.i) + 1) % pool.length; mc.dataset.i = i; $("#meCheer").textContent = pool[i]; };
     }
     $("#pvRefresh").onclick = async () => { const b = $("#pvRefresh"); b.classList.add("busy"); b.disabled = true; await loadRoster(ev, true); if (location.hash.startsWith("#/preview")) renderPreview(params); };

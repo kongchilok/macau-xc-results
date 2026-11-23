@@ -19,3 +19,5 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.old
+# Instagram 宣傳素材（不放網站）
+宣傳/
