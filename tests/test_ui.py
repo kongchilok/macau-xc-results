@@ -102,8 +102,11 @@ def test_home(page):
     expect(page.locator(".dock a")).to_have_count(4)
     expect(page.locator('.dock a[data-nav="home"]')).to_have_class("on")
     champ = EDS[47]["categories"]["MA"]["individual"][0]
-    expect(page.locator(".card").first).to_contain_text(champ["name_zh"])
-    expect(page.locator(".card").first).to_contain_text(champ["time"])
+    last = page.locator("#carousel .card").last         # 各組冠軍放最尾，標題寫明學年及屆數
+    expect(last.locator("h3")).to_have_text(f"{EDS[47]['year']}學年第47屆學界越野跑各組冠軍")
+    expect(last).to_contain_text(champ["name_zh"])
+    expect(last).to_contain_text(champ["time"])
+    expect(last).not_to_contain_text("最新一屆")
     no_hscroll(page)
 
 
@@ -516,6 +519,7 @@ def test_race_day_forecast(page):
     expect(page.locator(".wx-fc summary")).to_contain_text(rng)
     page.click(".wx-fc summary")
     expect(page.locator(".wx-fc")).to_contain_text("地球物理氣象局七天天氣預報")
+    expect(page.locator('.wx-fc a[href^="https://www.dsmg.gov.mo/"]')).to_have_count(1)
     expect(page.locator("#pvCarousel .hero-card .hc-fc")).to_contain_text(f"{fc['temp_min']}–{fc['temp_max']}°C")
     go(page, "#/records?c=MA&go=wx")
     expect(page.locator(".wxrow.fc-row")).to_contain_text("預測")

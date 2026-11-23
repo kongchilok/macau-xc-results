@@ -10,7 +10,7 @@
 """
 import json, math, re, sys, urllib.request, datetime as dt, xml.etree.ElementTree as ET
 
-URL = {"zh": "https://xml.smg.gov.mo/c_7daysforecast.xml", "en": "https://xml.smg.gov.mo/e_7daysforecast.xml"}
+URL = {"zh": "https://xml.dsmg.gov.mo/c_7daysforecast.xml", "en": "https://xml.dsmg.gov.mo/e_7daysforecast.xml"}
 
 
 def fetch(url):
@@ -37,7 +37,7 @@ def main(race_p, out_p):
     found = {k: next((w for w in d.iter("WeatherForecast") if w.find("ValidFor").text == day), None) for k, d in docs.items()}
     out = {"_note": "第 48 屆比賽當日天氣預測，取自澳門地球物理氣象局七天天氣預報；跑步影響以預報最高／最低氣溫及濕度的平均值粗略估算。",
            "source": "澳門地球物理氣象局七天天氣預報", "source_en": "Macao Meteorological and Geophysical Bureau 7-day forecast",
-           "source_url": "https://www.smg.gov.mo/", "date": day, "published": pub, "generated": dt.date.today().isoformat()}
+           "source_url": "https://www.dsmg.gov.mo/zh-hant", "date": day, "published": pub, "generated": dt.date.today().isoformat()}
     if found["zh"] is None:
         out["available"] = False
     else:

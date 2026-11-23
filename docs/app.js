@@ -8,7 +8,7 @@
       disclaimer: "本網站為非官方整理，資料來自教育及青年發展局「學界比賽」網頁公布的成績，如有出入，以官方公布為準。",
       source: "官方資料來源", removal: "申請移除個人資料",
       male: "男子", female: "女子", group: "組", secondary: "中學", primary: "小學",
-      edition: (n) => `第${n}屆`, latestChamps: "最新一屆各組冠軍", medalTitle: "學校團體冠軍榜",
+      edition: (n) => `第${n}屆`, latestChamps: (y, n) => `${y}學年第${n}屆學界越野跑各組冠軍`, medalTitle: "學校團體冠軍榜",
       medalNote: (a, b) => `只計算團體冠軍，統計期間為 ${a} 至 ${b}`, fastest: "近十年最快成績", fastestNote: "各屆賽道距離或有不同，成績未按距離調整。",
       streak: "團體冠軍連續衛冕", streakNote: "由最新一屆起向前計算連續奪得團體冠軍的屆數", kings: "個人冠軍次數最多",
       kingsNote: "近十年個人賽奪冠次數", times: "次", years: "連冠", quick: "最新一屆成績", quickAll: "全部成績",
@@ -122,7 +122,7 @@
       disclaimer: "Unofficial site. Results are compiled from the School Sports Competitions pages of the Education and Youth Development Bureau (DSEDJ); official publications prevail.",
       source: "Official source", removal: "Request removal",
       male: "Boys", female: "Girls", group: "", secondary: "Secondary", primary: "Primary",
-      edition: (n) => `${n}th edition`, latestChamps: "Latest individual champions", medalTitle: "School team titles",
+      edition: (n) => `${n}th edition`, latestChamps: (y, n) => `${y} · ${n}th Inter-school Cross Country: category champions`, medalTitle: "School team titles",
       medalNote: (a, b) => `Team titles only, ${a} to ${b}`, fastest: "Fastest times, last 10 years", fastestNote: "Course distance may differ between years; times are not distance-adjusted.",
       streak: "Active team streaks", streakNote: "Consecutive team titles up to the latest edition", kings: "Most individual titles",
       kingsNote: "Individual wins in the last 10 years", times: "×", years: "in a row", quick: "Latest results", quickAll: "All results",
@@ -333,6 +333,7 @@
       <div class="wx-impact">${t("wxImpact")}：${esc(wxSlow(f))}</div>
       <p class="wx-note">${esc(t("fcPub", pub))}。${esc(t("fcNote"))}</p>
       <a class="wx-link" href="#/records?c=MA&go=wx">${t("wxRecTitle")} ›</a>
+      ${/^https:\/\/www\.dsmg\.gov\.mo\//.test(f.source_url || "") ? `<a class="wx-link" href="${esc(f.source_url)}" target="_blank" rel="noopener">${lang === "zh" ? "地球物理氣象局最新預報" : "Latest SMG forecast"} ↗</a>` : ""}
     </details>`;
   }
 
@@ -503,18 +504,18 @@
     const kingRows = kings.map(({ p, w }) => `<a class="mini-row ${p.gender === "M" ? "m" : "f"}" href="#/p/${p.pid}"><span class="cat">${catLabel(p.recs.at(-1).cat)}</span><span class="who">${crest(p.recs.at(-1).school_zh, "xs")}${esc(lang === "zh" ? (p.name_zh || p.name_pt) : p.name_pt)}<small>${esc(school(p.recs.at(-1).school_zh))}</small></span><span class="t">${w}<small>${t("times")}</small></span></a>`).join("");
 
     const cards = [
-      { cls: "c-green", sub: `${t("edition", ed.edition)} · ${ed.year}`, title: t("latestChamps"), body: `<div class="mini">${champRows}</div>`, more: `#/rank?e=${ed.edition}&c=MA` },
       { cls: "c-gold", sub: t("medalNote", years.at(-1), years[0]), title: t("medalTitle"), body: `<div class="bars">${medalRows}</div>`, more: "#/athletes?tab=schools" },
       { cls: "c-steel", sub: t("rangeSub", years.at(-1), years[0]), title: t("fastest"), body: `<div class="mini">${fastRows}</div>`, note: t("fastestNote"), more: "#/records" },
       { cls: "c-green", sub: t("asOf", ed.edition), title: t("streak"), body: `<div class="mini">${streakRows}</div>`, note: t("streakNote"), more: `#/rank?t=team&e=${ed.edition}` },
       { cls: "c-gold", sub: t("kingsNote"), title: t("kings"), body: `<div class="mini">${kingRows}</div>`, more: "#/athletes?k=champ" },
+      { cls: "c-green", title: t("latestChamps", ed.year, ed.edition), body: `<div class="mini">${champRows}</div>`, more: `#/rank?e=${ed.edition}&c=MA` },
     ];
 
     const quick = CATS.map((c) => `<a class="${c[0] === "M" ? "m" : "f"}" href="#/rank?e=${ed.edition}&c=${c}">${c[1]}<small>${t(c[0] === "M" ? "male" : "female")}</small></a>`).join("");
 
     view.innerHTML = `
       ${raceBanner()}
-      <div class="carousel" id="carousel">${cards.map((k) => `<article class="card ${k.cls}"><h3>${esc(k.title)}</h3>${k.more ? `<a class="card-more" href="${k.more}">${t("more")} ›</a>` : ""}<div class="sub">${esc(k.sub)}</div>${k.body}${k.note ? `<div class="note">${esc(k.note)}</div>` : ""}</article>`).join("")}</div>
+      <div class="carousel" id="carousel">${cards.map((k) => `<article class="card ${k.cls}"><h3>${esc(k.title)}</h3>${k.more ? `<a class="card-more" href="${k.more}">${t("more")} ›</a>` : ""}${k.sub ? `<div class="sub">${esc(k.sub)}</div>` : ""}${k.body}${k.note ? `<div class="note">${esc(k.note)}</div>` : ""}</article>`).join("")}</div>
       <div class="dots" id="dots">${cards.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>
       <div class="section-title"><h2>${t("quick")} · ${t("edition", ed.edition)}</h2><a href="#/rank">${t("quickAll")} ›</a></div>
       <div class="quick">${quick}</div>
