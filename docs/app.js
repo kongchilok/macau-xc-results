@@ -122,7 +122,7 @@
       ctPri: "小學組（男女 D、E 組）不設終點計時：待大會公佈頭十名並經核對後，只開放頭十名的紀念卡。", ctTop: "大會公佈頭十名", ctNoT: "未有公佈",
       ctCat: "組別", ctPlace: "名次", ctTime: "完成時間", ctOf: (n) => `完賽 ${n} 人`, ctExport: "匯出完賽紀念卡", ctHist: "查看歷屆成績",
       ctHeat: (h) => `第 ${h} 組`, ctPlaceV: (p) => `第 ${p} 名`,
-      invBtn: "匯出邀請卡", csLabel: "榮譽卡款式", cs_dash: "衝線", cs_trail: "山徑", cs_bib: "號碼布", cs_classic: "經典", cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
+      invBtn: "匯出邀請卡", csLabel: "榮譽卡款式", cs_dash: "衝線", cs_trail: "山徑", cs_bib: "號碼布", cs_classic: "經典", cs_cPodium: "榮耀", cs_cTrail: "松山", cs_cSun: "陽光衝線", cs_cArch: "終點拱門", cs_cLeaf: "葉仔山", cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
       cardNote: "圖片只使用本網站已公開的成績資料。手機可按「分享」儲存至相簿或傳送給朋友。",
     },
     en: {
@@ -244,7 +244,7 @@
       ctPri: "Primary categories (D and E) have no finish-line timing: once the organiser publishes the top 10 and we have checked it, cards open for those 10 runners only.", ctTop: "Official top 10", ctNoT: "Not published",
       ctCat: "Category", ctPlace: "Place", ctTime: "Time", ctOf: (n) => `${n} finishers`, ctExport: "Export finisher card", ctHist: "See past results",
       ctHeat: (h) => `Heat ${h}`, ctPlaceV: (p) => `#${p}`,
-      invBtn: "Export invitation", csLabel: "Card style", cs_dash: "Sprint", cs_trail: "Trail", cs_bib: "Race bib", cs_classic: "Classic", cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
+      invBtn: "Export invitation", csLabel: "Card style", cs_dash: "Sprint", cs_trail: "Trail", cs_bib: "Race bib", cs_classic: "Classic", cs_cPodium: "Glory", cs_cTrail: "Guia Hill", cs_cSun: "Sunlit finish", cs_cArch: "Finish arch", cs_cLeaf: "Leaf hill", cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
       cardNote: "The card uses only results already published on this site. On a phone, use Share to save it to your photos.",
     },
   };
@@ -938,13 +938,16 @@
       $("#ctExport").onclick = () => openCertCard(r, ed);
     };
   }
+  // 紀念卡款式：頭三名「光環頒獎台」；中學「松山」「陽光衝線」；小學「終點拱門」「葉仔山」（相片／插畫背景）；其後為榮譽卡四款
+  const certStyles = (r) => [...(r.place <= 3 ? ["cPodium"] : []), ...(levelOf(r.cat) === "primary" ? ["cArch", "cLeaf"] : ["cTrail", "cSun"]), ...CARD_STYLES];
   function openCertCard(r, ed) {
-    let st = "dash";
-    try { const v = localStorage.getItem("xc-card-style"); if (CARD_STYLES.includes(v)) st = v; } catch (e) { /* 無痕模式 */ }
+    const list = certStyles(r);
+    let st = list[0];
+    try { const v = localStorage.getItem("xc-cert-style"); if (r.place > 3 && list.includes(v)) st = v; } catch (e) { /* 無痕模式 */ }
     const draw = (k) => { const d = certData(r, ed), S = window.XCCardStyles; return k !== "classic" && S && S[k] ? S[k](d) : XCCard.render(d); };
     openExport(t("ctExport"), `${r.name}_第${ed}屆完賽紀念卡.png`, draw, {
-      list: CARD_STYLES.map((k) => [k, t("cs_" + k)]), current: st,
-      pick: (k) => { try { localStorage.setItem("xc-card-style", k); } catch (e) { /* 無痕模式 */ } },
+      list: list.map((k) => [k, t("cs_" + k)]), current: st,
+      pick: (k) => { try { localStorage.setItem("xc-cert-style", k); } catch (e) { /* 無痕模式 */ } },
     });
   }
   // 榮譽卡款式：衝線、山徑、號碼布（docs/card-styles.js）及經典（docs/card.js）；記住使用者上次的選擇

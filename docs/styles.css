@@ -965,3 +965,4 @@ a.medal:hover { background: var(--surface-2); }
 /* 紀念卡：小學組只開放大會公佈的頭十名 */
 .ct-pri { margin-top: 4px; }
 .ct-grid b.ct-not { font-size: 15px; color: var(--muted); font-weight: 700; }
+.cm-styles:has(button:nth-child(5)) { border-radius: 18px; }

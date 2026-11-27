@@ -1445,8 +1445,13 @@ def test_finisher_card_lookup_and_export(page):
     no_hscroll(page)
     page.click("#ctExport")
     page.wait_for_function("document.querySelector('.card-modal img') && !document.querySelector('.cm-img.busy')")
-    expect(page.locator(".cm-styles button")).to_have_count(4)
+    # 第 3 名（中學）：光環頒獎台（預設）、松山、陽光衝線，其後榮譽卡四款
+    assert page.eval_on_selector_all(".cm-styles button", "bs => bs.map(b => b.dataset.k)") == ["cPodium", "cTrail", "cSun", "dash", "trail", "bib", "classic"]
+    expect(page.locator('.cm-styles [data-k="cPodium"]')).to_have_attribute("aria-checked", "true")
     assert "完賽紀念卡" in page.get_attribute("#cmSave", "download")
+    for k in ("cTrail", "cSun"):
+        page.click(f'.cm-styles [data-k="{k}"]')
+        page.wait_for_function("!document.querySelector('.cm-img.busy') && document.querySelector('.card-modal img')")
     page.click('.cm-styles [data-k="classic"]')
     page.wait_for_function("!document.querySelector('.cm-img.busy') && document.querySelector('.card-modal img')")
 
@@ -1465,9 +1470,15 @@ def test_finisher_card_primary_top10(page):
     expect(res).to_contain_text("未有公佈")
     expect(res).not_to_contain_text("完賽 10 人")
     no_hscroll(page)
-    for k in ("dash", "trail", "bib", "classic"):
+    page.evaluate("window.__txt = []")
+    page.click("#ctExport")
+    page.wait_for_function("document.querySelector('.card-modal img') && !document.querySelector('.cm-img.busy') && window.__txt.length > 5")
+    # 小學第 2 名：光環頒獎台（亞軍）、終點拱門、葉仔山
+    assert page.eval_on_selector_all(".cm-styles button", "bs => bs.map(b => b.dataset.k)")[:3] == ["cPodium", "cArch", "cLeaf"]
+    assert any("第 48 屆亞軍" in x for x in page.evaluate("window.__txt"))
+    for k in ("cArch", "cLeaf", "dash", "trail", "bib", "classic"):
         page.evaluate("window.__txt = []")
-        page.click("#ctExport") if k == "dash" else page.click(f'.cm-styles [data-k="{k}"]')
+        page.click(f'.cm-styles [data-k="{k}"]')
         page.wait_for_function("document.querySelector('.card-modal img') && !document.querySelector('.cm-img.busy') && window.__txt.length > 5")
         txt = page.evaluate("window.__txt")
         assert not any("完賽 10 人" in x for x in txt), (k, txt)
