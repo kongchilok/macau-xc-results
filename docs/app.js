@@ -1535,7 +1535,9 @@
             else if (!e && gone.why.get(r.k) === "cutoff") { stt = t("lvMemCutoff"); cls = "dnf"; }
             else if (e) { stt = t("lvMemLap", e.laps, laps, e.place); cls = "run"; }
             else { stt = h.status === "ready" ? t("lvMemNotStarted") : h.status === "running" ? t("lvMemNoPass") : t("lvMemNoFin"); cls = "wait"; }
-            return `<li class="${cls}"><span class="mn">${nm}</span><span class="ms">${cls === "sc" ? `<b class="lv-sc-tag">${t("lvScorer")}</b>` : ""}${esc(stt)}</span></li>`;
+            // 左：名次（完賽＝名次；途中＝暫列名次；未有紀錄＝–）；右：姓名大字、拼音另起一行、狀態在下，名字不再被截斷
+            const badge = e && e.place != null ? e.place : "–";
+            return `<li class="${cls}"><span class="mp" aria-hidden="true">${badge}</span><span class="mb"><span class="mn">${nm}</span><span class="ms">${cls === "sc" ? `<b class="lv-sc-tag">${t("lvScorer")}</b>` : ""}${esc(stt)}</span></span></li>`;
           };
           const sortM = (a, b) => (a.e && a.e.place != null ? a.e.place : 1e9) - (b.e && b.e.place != null ? b.e.place : 1e9);
           let inner = "";
