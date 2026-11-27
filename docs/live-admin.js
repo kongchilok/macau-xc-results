@@ -127,9 +127,13 @@
 
   /* ---------- 與伺服器同步 ---------- */
   let online = true;
+  // 完整重讀（登入、切換正式／演練）：先清空並即時重畫（舊組別的按鈕不會殘留），
+  // 較早開始而未完成的讀取（包括每 2 秒的增量讀取）作廢，避免舊資料混入或覆蓋
+  let pullGen = 0;
   async function pull(full) {
     if (PRACTICE) return;
-    if (full) { rev = 0; revH = 0; revC = 0; entries.clear(); heats.clear(); cpMap.clear(); }
+    const my = full ? ++pullGen : pullGen;
+    if (full) { rev = 0; revH = 0; revC = 0; entries.clear(); heats.clear(); cpMap.clear(); renderClockBtns(); }
     try {
       // 紀錄、分組、途經點各自記住讀到的 rev：紀錄超過一批（1000 行）時，分組較新的 rev 不會令未讀的紀錄被跳過
       const [e, h, c] = await Promise.all([
@@ -138,6 +142,7 @@
         CP ? Promise.resolve([]) : readEntries(`${st.event}cp`, revC),
       ]);
       if (h.error) throw h.error;
+      if (my !== pullGen) return;
       let changed = false;
       const pendingIds = new Set(queue.filter((q) => q.t === "entry").map((q) => q.row.id));
       for (const r of e) { if (!pendingIds.has(r.id)) entries.set(r.id, r); rev = Math.max(rev, r.rev); changed = true; }
@@ -340,6 +345,84 @@
       }
       await loadCert(); renderClockBtns();
     });
+  }
+
+  /* ---------- 小學組（D、E）：不設終點計時，按大會公佈的頭十名手動開放紀念卡（只限這十人） ---------- */
+  const TOP_CATS = ["MD", "FD", "ME", "FE"];
+  const parseT = (s) => {
+    s = String(s || "").trim(); if (!s) return null;
+    const m = s.match(/^(\d{1,2})[:：.'′](\d{1,2}(?:\.\d)?)$/);
+    if (!m || +m[2] >= 60) return NaN;
+    return Math.round((+m[1] * 60 + +m[2]) * 1000);
+  };
+  async function topSheet(cat) {
+    cat = TOP_CATS.includes(cat) ? cat : (TOP_CATS.includes(st.topCat) ? st.topCat : TOP_CATS[0]);
+    let prev = [];
+    const got = await sb.from("xc_live_cert").select("bib,place,time_ms").eq("event", st.event).eq("cat", cat).order("place");
+    if (!got.error) prev = got.data || [];
+    const rows = Array.from({ length: 10 }, (_, i) => {
+      const p = prev.find((x) => x.place === i + 1) || {};
+      const tv = p.time_ms == null ? "" : fmtT(p.time_ms).replace(/\.0$/, "");
+      return `<li><b>${i + 1}</b><input class="tb" inputmode="numeric" maxlength="4" placeholder="號碼布" aria-label="第 ${i + 1} 名號碼布" value="${p.bib || ""}"><input class="tt" inputmode="decimal" maxlength="7" placeholder="時間（可留空）" aria-label="第 ${i + 1} 名時間" value="${tv}"><span class="tn"></span></li>`;
+    }).join("");
+    const collect = () => {
+      const out = [], seen = new Set(); let err = "", gap = false;
+      $("#sheetBody").querySelectorAll(".top-in li").forEach((li, i) => {
+        const b = parseInt(li.querySelector(".tb").value.replace(/\D/g, ""), 10), tRaw = li.querySelector(".tt").value, tn = li.querySelector(".tn");
+        const r = b ? ROSTER.get(String(b)) : null, t = parseT(tRaw);
+        let bad = "";
+        if (!b) { tn.textContent = ""; tn.className = "tn"; if (tRaw.trim()) bad = "未填號碼布"; else { gap = true; return; } }
+        else if (!r) bad = "名單沒有此號碼";
+        else if (r.cat !== cat) bad = `屬${catLabel(r.cat)}`;
+        else if (seen.has(b)) bad = "重複";
+        if (!bad && Number.isNaN(t)) bad = "時間格式不對";
+        if (b) { tn.textContent = bad || `${r.name || ""}・${r.abbr || ""}`; tn.className = bad ? "tn bad" : "tn"; }
+        if (bad) { err = err || `第 ${i + 1} 名：${bad}`; return; }
+        if (gap) { err = err || `第 ${i + 1} 名之前有空格`; return; }
+        seen.add(b); out.push({ event: st.event, cat, bib: b, place: i + 1, time_ms: t });
+      });
+      if (!err && !out.length) err = "未有輸入號碼布";
+      const m = $("#topMsg"); if (m) m.textContent = err;
+      return { rows: out, err };
+    };
+    sheet(`<h2>小學頭十名紀念卡</h2>
+      <p class="muted">小學組不設終點計時。大會公佈頭十名後，按名次輸入號碼布並核對姓名；時間如大會有公佈才填（例 12:34）。開放後只有這些同學可匯出紀念卡（非官方）。</p>
+      <label class="top-cat">組別<select id="topCat">${TOP_CATS.map((c) => `<option value="${c}" ${c === cat ? "selected" : ""}>${catLabel(c)}${CERT.has(c) ? "（已開放）" : ""}</option>`).join("")}</select></label>
+      <ol class="top-in">${rows}</ol>
+      <p id="topMsg" class="msg" role="alert"></p>
+      <div class="row-btns"><button value="cancel" class="ghost">取消</button><button value="ok" class="primary" id="topOk">${prev.length ? "按此更新" : "已核對，開放"}</button></div>
+      ${prev.length ? `<hr><button value="off" class="danger">取消開放${catLabel(cat)}</button>` : ""}`, async (v) => {
+      if (v === "switch") return topSheet(st.topCat);
+      if (v === "ok") {
+        const R = collect();
+        if (R.err) return;
+        if (!confirm(`確定${prev.length ? "更新" : "開放"}${catLabel(cat)}頭 ${R.rows.length} 名紀念卡？`)) return;
+        const del = await sb.from("xc_live_cert").delete().eq("event", st.event).eq("cat", cat);
+        const ins = del.error ? del : await sb.from("xc_live_cert").insert(R.rows);
+        if (ins.error) { alert("未能開放紀念卡：" + ins.error.message); return; }
+        flash(`${catLabel(cat)}紀念卡已開放（${R.rows.length} 人）`);
+      }
+      if (v === "off") {
+        if (!confirm(`取消開放${catLabel(cat)}紀念卡？運動員將無法匯出。`)) return;
+        const del = await sb.from("xc_live_cert").delete().eq("event", st.event).eq("cat", cat);
+        if (del.error) { alert("未能取消：" + del.error.message); return; }
+        flash(`${catLabel(cat)}紀念卡已取消開放`);
+      }
+      await loadCert(); renderTopBtn();
+    });
+    const box = $("#sheetBody").querySelector(".top-in");
+    box.addEventListener("input", collect);
+    box.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const ins = [...box.querySelectorAll("input")], i = ins.indexOf(e.target); if (ins[i + 1]) ins[i + 1].focus(); } });
+    // 有錯時不關閉，保留已輸入的內容
+    $("#topOk").addEventListener("click", (e) => { if (collect().err) e.preventDefault(); });
+    $("#topCat").onchange = (e) => { st.topCat = e.target.value; save(); $("#sheet").close("switch"); };
+    collect(); $("#topMsg").textContent = "";
+  }
+  function renderTopBtn() {
+    const b = $("#topBtn"); if (!b) return;
+    b.hidden = CP || PRACTICE;
+    const n = TOP_CATS.filter((c) => CERT.has(c)).length;
+    b.textContent = n ? `小學頭十名紀念卡（已開放 ${n} 組）` : "小學頭十名紀念卡";
   }
 
   /* ---------- 號碼：本組號碼有共同前綴時只需輸入尾數 ----------
@@ -1082,7 +1165,7 @@
   function buzz() { try { navigator.vibrate && navigator.vibrate(25); } catch (e) { /* 不支援 */ } }
   async function keepAwake() { try { if (navigator.wakeLock) { let lock = await navigator.wakeLock.request("screen"); document.addEventListener("visibilitychange", async () => { if (document.visibilityState === "visible") lock = await navigator.wakeLock.request("screen"); }); } } catch (e) { /* 不支援 */ } }
 
-  function renderAll() { renderBar(); renderClockBtns(); renderList(); tickClock(); setSync(); if (!bibBuf) showBib(); }
+  function renderAll() { renderBar(); renderClockBtns(); renderTopBtn(); renderList(); tickClock(); setSync(); if (!bibBuf) showBib(); }
 
   /* ---------- 事件 ---------- */
   $("#pad").addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (b) key(b.dataset.k); });
@@ -1102,6 +1185,7 @@
   $("#doneBtn").onclick = toggleDone;
   $("#adjBtn").onclick = adjustStart;
   $("#certBtn").onclick = certSheet;
+  $("#topBtn").onclick = () => topSheet();
   $("#loginBtn").onclick = login;
   $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
   $("#logout").onclick = async () => { if (queue.length && !confirm(`尚有 ${queue.length} 項未上傳，登出後會保留在此裝置，下次登入繼續上傳。確定登出？`)) return; await sb.auth.signOut(); location.reload(); };

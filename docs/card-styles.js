@@ -114,12 +114,12 @@
     const z = c.small ? [22, 40, 24, 34, 84, 20] : [28, 64, 32, 50, h * .58, 30];   // 字級（小、大、中）及三行位置
     ctx.fillStyle = c.muted; FITF(ctx, k.event, w - 56, z[0], 16, 700); ctx.fillText(k.event, x + 28, y + z[3]);
     ctx.fillStyle = c.fg; FITF(ctx, `${k.cat}　第 ${k.place} 名`, w - 56, z[1], 28, 900); ctx.fillText(`${k.cat}　第 ${k.place} 名`, x + 28, y + z[4]);
-    ctx.fillStyle = c.accent; FITF(ctx, `完賽 ${k.finishers} 人・完成時間 ${k.time}`, w - 56, z[2], 18, 800); ctx.fillText(`完賽 ${k.finishers} 人・完成時間 ${k.time}`, x + 28, y + h - z[5]);
+    ctx.fillStyle = c.accent; const ln = k.line || `完賽 ${k.finishers} 人・完成時間 ${k.time}`; FITF(ctx, ln, w - 56, z[2], 18, 800); ctx.fillText(ln, x + 28, y + h - z[5]);
     ctx.restore();
   }
   function heroStat(d) { if (d.cert) return { pre: "#", big: String(d.cert.place), post: "", lab: `第 ${d.cert.edition} 屆名次` }; return d.stats.wins ? { pre: "", big: String(d.stats.wins), post: "×", lab: "冠軍" } : { pre: "#", big: String(d.stats.best), post: "", lab: "最佳名次" }; }
   function statList(d) {
-    const s = d.cert ? [["完賽人數", String(d.cert.finishers)], ["獎牌", String(d.stats.medals)], ["名次", `#${d.cert.place}`]]
+    const s = d.cert ? [[d.cert.finLabel || "完賽人數", String(d.cert.finVal ?? d.cert.finishers)], ["獎牌", String(d.stats.medals)], ["名次", `#${d.cert.place}`]]
       : [["參賽", String(d.stats.races)], ["獎牌", String(d.stats.medals)], ["最佳", `#${d.stats.best}`]];
     s.push(d.pb ? [d.pb.text || `${d.pb.label}最佳`, d.pb.time] : ["冠軍", String(d.stats.wins)]);
     return s;
@@ -361,7 +361,7 @@
     if (d.namePt) { ctx.fillStyle = "#666"; fit(ctx, d.namePt, 500, 40, 22, (s) => `italic 800 ${s}px ${NUM}`); ctx.fillText(d.namePt, 230, 704); }
     if (qr) { drawQR(ctx, qr, PW - 54 - 150, 548, 150, ink, "#fff", 8); ctx.textAlign = "center"; ctx.fillStyle = "#555"; ctx.font = `900 20px ${CJK}`; ctx.fillText("掃描看個人頁", PW - 54 - 75, 724); }
     // 數據條（斜）
-    const sts = [d.cert ? ["完賽人數", String(d.cert.finishers), false] : ["參賽", String(d.stats.races), false], ["冠軍", String(d.stats.wins), !!d.stats.wins], ["獎牌", String(d.stats.medals), false]];
+    const sts = [d.cert ? [d.cert.finLabel || "完賽人數", String(d.cert.finVal ?? d.cert.finishers), false] : ["參賽", String(d.stats.races), false], ["冠軍", String(d.stats.wins), !!d.stats.wins], ["獎牌", String(d.stats.medals), false]];
     const last = d.pb ? [d.pb.text || `${d.pb.label}最佳`, d.pb.time] : ["最佳", `#${d.stats.best}`];
     const unit = (PW - 108) / 4.6; let bx = 54;
     [...sts, [last[0], last[1], false]].forEach(([lab, val, hl], i) => {

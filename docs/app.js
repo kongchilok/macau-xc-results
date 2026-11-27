@@ -119,6 +119,7 @@
       ctNote: "非官方紀念卡：各組成績由工作人員按終點紀錄整理，並與官方成績核對後逐組開放；正式成績以教育及青年發展局公布為準。",
       ctOpen: "已開放：", ctWait: "比賽後，各組成績經核對後逐組開放。", ctBib: "號碼布", ctName: "姓名（秩序冊上的中文姓名；沒有中文姓名請輸入葡文姓名）",
       ctGo: "查詢", ctNone: "找不到紀錄：請檢查號碼布及姓名，或該組別尚未開放。", ctNet: "暫時未能連線，請稍後再試。", ctNeed: "請輸入號碼布及姓名。",
+      ctPri: "小學組（男女 D、E 組）不設終點計時：待大會公佈頭十名並經核對後，只開放頭十名的紀念卡。", ctTop: "大會公佈頭十名", ctNoT: "未有公佈",
       ctCat: "組別", ctPlace: "名次", ctTime: "完成時間", ctOf: (n) => `完賽 ${n} 人`, ctExport: "匯出完賽紀念卡", ctHist: "查看歷屆成績",
       ctHeat: (h) => `第 ${h} 組`, ctPlaceV: (p) => `第 ${p} 名`,
       invBtn: "匯出邀請卡", csLabel: "榮譽卡款式", cs_dash: "衝線", cs_trail: "山徑", cs_bib: "號碼布", cs_classic: "經典", cardBtn: "匯出榮譽卡", cardSave: "下載圖片", cardShare: "分享", cardClose: "關閉", cardFail: "未能產生圖片，請稍後再試。",
@@ -240,6 +241,7 @@
       ctNote: "Unofficial keepsake: results come from the finish-line record and are released category by category after checking against the official results. Official results are published by DSEDJ.",
       ctOpen: "Released: ", ctWait: "Released category by category after the race, once checked.", ctBib: "Bib number", ctName: "Name (as on the start list; Chinese name, or Portuguese name if none)",
       ctGo: "Search", ctNone: "No record found. Check the bib number and name, or the category has not been released yet.", ctNet: "Connection problem. Please try again later.", ctNeed: "Enter your bib number and name.",
+      ctPri: "Primary categories (D and E) have no finish-line timing: once the organiser publishes the top 10 and we have checked it, cards open for those 10 runners only.", ctTop: "Official top 10", ctNoT: "Not published",
       ctCat: "Category", ctPlace: "Place", ctTime: "Time", ctOf: (n) => `${n} finishers`, ctExport: "Export finisher card", ctHist: "See past results",
       ctHeat: (h) => `Heat ${h}`, ctPlaceV: (p) => `#${p}`,
       invBtn: "Export invitation", csLabel: "Card style", cs_dash: "Sprint", cs_trail: "Trail", cs_bib: "Race bib", cs_classic: "Classic", cardBtn: "Export honours card", cardSave: "Download image", cardShare: "Share", cardClose: "Close", cardFail: "Could not create the image. Please try again.",
@@ -877,6 +879,8 @@
   function certData(r, ed) {
     const zh = zhOfAbbr(r.abbr), abbr = r.abbr, p = r.pid && PEOPLE.get(r.pid);
     const cz = catZhFull(r.cat), time = r.time_ms == null ? "-" : fmt(r.time_ms / 1000);
+    // 小學組：只有大會公佈的頭十名，不計完賽人數；時間未有公佈則不顯示
+    const top = levelOf(r.cat) === "primary", reg = ((DB.race && DB.race.totals) || {})[r.cat];
     const medal = r.place <= CARD_MEDAL, win = r.place === 1, url = siteUrl(), yr = (DB.race && DB.race.year) || "";
     return {
       name: r.name, namePt: p && p.name_zh ? p.name_pt : "", school: zh, crestImg: DB.crests[abbr] || null, crestAbbr: abbr, crestHue: hueOf(abbr),
@@ -885,9 +889,10 @@
       tier: win ? "gold" : r.place === 2 ? "silver" : medal ? "bronze" : "base",
       title: `第 ${ed} 屆成績`,
       rows: [{ place: r.place, year: yr, edition: ed, cat: cz, gender: r.cat[0], time }],
-      pb: { text: `${cz}完成時間`, label: cz, time, year: yr },
-      source: "資料來源：終點紀錄（已與官方成績核對）",
+      pb: top && r.time_ms == null ? null : { text: `${cz}完成時間`, label: cz, time, year: yr },
+      source: top ? "資料來源：大會公佈頭十名（已核對）" : "資料來源：終點紀錄（已與官方成績核對）",
       cert: { edition: ed, cat: cz, place: r.place, finishers: r.finishers, time,
+              ...(top ? { line: r.time_ms == null ? "大會公佈頭十名" : `大會公佈頭十名・完成時間 ${time}`, finLabel: "參賽人數", finVal: reg || "-" } : {}),
               event: `第 ${ed} 屆學界越野跑比賽・${(DB.race && DB.race.date || "").replace(/^(\d{4})-(\d{2})-(\d{2})$/, (m, y, mo, d) => `${y}年${+mo}月${+d}日`)}` },
       url, qrUrl: r.pid ? `https://${url}/#/p/${r.pid}` : `https://${url}/#/cert`, seed: `c${r.cat}${r.name}`,
     };
@@ -897,6 +902,7 @@
     const event = (params.get("ev") || String(ed)).replace(/[^a-z0-9]/gi, "").toLowerCase();
     view.innerHTML = `<h1 class="page-title">${esc(t("ctTitle", ed))}${event !== String(ed) ? ' <span class="lv-pill demo">TEST</span>' : ""}</h1>
       <p class="lv-note">${esc(t("ctNote"))}</p>
+      <p class="lv-note ct-pri">${esc(t("ctPri"))}</p>
       <div id="ctCats" class="ct-cats"><span>&nbsp;</span></div>
       <form id="ctForm" class="ct-form" autocomplete="off" novalidate>
         <label><span>${esc(t("ctBib"))}</span><input id="ctBib" inputmode="numeric" pattern="[0-9]*" maxlength="4" enterkeyhint="next"></label>
@@ -923,8 +929,8 @@
         <div class="ct-head">${crest(zh, "md")}<div><b>${esc(r.name)}</b><small>${esc(school(zh))}</small></div></div>
         <div class="ct-grid">
           <div><span>${esc(t("ctCat"))}</span><b>${esc(catZhFull(r.cat))}</b>${multi && r.heat ? `<small>${esc(t("ctHeat", r.heat))}</small>` : ""}</div>
-          <div><span>${esc(t("ctPlace"))}</span><b>${esc(t("ctPlaceV", r.place))}</b><small>${esc(t("ctOf", r.finishers))}</small></div>
-          <div><span>${esc(t("ctTime"))}</span><b class="num">${r.time_ms == null ? "-" : fmt(r.time_ms / 1000)}</b></div>
+          <div><span>${esc(t("ctPlace"))}</span><b>${esc(t("ctPlaceV", r.place))}</b><small>${esc(levelOf(r.cat) === "primary" ? t("ctTop") : t("ctOf", r.finishers))}</small></div>
+          <div><span>${esc(t("ctTime"))}</span>${r.time_ms == null && levelOf(r.cat) === "primary" ? `<b class="ct-not">${esc(t("ctNoT"))}</b>` : `<b class="num">${r.time_ms == null ? "-" : fmt(r.time_ms / 1000)}</b>`}</div>
         </div>
         <button class="card-btn" id="ctExport" type="button">${esc(t("ctExport"))}</button>
         ${r.pid && PEOPLE.has(r.pid) ? `<a class="ct-hist" href="#/p/${esc(r.pid)}">${esc(t("ctHist"))} ›</a>` : ""}

@@ -62,6 +62,10 @@ def page(browser, base_url):
             hit = q.get("p_bib") == 24 and "".join((q.get("p_name") or "").split()) == "李蕙伃"
             body = json.dumps({"cat": "FC", "heat": 1, "abbr": "CDSJ5", "pid": "p46FD022", "name": "李蕙伃", "place": 3, "time_ms": 552400,
                                "finishers": 31, "released_at": "2026-11-29T12:00:00Z"} if hit else None)
+            # 小學組（大會公佈頭十名）：沒有時間；finishers 只是開放人數，不應顯示為完賽人數
+            if q.get("p_bib") == 301 and q.get("p_name") == "測試小":
+                body = json.dumps({"cat": "MD", "heat": None, "abbr": "CDBYW", "pid": None, "name": "測試小", "place": 2, "time_ms": None,
+                                   "finishers": 10, "released_at": "2026-11-29T13:00:00Z"})
             return route.fulfill(status=200, content_type="application/json", body=body)
         if "/rest/v1/xc_views" in req.url:
             if "pid=eq." in req.url:
@@ -724,6 +728,7 @@ def live(browser, base_url):
               {"bib": 405, "cat": "MC", "heat": 1, "abbr": "IV", "pid": None, "name": "陳浩天"},
               {"bib": 40, "cat": "MC", "heat": 1, "abbr": "IV", "pid": None, "name": "測試丙"},
               {"bib": 7, "cat": "MC", "heat": 2, "abbr": "CAM", "pid": None, "name": "羅焯饒"}]
+    db["roster"] = roster
     email = "helper@example.invalid"
     user = {"id": "u1", "aud": "authenticated", "role": "authenticated", "email": email, "app_metadata": {}, "user_metadata": {}, "created_at": "2026-01-01T00:00:00Z"}
     cors = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*"}
@@ -758,7 +763,7 @@ def live(browser, base_url):
             return ok(route, [{"k": f"h{r['bib']}", **{k: v for k, v in r.items() if k != "bib"}} for r in roster])
         if "/rest/v1/xc_live_roster" in u:
             db.setdefault("roster_q", []).append(u)
-            rows = sorted(db.get("roster_big") or roster, key=lambda r: r["bib"])
+            rows = sorted(db.get("roster_big") or db["roster"], key=lambda r: r["bib"])
             return ok(route, _page(u, rows))
         if "/rpc/xc_live_cert_cats" in u:
             cats = {}
@@ -766,6 +771,9 @@ def live(browser, base_url):
                 cats[r["cat"]] = cats.get(r["cat"], 0) + 1
             return ok(route, [{"cat": c, "n": n, "at": "2026-11-29T12:00:00Z"} for c, n in sorted(cats.items())])
         if "/rest/v1/xc_live_cert" in u:
+            if req.method == "GET":
+                cat = u.split("cat=eq.")[1].split("&")[0]
+                return ok(route, sorted(({k: r[k] for k in ("bib", "place", "time_ms")} for r in db["cert"].values() if r["cat"] == cat), key=lambda r: r["place"]))
             if req.method == "DELETE":
                 cat = u.split("cat=eq.")[1].split("&")[0]
                 db["cert"] = {k: v for k, v in db["cert"].items() if v["cat"] != cat}
@@ -898,7 +906,7 @@ def test_live_admin_old_fractional_queue_recovers(live):
     page.context.add_init_script("if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('xc-live-queue', %s); }" % json.dumps(json.dumps(q)))
     _login_ma(page)
     _until(page, lambda: "11111111-1111-4111-8111-111111111111" in page.db["entries"])
-    assert page.db["entries"]["11111111-1111-4111-8111-111111111111"]["at_ms"] == round(t - 300_000.5)
+    assert page.db["entries"]["11111111-1111-4111-8111-111111111111"]["at_ms"] == int(t - 300_000.5 + 0.5)  # 與 JS Math.round 相同（.5 向上；Python round 會取雙數）
     assert isinstance(page.db["heats"]["MA|1"]["start_ms"], int)
     _synced(page)
 
@@ -1006,6 +1014,59 @@ def test_live_admin_cert_release(live):
     page.click('#sheet button[value="off"]')
     _until(page, lambda: len(page.db["cert"]) == 0)
     expect(btn).to_have_text("核對後開放紀念卡")
+
+
+def test_live_admin_primary_top10(live):
+    """小學組不設計時：「小學頭十名紀念卡」按大會公佈名次輸入號碼布，核對姓名、組別、重複；時間可留空；可再開啟修改及取消"""
+    page = live
+    page.db["roster"] += [{"bib": b, "cat": c, "heat": None, "abbr": "YW", "pid": None, "name": n}
+                          for b, c, n in [(301, "MD", "小甲"), (302, "MD", "小乙"), (303, "MD", "小丙"), (501, "FD", "小丁")]]
+    _login_ma(page)
+    btn = page.locator("#topBtn")
+    expect(btn).to_have_text("小學頭十名紀念卡")
+    btn.click()
+    sh = page.locator("#sheet")
+    expect(sh).to_contain_text("小學頭十名紀念卡")
+    page.select_option("#topCat", "MD")
+    tb, tt = sh.locator(".tb"), sh.locator(".tt")
+    tb.nth(0).fill("302")
+    expect(sh.locator(".tn").nth(0)).to_have_text("小乙・YW")
+    tb.nth(1).fill("501")
+    expect(sh.locator(".tn").nth(1)).to_have_text("屬女D")
+    tb.nth(1).fill("302")
+    expect(sh.locator(".tn").nth(1)).to_have_text("重複")
+    tb.nth(1).fill("")
+    tb.nth(2).fill("301")
+    expect(page.locator("#topMsg")).to_contain_text("第 3 名之前有空格")
+    page.click("#topOk")                      # 有錯：不關閉、不寫入
+    expect(sh).to_be_visible()
+    assert not page.db["cert"]
+    tb.nth(1).fill("301"); tb.nth(2).fill("303")
+    tt.nth(0).fill("12:34"); tt.nth(2).fill("abc")
+    expect(page.locator("#topMsg")).to_contain_text("時間格式不對")
+    tt.nth(2).fill("")
+    expect(page.locator("#topMsg")).to_have_text("")
+    page.click("#topOk")
+    _until(page, lambda: len(page.db["cert"]) == 3)
+    rows = sorted(page.db["cert"].values(), key=lambda r: r["place"])
+    assert [(r["bib"], r["place"], r["time_ms"], r["cat"], r["event"]) for r in rows] == [
+        (302, 1, 754_000, "MD", "test"), (301, 2, None, "MD", "test"), (303, 3, None, "MD", "test")]
+    expect(btn).to_have_text("小學頭十名紀念卡（已開放 1 組）")
+    # 再開啟：預先填回已開放的名次，可取消開放
+    btn.click()
+    expect(tb.nth(0)).to_have_value("302")
+    expect(tt.nth(0)).to_have_value("12:34")
+    page.click('#sheet button[value="off"]')
+    _until(page, lambda: len(page.db["cert"]) == 0)
+    expect(btn).to_have_text("小學頭十名紀念卡")
+
+
+def test_live_admin_primary_top10_hidden_for_checkpoint(live):
+    page = live
+    page.goto(f"{page.base}/live-admin.html?cp=1")
+    page.fill("#email", "helper@example.invalid"); page.fill("#pw", "x"); page.click("#loginBtn")
+    expect(page.locator("#app")).to_be_visible()
+    expect(page.locator("#topBtn")).to_be_hidden()
 
 
 def test_live_admin_cert_hidden_until_done(live):
@@ -1388,6 +1449,29 @@ def test_finisher_card_lookup_and_export(page):
     assert "完賽紀念卡" in page.get_attribute("#cmSave", "download")
     page.click('.cm-styles [data-k="classic"]')
     page.wait_for_function("!document.querySelector('.cm-img.busy') && document.querySelector('.card-modal img')")
+
+
+def test_finisher_card_primary_top10(page):
+    """小學組紀念卡：頁面說明只開放頭十名；結果顯示「大會公佈頭十名」、時間「未有公佈」；卡上不寫完賽人數"""
+    page.add_init_script("""(() => { window.__txt = []; const f = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function (t, ...a) { window.__txt.push(String(t)); return f.call(this, t, ...a); }; })()""")
+    go(page, "#/cert")
+    expect(page.locator(".ct-pri")).to_contain_text("只開放頭十名")
+    page.fill("#ctBib", "301"); page.fill("#ctName", "測試小"); page.click(".ct-go")
+    res = page.locator(".ct-res")
+    expect(res).to_contain_text("男子D組")
+    expect(res).to_contain_text("第 2 名")
+    expect(res).to_contain_text("大會公佈頭十名")
+    expect(res).to_contain_text("未有公佈")
+    expect(res).not_to_contain_text("完賽 10 人")
+    no_hscroll(page)
+    for k in ("dash", "trail", "bib", "classic"):
+        page.evaluate("window.__txt = []")
+        page.click("#ctExport") if k == "dash" else page.click(f'.cm-styles [data-k="{k}"]')
+        page.wait_for_function("document.querySelector('.card-modal img') && !document.querySelector('.cm-img.busy') && window.__txt.length > 5")
+        txt = page.evaluate("window.__txt")
+        assert not any("完賽 10 人" in x for x in txt), (k, txt)
+        assert any("參賽人數" in x or "大會公佈頭十名" in x for x in txt), (k, txt)
 
 
 def test_finisher_card_needs_name(page):

@@ -962,3 +962,6 @@ a.medal:hover { background: var(--surface-2); }
 .ct-grid small { display: block; font-size: 12px; color: var(--text-2); }
 .ct-hist { display: inline-flex; align-items: center; min-height: var(--tap); margin-top: var(--s1); color: var(--accent); font-weight: 600; }
 .lv-links { margin: var(--s2) 0 0; }
+/* 紀念卡：小學組只開放大會公佈的頭十名 */
+.ct-pri { margin-top: 4px; }
+.ct-grid b.ct-not { font-size: 15px; color: var(--muted); font-weight: 700; }
