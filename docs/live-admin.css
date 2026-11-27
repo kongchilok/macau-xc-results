@@ -20,6 +20,9 @@ button:disabled { opacity: .35; }
 .sync.ok { color: var(--accent); }
 .sync.busy { color: var(--warn); }
 .sync.bad { background: rgb(255 107 107 / .18); color: var(--red); font-weight: 700; }
+.sync[role=button], .sync.bad { cursor: pointer; }
+.rej { list-style: none; padding: 0; margin: 8px 0; max-height: 50vh; overflow: auto; font-size: 14px; }
+.rej li { padding: 6px 0; border-bottom: 1px solid var(--line, #333); word-break: break-all; }
 .ghost { background: var(--surface-2); padding: 0 14px; }
 .primary { background: var(--accent); color: var(--accent-ink); font-weight: 800; padding: 0 18px; }
 .danger { background: rgb(255 107 107 / .18); color: var(--red); font-weight: 700; padding: 0 14px; }

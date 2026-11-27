@@ -21,12 +21,14 @@
   let offset = 0, rev = 0, revH = 0, bibBuf = "";
   const entries = new Map(), heats = new Map();
   let queue = PRACTICE ? [] : store.get("xc-live-queue", []);
+  let rejected = PRACTICE ? [] : store.get("xc-live-rejected", []); // 被資料庫拒絕的紀錄（保留在本裝置供核對）
   let undoLog = PRACTICE ? [] : store.get("xc-live-undo", []); // 本裝置的操作紀錄：[{id, before}]，供「撤銷上一下」
   const st = Object.assign({ event: "48", cat: "MA", heat: 1, tab: "course", lock: false, padOff: false }, PRACTICE ? {} : store.get("xc-live-state", {}));
   if (PRACTICE) st.event = "practice";
   let lockOrder = [];
   const save = () => { if (!PRACTICE) store.set("xc-live-state", st); };
-  const now = () => Date.now() + offset;
+  // 時間一律取整數毫秒：資料庫 at_ms／start_ms 是 bigint，帶小數（例如時差 x.5 毫秒）會被拒絕
+  const now = () => Math.round(Date.now() + offset);
 
   /* ---------- 載入公開資料（學校名稱、往績姓名、賽程） ---------- */
   async function loadStatic() {
@@ -80,7 +82,7 @@
       const t1 = Date.now();
       if (error) continue;
       const rtt = t1 - t0;
-      if (!best || rtt < best.rtt) best = { rtt, off: Number(data) - (t0 + t1) / 2 };
+      if (!best || rtt < best.rtt) best = { rtt, off: Math.round(Number(data) - (t0 + t1) / 2) };
     }
     if (best) offset = best.off;
   }
@@ -144,11 +146,21 @@
     try {
       while (queue.length) {
         const q = queue[0];
+        q.row = cleanRow(q.row); // 舊版留在佇列內帶小數的時間，上傳前取整
         const table = q.t === "entry" ? "xc_live_entries" : "xc_live_heats";
         const { error } = await sb.from(table).upsert(q.row, { onConflict: q.t === "entry" ? "id" : "event,cat,heat" });
         if (error && q.row.dns && /dns/.test(error.message || "")) {
           queue.shift(); store.set("xc-live-queue", queue); entries.delete(q.row.id);
           alert("資料庫未支援缺席標記（未執行 009_live_dns.sql），此標記未能儲存。其他紀錄不受影響。"); renderAll(); continue;
+        }
+        if (error && isDataError(error)) {
+          // 資料本身被資料庫拒絕（重試也不會成功）：移到「被拒」清單保留在本裝置，繼續上傳其他紀錄，不可阻塞整條佇列
+          queue.shift(); store.set("xc-live-queue", queue);
+          rejected.push({ ...q, error: `${error.code || ""} ${error.message || ""}`.trim(), at: Date.now() });
+          rejected = rejected.slice(-200); store.set("xc-live-rejected", rejected);
+          if (q.t === "entry") { const e = entries.get(q.row.id); if (e && e._pending) entries.delete(q.row.id); }
+          console.warn("rejected", error, q.row);
+          continue;
         }
         if (error) throw error;
         queue.shift(); store.set("xc-live-queue", queue);
@@ -157,7 +169,17 @@
     } catch (err) { online = false; console.warn(err); }
     pushing = false; setSync();
   }
+  // 時間欄位取整數毫秒；bib／heat 轉整數
+  function cleanRow(row) {
+    const r = { ...row };
+    for (const k of ["at_ms", "start_ms"]) if (typeof r[k] === "number" && isFinite(r[k])) r[k] = Math.round(r[k]);
+    for (const k of ["bib", "heat"]) if (r[k] != null && r[k] !== "" && isFinite(Number(r[k]))) r[k] = Math.round(Number(r[k]));
+    return r;
+  }
+  // Postgres 資料錯誤（22xxx 格式／數值、23xxx 違反限制）及 PostgREST 欄位錯誤（PGRST204）＝重試也不會成功
+  const isDataError = (err) => /^(22|23)/.test(String(err.code || "")) || err.code === "PGRST204";
   function enqueue(t, row) {
+    row = cleanRow(row);
     // 同一筆資料只保留最新一次修改
     queue = queue.filter((q) => !(q.t === t && (t === "entry" ? q.row.id === row.id : q.row.cat === row.cat && q.row.heat === row.heat && q.row.event === row.event)));
     queue.push({ t, row }); if (!PRACTICE) store.set("xc-live-queue", queue);
@@ -174,8 +196,10 @@
   function setSync() {
     const el = $("#sync");
     const n = queue.length;
-    el.textContent = PRACTICE ? "練習模式 · 不會上傳" : !online ? `離線 · 待上傳 ${n}` : n ? `上傳中 ${n}` : `已同步 · 名單 ${ROSTER.size}`;
-    el.className = "sync " + (PRACTICE ? "busy" : !online ? "bad" : n ? "busy" : "ok");
+    const bad = rejected.length ? ` · ⚠ 被拒 ${rejected.length}` : "";
+    el.textContent = (PRACTICE ? "練習模式 · 不會上傳" : !online ? `離線 · 待上傳 ${n}` : n ? `上傳中 ${n}` : `已同步 · 名單 ${ROSTER.size}`) + bad;
+    el.className = "sync " + (PRACTICE ? "busy" : !online || bad ? "bad" : n ? "busy" : "ok");
+    el.onclick = rejected.length ? showRejected : null;
   }
 
   /* ---------- 組別／分組 ---------- */
@@ -904,6 +928,17 @@
   }
 
   /* ---------- 對話框 ---------- */
+  // 被拒紀錄：列出原因，可重新上傳（已自動取整）或清除
+  function showRejected() {
+    const rows = rejected.slice().reverse().map((q) => `<li><b>${q.t === "entry" ? `${catLabel(q.row.cat)} ${q.row.bib ?? "空位"}` : `${catLabel(q.row.cat)} 分組狀態`}</b> <span class="muted">${esc(q.error)}</span></li>`).join("");
+    sheet(`<h2>被拒紀錄 ${rejected.length} 項</h2>
+      <p class="muted">資料庫拒絕了以下紀錄（其他紀錄照常上傳）。可按「重新上傳」再試；仍被拒請截圖交網站管理員。</p>
+      <ul class="rej">${rows}</ul>
+      <div class="row-btns"><button value="clear" class="ghost">清除清單</button><button value="retry" class="primary">重新上傳</button></div>`, (v) => {
+      if (v === "retry") { const back = rejected.map(({ t, row }) => ({ t, row: cleanRow(row) })); rejected = []; store.set("xc-live-rejected", rejected); for (const q of back) enqueue(q.t, q.row); }
+      if (v === "clear" && confirm("清除被拒清單？這些紀錄不會再上傳。")) { rejected = []; store.set("xc-live-rejected", rejected); setSync(); }
+    });
+  }
   function sheet(html, onClose) {
     const d = $("#sheet"); $("#sheetBody").innerHTML = html;
     d.onclose = () => { const v = d.returnValue; d.returnValue = ""; onClose && onClose(v); };

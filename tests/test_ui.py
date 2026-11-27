@@ -781,7 +781,17 @@ def live(browser, base_url):
                     db.setdefault("get_q", []).append((table, since))
                     return ok(route, _page(u, sorted((r for r in store.values() if r["rev"] > since), key=lambda r: r["rev"])))
                 rows = json.loads(req.post_data)
-                for r in rows if isinstance(rows, list) else [rows]:
+                rows = rows if isinstance(rows, list) else [rows]
+                # 與 Postgres 相同：bigint／int 欄位收到小數 → 400 invalid input syntax（22P02）；測試可指定拒絕某號碼（23514）
+                for r in rows:
+                    for f in ("at_ms", "start_ms", "bib", "heat"):
+                        v = r.get(f)
+                        if v is not None and (not isinstance(v, int) or isinstance(v, bool)):
+                            db.setdefault("rejected", []).append((f, v))
+                            return ok(route, {"code": "22P02", "message": f'invalid input syntax for type bigint: "{v}"', "details": None, "hint": None}, 400)
+                    if r.get("bib") is not None and r.get("bib") in db.get("reject_bibs", ()):
+                        return ok(route, {"code": "23514", "message": "new row violates check constraint", "details": None, "hint": None}, 400)
+                for r in rows:
                     k = r[key] if key else f"{r['cat']}|{r['heat']}"
                     store[k] = {**store.get(k, {}), **r, "rev": next(db["rev"])}
                 return route.fulfill(status=201, body="", headers=cors)
@@ -854,6 +864,61 @@ def test_live_admin_reads_past_1000_rows(live):
     page.click("#certBtn")
     expect(page.locator("#sheet")).to_contain_text("完賽 2 人")
     assert ("xc_live_entries", 1000) in page.db["get_q"]
+
+
+# 演練 11/26：時差校正 (t0+t1)/2 有一半機會帶 .5 毫秒 → at_ms 小數被 bigint 拒絕 → 佇列第一項卡住，之後全部「離線 · 待上傳」
+JITTER = "(() => { const o = Date.now.bind(Date); Date.now = () => o() + 0.1 + Math.random() * 0.8; })()"
+
+
+def test_live_admin_fractional_clock_still_uploads(live):
+    """裝置時鐘／時差帶小數時，終點紀錄及開賽時間仍以整數毫秒上傳，不會被資料庫拒絕"""
+    page = live
+    page.context.add_init_script(JITTER)
+    _login_ma(page)
+    page.click("#startBtn")
+    _until(page, lambda: page.db["heats"].get("MA|1", {}).get("status") == "running")
+    for bib in ("1001", "1012", "1003"):
+        _type_bib(page, bib)
+    _until(page, lambda: len([e for e in page.db["entries"].values() if not e.get("deleted")]) == 3)
+    assert not page.db.get("rejected"), page.db.get("rejected")
+    assert all(isinstance(e["at_ms"], int) for e in page.db["entries"].values())
+    assert isinstance(page.db["heats"]["MA|1"]["start_ms"], int)
+    _synced(page)
+
+
+def test_live_admin_old_fractional_queue_recovers(live):
+    """舊版留在手機佇列內帶小數的紀錄：新版載入後自動取整並上傳，不再卡住"""
+    page = live
+    t = int(time.time() * 1000)
+    q = [{"t": "heat", "row": {"event": "test", "cat": "MA", "heat": 1, "start_ms": t - 600_000.5, "status": "running"}},
+         {"t": "entry", "row": {"id": "11111111-1111-4111-8111-111111111111", "event": "test", "cat": "MA", "heat": 1, "bib": 1002, "abbr": "HK",
+                                 "pid": None, "name": "測試甲", "at_ms": t - 300_000.5, "seq": 1, "deleted": False, "fin": False, "force": False}}]
+    page.context.add_init_script("if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('xc-live-queue', %s); }" % json.dumps(json.dumps(q)))
+    _login_ma(page)
+    _until(page, lambda: "11111111-1111-4111-8111-111111111111" in page.db["entries"])
+    assert page.db["entries"]["11111111-1111-4111-8111-111111111111"]["at_ms"] == round(t - 300_000.5)
+    assert isinstance(page.db["heats"]["MA|1"]["start_ms"], int)
+    _synced(page)
+
+
+def test_live_admin_rejected_row_does_not_block_queue(live):
+    """某一筆被資料庫拒絕（例如違反限制）：移到「被拒」清單，其後的紀錄照常上傳；可查看及重新上傳"""
+    page = live
+    page.db["reject_bibs"] = {1012}
+    _login_ma(page)
+    page.click("#startBtn")
+    _type_bib(page, "1012")
+    _type_bib(page, "01")
+    _type_bib(page, "1003")
+    _until(page, lambda: {e["bib"] for e in page.db["entries"].values()} == {1001, 1003})
+    expect(page.locator("#sync")).to_contain_text("被拒 1")
+    expect(page.locator("#sync")).not_to_contain_text("離線")
+    page.db["reject_bibs"] = set()
+    page.click("#sync")
+    expect(page.locator("#sheet")).to_contain_text("被拒紀錄 1 項")
+    page.click('#sheet button[value="retry"]')
+    _until(page, lambda: {e["bib"] for e in page.db["entries"].values()} == {1001, 1003, 1012})
+    _synced(page)
 
 
 def test_live_admin_cert_release(live):
