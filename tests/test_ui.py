@@ -747,11 +747,12 @@ def live(browser, base_url):
         if "/rpc/xc_now" in u:
             return ok(route, int(time.time() * 1000))
         if "/rpc/xc_live_feed" in u:
-            since = json.loads(req.post_data or "{}").get("p_since") or 0
+            body = json.loads(req.post_data or "{}")
+            since, pev = body.get("p_since") or 0, body.get("p_event")
             return ok(route, {"now": int(time.time() * 1000),
-                              "heats": [h for h in db["heats"].values() if h["rev"] > since],
+                              "heats": [h for h in db["heats"].values() if h["rev"] > since and h.get("event", pev) == pev],
                               "entries": [{**{k: v for k, v in e.items() if k != "bib"}, "k": f"h{e['bib']}" if e.get("bib") else None}
-                                          for e in db["entries"].values() if e["rev"] > since]})
+                                          for e in db["entries"].values() if e["rev"] > since and e.get("event", pev) == pev]})
         if "/rpc/xc_live_roster_public" in u:
             db["roster_calls"] = db.get("roster_calls", 0) + 1
             return ok(route, [{"k": f"h{r['bib']}", **{k: v for k, v in r.items() if k != "bib"}} for r in roster])
@@ -778,8 +779,9 @@ def live(browser, base_url):
                 store = db["entries" if key else "heats"]
                 if req.method == "GET":
                     since = int(u.split("rev=gt.")[1].split("&")[0]) if "rev=gt." in u else 0
+                    ev = u.split("event=eq.")[1].split("&")[0] if "event=eq." in u else None
                     db.setdefault("get_q", []).append((table, since))
-                    return ok(route, _page(u, sorted((r for r in store.values() if r["rev"] > since), key=lambda r: r["rev"])))
+                    return ok(route, _page(u, sorted((r for r in store.values() if r["rev"] > since and (ev is None or r.get("event", ev) == ev)), key=lambda r: r["rev"])))
                 rows = json.loads(req.post_data)
                 rows = rows if isinstance(rows, list) else [rows]
                 # 與 Postgres 相同：bigint／int 欄位收到小數 → 400 invalid input syntax（22P02）；測試可指定拒絕某號碼（23514）
@@ -919,6 +921,64 @@ def test_live_admin_rejected_row_does_not_block_queue(live):
     page.click('#sheet button[value="retry"]')
     _until(page, lambda: {e["bib"] for e in page.db["entries"].values()} == {1001, 1003, 1012})
     _synced(page)
+
+
+def test_live_admin_checkpoint_mode(live):
+    """途經點模式：輸入寫入 event「testcp」（不寫 test）；不能開賽；不顯示泡泡；公眾即時頁不受影響"""
+    page = live
+    t0 = int(time.time() * 1000) - 120_000
+    page.db["heats"]["MA|1"] = {"event": "test", "cat": "MA", "heat": 1, "start_ms": t0, "status": "running", "rev": next(page.db["rev"])}
+    page.goto(f"{page.base}/live-admin.html?cp=1")
+    page.fill("#email", "helper@example.invalid")
+    page.fill("#pw", "x")
+    page.click("#loginBtn")
+    expect(page.locator("#title")).to_have_text("途經點輸入")
+    expect(page.locator("#cpNote")).to_be_visible()
+    page.select_option("#event", "test")
+    page.select_option("#grp", "MA|1")
+    for b in ("#startBtn", "#doneBtn", "#dnsBtn", "#markBtn", "#bubbles"):
+        expect(page.locator(b)).to_be_hidden()
+    page.click('#listTabs [data-tab="all"]')
+    _type_bib(page, "1012")
+    _type_bib(page, "01")
+    _until(page, lambda: len(page.db["entries"]) == 2)
+    assert {e["event"] for e in page.db["entries"].values()} == {"testcp"}
+    assert {e["bib"] for e in page.db["entries"].values()} == {1012, 1001}
+    expect(page.locator("#list")).to_contain_text("第 1 次途經")
+    expect(page.locator("#who")).to_contain_text("途經")
+    # 公眾即時頁（event test）看不到途經點紀錄
+    pub = page.context.new_page()
+    pub.goto(f"{page.base}/#/live?ev=test&c=MA")
+    expect(pub.locator(".lv-head")).to_be_visible()
+    expect(pub.locator("#view")).not_to_contain_text("1／5 圈")
+    pub.close()
+
+
+def test_live_admin_finish_orders_by_checkpoint(live):
+    """終點裝置：已過途經點者排在「跑道上」最前（按途經次序，未記第一圈者亦列出）；泡泡先列途經點先到者；
+    記錄終點後該次途經即用完；途經點→終點用時配對後顯示預計到達"""
+    page = live
+    t0 = int(time.time() * 1000) - 200_000
+    page.db["heats"]["MA|1"] = {"event": "test", "cat": "MA", "heat": 1, "start_ms": t0, "status": "running", "rev": next(page.db["rev"])}
+    for i, (bib, sec) in enumerate([(1012, 150), (1003, 155)]):
+        page.db["entries"][f"cp{i}"] = {"id": f"cp{i}", "event": "testcp", "cat": "MA", "heat": 1, "bib": bib, "abbr": "HK", "pid": None, "name": None,
+                                        "at_ms": t0 + sec * 1000, "seq": i + 1, "deleted": False, "fin": False, "force": False, "rev": next(page.db["rev"])}
+    _login_ma(page)
+    page.click('#listTabs [data-tab="course"]')
+    rows = page.locator("#list.runners li[data-key]")
+    expect(rows).to_have_count(2)
+    expect(rows.nth(0)).to_have_attribute("data-key", "b1012")
+    expect(rows.nth(1)).to_have_attribute("data-key", "b1003")
+    expect(rows.nth(0)).to_contain_text("途經")
+    expect(page.locator("#bubbles")).to_contain_text("已過途經點先列")
+    expect(page.locator("#bubbles button").first).to_have_attribute("data-pb", "1012")
+    # 按清單第一行記第 1 圈 → 1012 已用完該次途經，跑道上只剩 1003 排最前（已過途經點）
+    rows.nth(0).locator(".tap").click()
+    _until(page, lambda: any(e.get("bib") == 1012 and e["event"] == "test" for e in page.db["entries"].values()))
+    expect(rows.nth(0)).to_have_attribute("data-key", "b1003")
+    expect(page.locator('#list.runners li[data-key="b1012"]')).not_to_have_class("cp")
+    # 已有一對（途經→終點）用時 → 1003 有預計到達
+    expect(page.locator('#list.runners li[data-key="b1003"]')).to_have_attribute("data-eta", re.compile(r"\d+"))
 
 
 def test_live_admin_cert_release(live):

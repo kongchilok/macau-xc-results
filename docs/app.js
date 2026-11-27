@@ -1601,7 +1601,7 @@
 
   function renderLive(params) {
     const demo = Number(params.get("demo")) || 0;
-    const event = demo ? "demo" : (params.get("ev") || String((DB.race && DB.race.edition) || 48)).replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const event = demo ? "demo" : (params.get("ev") || String((DB.race && DB.race.edition) || 48)).replace(/[^a-z0-9]/gi, "").toLowerCase().replace(/cp$/, ""); // 途經點紀錄（48cp 等）只供終點排序，公眾頁不顯示
     const cats = liveCats();
     // 同一場資料只換組別或畫面：保留已下載的資料及排位紀錄
     if (!LIVE || LIVE.event !== event || LIVE.demo !== demo) LIVE = { event, demo, rev: 0, offset: 0, entries: new Map(), heats: new Map(), loaded: false, cat: null, roster: null, open: new Set(), openTeams: new Set(), heatPin: {}, lastRanks: new Map(), moves: new Map() };

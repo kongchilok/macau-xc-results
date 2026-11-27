@@ -16,17 +16,24 @@
   const LIVE_CATS = ["MA", "MB", "FB", "MC", "FC", "FA"];
   const catLabel = (c) => `${c[0] === "M" ? "男" : "女"}${c[1]}`;
   const PRACTICE = new URLSearchParams(location.search).has("practice");
+  // 途經點模式（live-admin.html?cp=1）：途經點工作人員輸入經過的號碼布，寫入另一個 event（例如 48cp），
+  // 只供終點裝置把「跑道上」清單及第一圈泡泡按途經次序排列；不計圈、不計名次，公眾即時成績只讀 event 48，不會顯示
+  const CP = !PRACTICE && new URLSearchParams(location.search).has("cp");
+  const CP_DEDUP = 20; // 途經點同一號碼相隔少於 20 秒＝重複輸入
 
   let PRED = {}, sb = null, RACE = null, RES = null, SCHOOL = new Map(), NAME = new Map(), ROSTER = new Map();
   let offset = 0, rev = 0, revH = 0, bibBuf = "";
   const entries = new Map(), heats = new Map();
+  const cpMap = new Map(); let revC = 0; // 終點裝置：途經點紀錄（只讀）
   let queue = PRACTICE ? [] : store.get("xc-live-queue", []);
   let rejected = PRACTICE ? [] : store.get("xc-live-rejected", []); // 被資料庫拒絕的紀錄（保留在本裝置供核對）
   let undoLog = PRACTICE ? [] : store.get("xc-live-undo", []); // 本裝置的操作紀錄：[{id, before}]，供「撤銷上一下」
-  const st = Object.assign({ event: "48", cat: "MA", heat: 1, tab: "course", lock: false, padOff: false }, PRACTICE ? {} : store.get("xc-live-state", {}));
+  const ST_KEY = CP ? "xc-live-state-cp" : "xc-live-state";
+  const st = Object.assign({ event: "48", cat: "MA", heat: 1, tab: CP ? "grid" : "course", lock: false, padOff: false }, PRACTICE ? {} : store.get(ST_KEY, {}));
   if (PRACTICE) st.event = "practice";
   let lockOrder = [];
-  const save = () => { if (!PRACTICE) store.set("xc-live-state", st); };
+  const save = () => { if (!PRACTICE) store.set(ST_KEY, st); };
+  const wEvent = () => (CP ? `${st.event}cp` : st.event); // 終點紀錄寫入／讀取的 event
   // 時間一律取整數毫秒：資料庫 at_ms／start_ms 是 bigint，帶小數（例如時差 x.5 毫秒）會被拒絕
   const now = () => Math.round(Date.now() + offset);
 
@@ -70,7 +77,14 @@
     setInterval(syncClock, 60000);
     keepAwake();
   }
-  function showApp() { $("#login").hidden = true; $("#app").hidden = false; $("#logout").hidden = PRACTICE; document.body.classList.add("app-on"); }
+  function showApp() {
+    $("#login").hidden = true; $("#app").hidden = false; $("#logout").hidden = PRACTICE; document.body.classList.add("app-on");
+    if (CP) {
+      document.body.classList.add("cp-mode"); $("#cpNote").hidden = false; $("#title").textContent = "途經點輸入";
+      for (const id of ["#markBtn", "#schoolBtn", "#dnsBtn"]) $(id).hidden = true;
+      document.title = "途經點輸入";
+    }
+  }
   function startTimers() { setInterval(tickClock, 100); setInterval(tickEta, 1000); }
 
   /* ---------- 時差校正：取往返時間最短的一次 ---------- */
@@ -115,28 +129,34 @@
   let online = true;
   async function pull(full) {
     if (PRACTICE) return;
-    if (full) { rev = 0; revH = 0; entries.clear(); heats.clear(); }
+    if (full) { rev = 0; revH = 0; revC = 0; entries.clear(); heats.clear(); cpMap.clear(); }
     try {
-      // 紀錄與分組各自記住讀到的 rev：紀錄超過一批（1000 行）時，分組較新的 rev 不會令未讀的紀錄被跳過
-      const [e, h] = await Promise.all([
-        sb.from("xc_live_entries").select("*").eq("event", st.event).gt("rev", rev).order("rev").limit(PAGE),
+      // 紀錄、分組、途經點各自記住讀到的 rev：紀錄超過一批（1000 行）時，分組較新的 rev 不會令未讀的紀錄被跳過
+      const [e, h, c] = await Promise.all([
+        readEntries(wEvent(), rev),
         sb.from("xc_live_heats").select("cat,heat,start_ms,status,rev").eq("event", st.event).gt("rev", revH).order("rev"),
+        CP ? Promise.resolve([]) : readEntries(`${st.event}cp`, revC),
       ]);
-      if (e.error || h.error) throw e.error || h.error;
+      if (h.error) throw h.error;
       let changed = false;
       const pendingIds = new Set(queue.filter((q) => q.t === "entry").map((q) => q.row.id));
-      let batch = e.data;
-      for (;;) {
-        for (const r of batch) { if (!pendingIds.has(r.id)) entries.set(r.id, r); rev = Math.max(rev, r.rev); changed = true; }
-        if (batch.length < PAGE) break;
-        const more = await sb.from("xc_live_entries").select("*").eq("event", st.event).gt("rev", rev).order("rev").limit(PAGE);
-        if (more.error) throw more.error;
-        batch = more.data;
-      }
+      for (const r of e) { if (!pendingIds.has(r.id)) entries.set(r.id, r); rev = Math.max(rev, r.rev); changed = true; }
+      for (const r of c) { cpMap.set(r.id, r); revC = Math.max(revC, r.rev); changed = true; }
       for (const r of h.data) { const k = `${r.cat}|${r.heat}`; if (!queue.some((q) => q.t === "heat" && `${q.row.cat}|${q.row.heat}` === k)) heats.set(k, r); revH = Math.max(revH, r.rev); changed = true; }
       online = true;
       if (changed) renderAll(); else setSync();
     } catch (err) { online = false; setSync(); }
+  }
+  // 分批讀取 rev 較新的紀錄（每批最多 1000 行）
+  async function readEntries(event, since) {
+    const out = [];
+    for (let cur = since; ;) {
+      const r = await sb.from("xc_live_entries").select("*").eq("event", event).gt("rev", cur).order("rev").limit(PAGE);
+      if (r.error) throw r.error;
+      out.push(...r.data);
+      if (r.data.length) cur = r.data[r.data.length - 1].rev;
+      if (r.data.length < PAGE) return out;
+    }
   }
   let pushing = false;
   async function push() {
@@ -235,11 +255,12 @@
       const left = XCLive.CUTOFF[st.cat] * 1000 / (PRACTICE ? practice.speed : 1) - ms;
       cut.textContent = left > 0 ? `距達標時間 ${mmss(left)}` : "已到達標時間：停止記錄";
       cut.className = left <= 0 ? "over" : left < 60000 ? "warn" : "";
-    } else { el.textContent = h.status === "done" ? "已完成" : "0:00.0"; cut.textContent = h.status === "done" ? "如需補錄，按「重新開放」" : "按「開賽計時」開始"; cut.className = ""; }
+    } else { el.textContent = h.status === "done" ? "已完成" : "0:00.0"; cut.textContent = h.status === "done" ? (CP ? "本組已完成" : "如需補錄，按「重新開放」") : CP ? "終點開賽後自動計時" : "按「開賽計時」開始"; cut.className = ""; }
     if (PRACTICE) practiceTick();
   }
   function renderClockBtns() {
     const h = heatRow();
+    if (CP) { for (const id of ["#startBtn", "#doneBtn", "#adjBtn", "#certBtn"]) $(id).hidden = true; return; }
     $("#startBtn").hidden = h.status !== "ready";
     $("#doneBtn").hidden = h.status === "ready";
     $("#doneBtn").textContent = h.status === "done" ? "重新開放" : "本組完成";
@@ -406,6 +427,7 @@
   let lastReason = "";
   // opt.voice：語音輸入，不彈確認框；不記錄時以 lastReason 說明原因
   function recordPass(r, tapped, opt = {}) {
+    if (CP) return cpRecord(r, tapped, opt);
     const h = heatRow();
     const run = runnerOf(r.bib);
     lastReason = "";
@@ -427,7 +449,7 @@
     }
     if (h.status === "ready" && (opt.voice || !confirm("本組尚未按「開賽計時」，仍要記錄？（將沒有用時）"))) { lastReason = "本組尚未開賽，未記錄"; return false; }
     const slot = firstSlot();
-    const base = slot || { id: uuid(), event: st.event, cat: st.cat, heat: st.heat, at_ms: tapped, seq: nextSeq(), deleted: false };
+    const base = slot || { id: uuid(), event: wEvent(), cat: st.cat, heat: st.heat, at_ms: tapped, seq: nextSeq(), deleted: false };
     const lap = (run ? run.laps : 0) + 1;
     const fin = !!opt.finish || lap >= lapsN();
     act(strip({ ...base, bib: Number(r.bib), abbr: r.abbr || "?", pid: r.pid || null, name: r.name || null, force: force || !!base.force, fin: !!opt.finish }),
@@ -437,6 +459,52 @@
     buzz();
     return true;
   }
+  // 途經點：每次輸入＝經過途經點一次；不計圈、不判完賽；同一號碼 20 秒內再輸入視為重複
+  function cpRecord(r, tapped, opt = {}) {
+    lastReason = "";
+    const mine = curEntries().filter((e) => !e.deleted && String(e.bib) === String(r.bib)).sort((a, b) => a.at_ms - b.at_ms);
+    const last = mine[mine.length - 1];
+    if (last && (tapped - last.at_ms) / 1000 < CP_DEDUP) {
+      if (opt.voice) { lastReason = "剛記錄，已略過"; flash(`${r.bib} 剛記錄，已略過`, true); return false; }
+      if (!confirm(`${r.bib} 在 ${Math.round((tapped - last.at_ms) / 1000)} 秒前剛記錄。\n仍要再記一次？`)) { flash("已略過（重複）", true); return false; }
+    }
+    const n = mine.length + 1;
+    act({ id: uuid(), event: wEvent(), cat: st.cat, heat: st.heat, bib: Number(r.bib), abbr: r.abbr || "?", pid: r.pid || null, name: r.name || null,
+          at_ms: tapped, seq: nextSeq(), deleted: false, fin: false, force: false }, `${r.bib} 途經`);
+    flash(`${r.bib} 已記途經（第 ${n} 次）`);
+    lastReason = "途經";
+    buzz();
+    return true;
+  }
+  /* ---------- 途經點排序（終點裝置）----------
+     途經點在每圈終點之前：某人在最近一次經過終點之後再經過途經點 → 他已在最後一段，一定比未經過途經點的人先到。
+     cpAfter：號碼 → 最近一次終點紀錄之後的途經時間；seg：途經點至終點的用時（以已配對的紀錄取中位數） */
+  function cpState(R) {
+    const h = heatRow(); const start = h.start_ms;
+    const bibs = new Set(inCat().map((r) => String(r.bib)));
+    const passes = new Map(); // bib → [at_ms...]
+    for (const e of cpMap.values()) {
+      if (e.deleted || e.bib == null || !bibs.has(String(e.bib)) || (start != null && e.at_ms < start)) continue;
+      const k = String(e.bib); if (!passes.has(k)) passes.set(k, []); passes.get(k).push(e.at_ms);
+    }
+    for (const a of passes.values()) a.sort((x, y) => x - y);
+    const byBib = new Map(R.runners.filter((x) => x.bib != null).map((x) => [String(x.bib), x]));
+    const cpAfter = new Map(), segs = [];
+    for (const [k, a] of passes) {
+      const run = byBib.get(k);
+      const fp = run ? run.passes.map((q) => q.at_ms) : [];
+      // 配對：每次終點經過之前（上一次終點經過之後）最遲的途經時間
+      let prev = start ?? -Infinity;
+      for (const f of fp) { const c = a.filter((x) => x > prev && x < f).pop(); if (c != null) segs.push(f - c); prev = f; }
+      if (run && run.fin) continue;
+      const after = a.filter((x) => x > prev).pop();
+      if (after != null) cpAfter.set(k, after);
+    }
+    segs.sort((x, y) => x - y);
+    const recent = segs.slice(-15).sort((x, y) => x - y);
+    const seg = recent.length ? recent[Math.floor(recent.length / 2)] : null;
+    return { cpAfter, seg, n: passes.size };
+  }
   /* ---------- 缺席 ----------
      兩種方法（同一視窗切換，記住選擇）：
      - 點名（預設）：按有到的號碼；按「點名完成」後，未點名者一次過標記缺席（已有經過紀錄者自動當有到）
@@ -444,7 +512,7 @@
      點名進度只存於本裝置（重新整理不會遺失）；缺席標記寫入資料庫（xc_live_entries.dns），其他裝置及公眾頁同步 */
   const dnsOf = (bib) => [...entries.values()].find((e) => e.dns && !e.deleted && e.event === st.event && String(e.bib) === String(bib));
   const dnsCount = () => inCat().filter((r) => dnsOf(r.bib)).length;
-  const dnsRow = (r) => ({ id: uuid(), event: st.event, cat: r.cat || st.cat, heat: r.heat || st.heat, bib: Number(r.bib), abbr: r.abbr || "?", pid: r.pid || null, name: r.name || null,
+  const dnsRow = (r) => ({ id: uuid(), event: wEvent(), cat: r.cat || st.cat, heat: r.heat || st.heat, bib: Number(r.bib), abbr: r.abbr || "?", pid: r.pid || null, name: r.name || null,
                            at_ms: now(), seq: nextSeq(), deleted: false, fin: false, force: false, dns: true });
   function toggleDns(r) {
     const cur = dnsOf(r.bib);
@@ -546,7 +614,7 @@
     draw();
   }
   function markFinish() {
-    act({ id: uuid(), event: st.event, cat: st.cat, heat: st.heat, bib: null, abbr: "?", pid: null, name: null, at_ms: now(), seq: nextSeq(), deleted: false, fin: false, force: false }, "空位");
+    act({ id: uuid(), event: wEvent(), cat: st.cat, heat: st.heat, bib: null, abbr: "?", pid: null, name: null, at_ms: now(), seq: nextSeq(), deleted: false, fin: false, force: false }, "空位");
     flash("已記時間，請補號碼"); buzz();
   }
   function bySchool() {
@@ -556,7 +624,7 @@
       <div class="row-btns"><button value="cancel" class="ghost">取消</button></div>`, (v) => {
       if (!v || v === "cancel") return;
       const slot = firstSlot();
-      const base = slot || { id: uuid(), event: st.event, cat: st.cat, heat: st.heat, at_ms: now(), seq: nextSeq(), deleted: false, bib: null, pid: null, name: null, fin: false, force: false };
+      const base = slot || { id: uuid(), event: wEvent(), cat: st.cat, heat: st.heat, at_ms: now(), seq: nextSeq(), deleted: false, bib: null, pid: null, name: null, fin: false, force: false };
       act(strip({ ...base, abbr: v === "?" ? "?" : v }), `按學校 ${v}`);
       buzz();
     });
@@ -582,8 +650,15 @@
   function fmtT(t) { if (t == null) return "--"; const s = t / 1000; return `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`; }
   const schOf = (x) => (x.abbr === "?" ? "待確認" : (SCHOOL.get(x.abbr) || x.abbr));
   function renderList() {
+    if (CP) return renderCpList();
     const R = ranked();
-    const on = R.runners.filter((r) => !r.fin), fin = R.runners.filter((r) => r.fin);
+    const CPS = cpState(R);
+    const fin = R.runners.filter((r) => r.fin);
+    // 跑道上：已有終點紀錄未完賽者＋只在途經點出現（未記第一圈）的人
+    const seenKeys = new Set(R.runners.map((x) => x.key));
+    const cpOnly = inCat().filter((r) => CPS.cpAfter.has(String(r.bib)) && !seenKeys.has(`b${r.bib}`) && !dnsOf(r.bib))
+      .map((r) => ({ key: `b${r.bib}`, bib: r.bib, abbr: r.abbr, pid: r.pid, name: r.name, laps: 0, last: null, cpOnly: true }));
+    const on = R.runners.filter((r) => !r.fin).concat(cpOnly);
     const all = curEntries();
     $("#listTabs").innerHTML = [["grid", "號碼格"], ["course", `跑道上 ${on.length}`], ["fin", `已完賽 ${fin.length}`], ["all", `紀錄 ${all.filter((e) => !e.deleted).length}`]]
       .map(([k, l]) => `<button class="${st.tab === k ? "on" : ""}" data-tab="${k}">${l}</button>`).join("");
@@ -597,7 +672,7 @@
     $("#padBtn").classList.toggle("on", !!st.padOff);
     $("#lockBtn").textContent = st.lock ? "🔒 已鎖定排序" : "鎖定排序";
     $("#lockBtn").classList.toggle("on", st.lock);
-    renderBubbles(R);
+    renderBubbles(R, CPS);
     $("#slotNote").hidden = !R.slots.length;
     $("#slotNote").textContent = `有 ${R.slots.length} 個空位待補號碼：下一個輸入或按下的運動員會填入最早的空位。`;
     const L = lapsN();
@@ -606,7 +681,7 @@
     box.dataset.tab = st.tab;
     if (st.tab === "grid") {
       // 號碼格：本組（分組）全部號碼，按預測排名排列（其餘按號碼）；按一下記一圈
-      const order = new Map(predictedBibs().map((r, i) => [String(r.bib), i]));
+      const order = new Map(cpFirst(predictedBibs(), CPS).map((r, i) => [String(r.bib), i]));
       const byKey = new Map(R.runners.map((x) => [x.key, x]));
       const list = inCat().sort((a, b) => (order.has(String(a.bib)) ? order.get(String(a.bib)) : 1e4) - (order.has(String(b.bib)) ? order.get(String(b.bib)) : 1e4) || a.bib - b.bib);
       box.className = "grid";
@@ -616,18 +691,21 @@
         : `<li class="empty">${ROSTER.size ? "本組未有號碼布名單。" : "未載入號碼布名單。"}</li>`;
       box.querySelectorAll("[data-gb]").forEach((b) => b.onclick = () => { const r = ROSTER.get(b.dataset.gb); if (r) recordPass(r, now()); });
     } else if (st.tab === "course") {
-      let list = on.map((r) => ({ r, eta: XCLive.eta(r, R.hs) }));
-      list.sort((a, b) => a.eta - b.eta || a.r.last.seq - b.r.last.seq);
+      // 已過途經點（最近一次終點紀錄之後）者排最前，按途經次序；其餘按預計到達
+      let list = on.map((r) => { const c = CPS.cpAfter.get(String(r.bib));
+        return { r, cp: c ?? null, eta: c != null ? (CPS.seg != null ? c + CPS.seg : null) : r.last ? XCLive.eta(r, R.hs) : null }; });
+      const kk = (x) => (x.cp != null ? [0, x.cp] : [1, x.eta ?? Infinity]);
+      list.sort((a, b) => { const ka = kk(a), kb = kk(b); return ka[0] - kb[0] || ka[1] - kb[1] || (a.r.last ? a.r.last.seq : 0) - (b.r.last ? b.r.last.seq : 0); });
       if (st.lock) {
         const pos = new Map(lockOrder.map((k, i) => [k, i]));
         list.sort((a, b) => (pos.has(a.r.key) ? pos.get(a.r.key) : -1) - (pos.has(b.r.key) ? pos.get(b.r.key) : -1));
       }
       lockOrder = list.map((x) => x.r.key);
       box.className = "runners";
-      box.innerHTML = list.length ? list.map(({ r, eta }) => `<li class="${r.last._pending ? "pending" : ""}" data-key="${esc(r.key)}" data-eta="${eta}">
+      box.innerHTML = list.length ? list.map(({ r, eta, cp }) => `<li class="${r.last && r.last._pending ? "pending" : ""} ${cp != null ? "cp" : ""}" data-key="${esc(r.key)}" ${eta != null ? `data-eta="${eta}"` : ""} ${cp != null ? `data-cp="${cp}"` : ""}>
           <button class="tap" data-bib="${r.bib ?? ""}" aria-label="${r.bib ?? "?"} 記一圈"><b class="bb">${r.bib ?? "?"}</b>
             <span class="nm">${esc(schOf(r))}${personOf(r) ? `<small>${esc(personOf(r))}</small>` : ""}</span>
-            <span class="lp"><b>${r.laps}</b>/${L}<small class="eta"></small></span></button>
+            <span class="lp">${cp != null ? `<i class="cpchip">途經</i>` : ""}<b>${r.laps}</b>/${L}<small class="eta"></small></span></button>
           <button class="more" data-key="${esc(r.key)}" aria-label="詳情">⋯</button></li>`).join("")
         : `<li class="empty">第一圈請用上方數字鍵輸入號碼；之後運動員會出現在這裏，按一下即記一圈。</li>`;
       box.querySelectorAll(".tap").forEach((b) => b.onclick = () => {
@@ -635,7 +713,7 @@
         const r = ROSTER.get(bib) || on.find((x) => String(x.bib) === bib);
         recordPass({ bib: Number(bib), abbr: r.abbr, pid: r.pid, name: r.name }, now());
       });
-      box.querySelectorAll(".more").forEach((b) => b.onclick = () => runnerSheet(b.dataset.key));
+      box.querySelectorAll(".more").forEach((b) => { const x = on.find((y) => y.key === b.dataset.key); if (x && x.cpOnly) b.hidden = true; else b.onclick = () => runnerSheet(b.dataset.key); });
       tickEta();
     } else if (st.tab === "fin") {
       box.className = "fins";
@@ -665,6 +743,50 @@
     $("#undoBtn").disabled = !undoLog.length;
     $("#undoBtn").textContent = undoLog.length ? `↶ 撤銷 ${undoLog[undoLog.length - 1].label}` : "↶ 撤銷";
   }
+  function renderCpList() {
+    const all = curEntries();
+    const live = all.filter((e) => !e.deleted);
+    const cnt = new Map(); for (const e of live) cnt.set(String(e.bib), (cnt.get(String(e.bib)) || 0) + 1);
+    if (!["grid", "all"].includes(st.tab)) st.tab = "grid";
+    $("#listTabs").innerHTML = [["grid", "號碼格"], ["all", `已記 ${live.length}`]].map(([k, l]) => `<button class="${st.tab === k ? "on" : ""}" data-tab="${k}">${l}</button>`).join("");
+    $("#listTabs").querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { st.tab = b.dataset.tab; save(); renderList(); });
+    $("#lockBtn").hidden = true; $("#bubbles").hidden = true; $("#slotNote").hidden = true;
+    document.body.classList.toggle("grid-mode", st.tab === "grid");
+    document.body.classList.toggle("pad-off", !!st.padOff);
+    $("#padBtn").hidden = st.tab === "grid";
+    $("#padBtn").textContent = st.padOff ? "⌨ 顯示" : "⌨ 收起";
+    const box = $("#list");
+    const keep = box.dataset.tab === st.tab ? box.scrollTop : 0;
+    box.dataset.tab = st.tab;
+    const lastAt = new Map(); for (const e of live) lastAt.set(String(e.bib), Math.max(lastAt.get(String(e.bib)) || 0, e.at_ms));
+    if (st.tab === "grid") {
+      // 號碼格：未經過或最早經過的排前（下一批最可能是他們），剛記錄的排後；同級按預測名次
+      const order = new Map(predictedBibs().map((r, i) => [String(r.bib), i]));
+      const list = inCat().filter((r) => !dnsOf(r.bib)).sort((a, b) => (lastAt.get(String(a.bib)) || 0) - (lastAt.get(String(b.bib)) || 0)
+        || (order.has(String(a.bib)) ? order.get(String(a.bib)) : 1e4) - (order.has(String(b.bib)) ? order.get(String(b.bib)) : 1e4) || a.bib - b.bib);
+      box.className = "grid";
+      box.innerHTML = list.length ? list.map((r) => { const n = cnt.get(String(r.bib)) || 0;
+        return `<li class="${n ? "run" : ""}"><button data-gb="${r.bib}"><b>${r.bib}</b><span>${esc(personOf(r) || r.abbr)}</span><i>${n ? `途經 ${n} 次` : "未經過"}</i></button></li>`; }).join("")
+        : `<li class="empty">${ROSTER.size ? "本組未有號碼布名單。" : "未載入號碼布名單。"}</li>`;
+      box.querySelectorAll("[data-gb]").forEach((b) => b.onclick = () => { const r = ROSTER.get(b.dataset.gb); if (r) recordPass(r, now()); });
+    } else {
+      const h = heatRow();
+      const nth = new Map(), seen = new Map();
+      for (const e of live.slice().sort((a, b) => a.at_ms - b.at_ms)) { const k = String(e.bib); seen.set(k, (seen.get(k) || 0) + 1); nth.set(e.id, seen.get(k)); }
+      box.className = "records";
+      box.innerHTML = all.length ? all.slice().sort((a, b) => b.seq - a.seq).map((e) => `<li class="${e.deleted ? "del" : ""} ${e._pending ? "pending" : ""}" data-id="${e.id}">
+          <span class="tt">${fmtT(h.start_ms != null ? e.at_ms - h.start_ms : null)}</span><span class="bb">${e.bib ?? "—"}</span>
+          <span class="nm">${esc(schOf(e))}<small>${e.deleted ? "已刪除" : `第 ${nth.get(e.id)} 次途經`}</small></span></li>`).join("")
+        : `<li class="empty">尚未有紀錄。運動員經過途經點時輸入號碼布即可。</li>`;
+      box.querySelectorAll("li[data-id]").forEach((el) => el.onclick = () => {
+        const e = entries.get(el.dataset.id); if (!e || e.deleted) return;
+        if (confirm(`刪除 ${e.bib} 這次途經紀錄？`)) act(strip({ ...e, deleted: true }), `刪除 ${e.bib}`);
+      });
+    }
+    box.scrollTop = keep;
+    $("#undoBtn").disabled = !undoLog.length;
+    $("#undoBtn").textContent = undoLog.length ? `↶ 撤銷 ${undoLog[undoLog.length - 1].label}` : "↶ 撤銷";
+  }
   /* 第一圈快速記錄：本組（分組）預測排名最前、尚未記第一圈的 5 人以泡泡顯示，按一下即記第一圈
      預測來自賽前預覽（preview48.json）：有往績者以學生編號對應名單，其餘以姓名及學校對應 */
   function predictedBibs() {
@@ -678,23 +800,34 @@
     }
     return out;
   }
-  function renderBubbles(R) {
+  // 已過途經點者（按途經次序）排在預測名單之前
+  function cpFirst(list, CPS) {
+    if (!CPS || !CPS.cpAfter.size) return list;
+    const cp = inCat().filter((r) => CPS.cpAfter.has(String(r.bib))).sort((a, b) => CPS.cpAfter.get(String(a.bib)) - CPS.cpAfter.get(String(b.bib)));
+    const s = new Set(cp);
+    return cp.concat(list.filter((r) => !s.has(r)));
+  }
+  function renderBubbles(R, CPS) {
     const box = $("#bubbles"), h = heatRow();
+    if (CP) { box.hidden = true; return; }
     const seen = new Set(R.runners.map((r) => r.key));
-    const top = h.status === "done" ? [] : predictedBibs().filter((r) => !seen.has(`b${r.bib}`) && !dnsOf(r.bib)).slice(0, 5);
+    const top = h.status === "done" ? [] : cpFirst(predictedBibs(), CPS).filter((r) => !seen.has(`b${r.bib}`) && !dnsOf(r.bib)).slice(0, 5);
     box.hidden = !top.length;
-    const html = top.map((r) => `<button data-pb="${r.bib}"><b>${r.bib}</b><span>${esc(personOf(r) || SCHOOL.get(r.abbr) || r.abbr)}</span></button>`).join("");
+    const viaCp = (r) => CPS && CPS.cpAfter.has(String(r.bib));
+    const html = top.map((r) => `<button data-pb="${r.bib}" class="${viaCp(r) ? "cp" : ""}"><b>${r.bib}</b><span>${esc(personOf(r) || SCHOOL.get(r.abbr) || r.abbr)}</span></button>`).join("");
     if (box.dataset.h !== html) {
-      box.innerHTML = `<small>預測前列 · 按一下記第 1 圈</small>${html}`; box.dataset.h = html;
+      box.innerHTML = `<small>${top.some(viaCp) ? "已過途經點先列" : "預測前列"} · 按一下記第 1 圈</small>${html}`; box.dataset.h = html;
       box.querySelectorAll("[data-pb]").forEach((b) => b.onclick = () => { const r = ROSTER.get(b.dataset.pb); if (r) recordPass(r, now()); });
     }
   }
   // 每秒更新「預計到達」倒數（不重排，避免清單跳動）
   function tickEta() {
     const t = now();
-    document.querySelectorAll("#list.runners li[data-eta]").forEach((li) => {
-      const d = Number(li.dataset.eta) - t, el = li.querySelector(".eta");
+    document.querySelectorAll("#list.runners li[data-eta], #list.runners li[data-cp]").forEach((li) => {
+      const el = li.querySelector(".eta");
       if (!el) return;
+      if (li.dataset.eta == null) { el.textContent = `${mmss(t - Number(li.dataset.cp))} 前途經`; li.classList.add("due"); return; }
+      const d = Number(li.dataset.eta) - t;
       el.textContent = d >= 0 ? `約 ${mmss(d)} 後` : `遲 ${mmss(-d)}`;
       li.classList.toggle("due", d < 15000);
     });
@@ -755,7 +888,7 @@
         const prev = list[i - 1];
         const seq = prev ? (prev.seq + e.seq) / 2 : e.seq - 1;
         const at = prev ? Math.round((prev.at_ms + e.at_ms) / 2) : e.at_ms - 500;
-        act({ id: uuid(), event: st.event, cat: st.cat, heat: st.heat, bib: null, abbr: "?", pid: null, name: null, at_ms: at, seq, deleted: false, fin: false, force: false }, "插入空位");
+        act({ id: uuid(), event: wEvent(), cat: st.cat, heat: st.heat, bib: null, abbr: "?", pid: null, name: null, at_ms: at, seq, deleted: false, fin: false, force: false }, "插入空位");
       }
       if (v === "delete" && confirm("刪除此紀錄？")) act(strip({ ...e, deleted: true }), `刪除 ${e.bib ?? ""} 一次紀錄`);
       if (v === "restore") act(strip({ ...e, deleted: false }), `復原 ${e.bib ?? ""}`);

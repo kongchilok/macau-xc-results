@@ -288,3 +288,11 @@ body.pad-off .pad { display: none; }
 .dns-foot button { min-height: 48px; }
 .dns-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .dns-head h2 { margin: 0; }
+
+/* 途經點 */
+.cp-note { margin: 0 0 6px; padding: 6px 10px; border-radius: 10px; background: rgb(246 197 68 / .14); color: #f3dc9a; font-size: 13px; line-height: 1.4; }
+body.cp-mode header.top b#title { color: #f3dc9a; }
+.cpchip { display: inline-block; margin-right: 4px; padding: 0 5px; border-radius: 5px; background: rgb(246 197 68 / .2); color: #f3dc9a; font-style: normal; font-size: 11px; font-weight: 700; vertical-align: 2px; }
+#list.runners li.cp { box-shadow: inset 3px 0 0 #f6c544; }
+.bubbles button.cp { box-shadow: inset 0 0 0 2px #f6c544; }
+.practice-link { display: block; margin: 10px 0; }
